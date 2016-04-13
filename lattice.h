@@ -2,6 +2,7 @@
 #define LATTICE_H
 
 #include "utils.h"
+#include <Eigen/LU>
 #include "MersenneTwister.h"
 #include <numeric>
 #include <deque>
@@ -45,6 +46,11 @@ private:
 	complex<double> L1,L2;
 	vector <vector <double> > coulomb_table,sq2;
 	vector <vector <complex<double> > > sq;
+	vector <vector <int> > ds;
+	vector<double> dsum;
+	Eigen::MatrixXcd oldMatrix;
+	complex<double> oldDeterminant;
+	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;	
 	MTRand ran;
 	bool fermions;
 	vector< vector<int> > locs;
