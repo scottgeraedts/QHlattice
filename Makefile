@@ -7,7 +7,7 @@ CC=g++
 HERE = /home/sgeraedt/QHlattice
 MYDIR = /home/sgeraedt/myClibrary/
 CFLAGS=-Wall -I$(HERE) -I$(MYDIR)
-LIBS= $(MYDIR)utils.o  -lgfortran 
+LIBS=  -lgfortran 
 
 a.out: main.o lattice.o z_function_m.o coulomb2_m.o wf_tools.o
 	$(CC) -O3 $(CFLAGS) -o a.out z_function_m.o coulomb2_m.o wf_tools.o lattice.o main.o $(LIBS)

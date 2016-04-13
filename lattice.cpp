@@ -10,7 +10,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	if(NPhi%invNu) cout<<"NPhi not divisible by filling!"<<endl;
 	Ne=NPhi/invNu;
 	fermions=true;
-	testing=true;
+	testing=false;
 	type="laughlin";
 
 //	cout<<NPhi<<" "<<invNu<<" "<<Ne<<" "<<L1<<" "<<L2<<endl;
@@ -18,10 +18,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 
 	//****initialize z's, w's, d's
 	locs=vector< vector<int> >(Ne, vector<int>(2,0));//initalize locations of all electrons
-	for(int i=0;i<Ne;i++){
-		locs[i][0]=i;
-		locs[i][1]=i;
-	}
+	cold_start();
 
 	ws=vector< vector<double> > (invNu, vector<double>(2,0) );
 	for( int i=0;i<invNu;i++) ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
@@ -358,5 +355,12 @@ void LATTICE::print_structure_factors(int nMeas){
 	}
 	sqout.close();
 	sqout2.close();
+}
+
+void LATTICE::cold_start(){
+	for(int i=0;i<Ne;i++){
+		locs[i][0]=i;
+		locs[i][1]=i;
+	}
 }
 LATTICE::~LATTICE(){ delete []sl2z; }

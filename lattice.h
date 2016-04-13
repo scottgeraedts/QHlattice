@@ -33,6 +33,7 @@ public:
 	void setup_weierstrass();
 	void update_structure_factors();
 	void print_structure_factors(int nMeas);
+	void cold_start();
 	
 	int Ne;
 	bool testing;
