@@ -188,7 +188,7 @@ vector<int> LATTICE::random_move( const vector<int> &in){
 //	newloc[0]=ran.randInt(NPhi-1);
 //	newloc[1]=ran.randInt(NPhi-1);
 
-	double hoplength=2;
+	int hoplength=Ne/10;
 	int n=pow(2*hoplength+1,2)-1;
 	vector<int> newx(n),newy(n);
 	vector<double> newprob(n);

@@ -43,7 +43,6 @@ int main(){
 			
 			ll.update_structure_factors();
 		}
-		ll.print_structure_factors(nMeas);
 		outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<endl;
 		cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
 	//	cout<<"almost done"<<endl;
@@ -56,6 +55,7 @@ int main(){
 			auto_out<<endl;
 		}
 	}
+	ll.print_structure_factors(nMeas*nBins);
 	eout.close();
 	outfile.close();
 }
