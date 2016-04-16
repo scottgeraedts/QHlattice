@@ -28,6 +28,8 @@ public:
 	void sum_locs(int []);
 	int simple_update();
 	vector<int> random_move(const vector<int> &oldsite);
+	void make_fermi_surface(double* center_frac);
+	void print_ds();
 	double coulomb_energy();
 	void setup_coulomb();
 	void setup_weierstrass();

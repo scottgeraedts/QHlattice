@@ -11,7 +11,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	Ne=NPhi/invNu;
 	fermions=true;
 	testing=false;
-	type="laughlin";
+	type="CFL";
 
 //	cout<<NPhi<<" "<<invNu<<" "<<Ne<<" "<<L1<<" "<<L2<<endl;
 	one=1; zero=0; //useful for fortran calls
@@ -22,8 +22,11 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 
 	ws=vector< vector<double> > (invNu, vector<double>(2,0) );
 	for( int i=0;i<invNu;i++) ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
-	ds=vector <vector<int> >(Ne, vector<int>(2,0));
-	//TODO: need to initialiize the d's in a clustered way: Jie?
+
+	double center_frac[2]={0.,0.};
+	if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
+	make_fermi_surface(center_frac);
+	print_ds();
 	dsum=vector<double>(2,0);
 	for(int i=0;i<Ne;i++){
 		dsum[0]+=ds[i][0]/(1.*Ne); dsum[1]+=ds[i][1]/(1.*Ne);
@@ -154,7 +157,15 @@ int LATTICE::simple_update(){
 						x=(locs[i][0]-locs[k][0])/(1.*NPhi)-(ds[j][0]-dsum[0])/(1.*Ne);
 						y=(locs[i][1]-locs[k][1])/(1.*NPhi)-(ds[j][1]-dsum[1])/(1.*Ne);
 					}
+					xi=x*NPhi;
+					yi=y*NPhi;
+					cout<<xi<<" "<<yi<<endl;
+					if(floor(xi)!=xi || floor(yi) != yi){
+						cout<<"can't call lattice_z, likely this is because of dsum not begin in the form n/NPhi"<<endl;
+						cout<<xi<<" "<<yi<<endl;
+					}
 					z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+					//temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
 					product*=temp;
 				}
 				newMatrix(i,j)=product;
@@ -189,6 +200,7 @@ vector<int> LATTICE::random_move( const vector<int> &in){
 //	newloc[1]=ran.randInt(NPhi-1);
 
 	int hoplength=Ne/10;
+	if(Ne<10) hoplength=1;
 	int n=pow(2*hoplength+1,2)-1;
 	vector<int> newx(n),newy(n);
 	vector<double> newprob(n);
@@ -326,6 +338,61 @@ double LATTICE::coulomb_energy(){
 		}
 	}
 	return out;
+}
+/*
+make_fermi_surface(l1,l2,Ne,center_frac,ds);
+ l1, l2 are primitive lattice. Ne is #e.
+ center_frac = (x0,y0). x0*l1+y0*l2 is the center position of fermi surface.
+ ds contains d s .
+*/
+void LATTICE::make_fermi_surface(double* center_frac){
+    vector<vector<int> > d_list;
+    double x0,y0; x0=center_frac[0]; y0=center_frac[1];
+    //initial sub-lattice: L_{mn}/Ne where d s lives on.
+    vector<int> d=vector<int>(2,0);
+    d_list.push_back(d);
+    for (int i=-Ne; i<Ne; i++) {
+        for (int j=-Ne; j<Ne; j++) {
+            if (i==0 && j==0) continue;
+            vector<int> d;
+            d.push_back(i); d.push_back(j);
+            d_list.push_back(d);
+            d.clear();
+        }
+    }
+//uncomment this if the lattice should be shifted    
+    for (int i=0; i<(signed)d_list.size(); i++) {
+        d_list[i][0]+=(int)(x0*Ne); d_list[i][1]+=(int)(y0*Ne);
+    }
+    
+    //fill electrons one by one, fill those close to center first.
+    int x,y; double min,min_;
+    vector< vector<int> >::iterator it;
+    
+    for (int k=0; k<Ne; k++) {
+        it=d_list.begin();
+        
+        x=d_list[0][0]; y=d_list[0][1]; min = norm(L1*((double)x/(1.*Ne)-x0)+L2*((double)y/(1.*Ne)-y0));
+        for (int i=1; i<(signed)d_list.size(); i++) {
+            x=d_list[i][0]; y=d_list[i][1]; min_ = norm(L1*((double)x/(1.*Ne)-x0)+L2*((double)y/(1.*Ne)-y0));
+            if (min_<min) {
+                it=d_list.begin()+i;
+                min=min_;
+            }
+        }
+
+        vector<complex<double> > tmp;
+//        ds.push_back(1.*(*it)[0]*l1/(1.*Ne)+1.*(*it)[1]*l2/(1.*Ne));
+		ds.push_back(*it);
+        it=d_list.erase(it);
+    }
+    
+}
+void LATTICE::print_ds(){
+	ofstream dout("ds");
+	for (unsigned int i = 0; i < ds.size(); i += 1)
+		dout<<ds[i][0]<<" "<<ds[i][1]<<endl;
+	dout.close();
 }
 void LATTICE::update_structure_factors(){
 	complex<double>temp;
