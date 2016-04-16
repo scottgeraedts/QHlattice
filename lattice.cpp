@@ -1,7 +1,7 @@
 #include "lattice.h"
 
 int supermod(int x, int NPhi){	return (x%NPhi+NPhi)%NPhi; }
-	
+
 LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	//various parameters from input file
 	L1=sqrt(2*M_PI*NPhi)/sqrt(2.);//these are only used for calls to Duncan's functions, if you use them in other places there will be problems due to 
@@ -10,7 +10,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	if(NPhi%invNu) cout<<"NPhi not divisible by filling!"<<endl;
 	Ne=NPhi/invNu;
 	fermions=true;
-	testing=false;
+	testing=true;
 	type="CFL";
 
 //	cout<<NPhi<<" "<<invNu<<" "<<Ne<<" "<<L1<<" "<<L2<<endl;
@@ -82,7 +82,9 @@ int LATTICE::simple_update(){
 
 	//find a new position for a randomly chosen electron
 	int electron=ran.randInt(Ne-1);
+	cout<<"simple update with electon at "<<locs[electron][0]<<" "<<locs[electron][1]<<endl;
 	vector<int> newloc=random_move(locs[electron]);
+	cout<<"moving to "<<newloc[0]<<" "<<newloc[1]<<endl;
 	vector< vector<int> >::iterator it=find(locs.begin(),locs.end(),newloc);
 	if(it!=locs.end()) return 0;
 	double prob=1;
@@ -137,6 +139,7 @@ int LATTICE::simple_update(){
 	prob*=norm(temp);	
 
 	///***********determinant part
+	complex<double> temp2;
 	complex<double> newDeterminant;
 	if(type=="CFL"){
 		complex<double> product;
@@ -159,20 +162,29 @@ int LATTICE::simple_update(){
 					}
 					xi=x*NPhi;
 					yi=y*NPhi;
-					cout<<xi<<" "<<yi<<endl;
 					if(floor(xi)!=xi || floor(yi) != yi){
 						cout<<"can't call lattice_z, likely this is because of dsum not begin in the form n/NPhi"<<endl;
 						cout<<xi<<" "<<yi<<endl;
 					}
-					z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-					//temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
-					product*=temp;
+					z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp2);
+					temp=modded_lattice_z(xi,yi);
+					if(abs(temp2-temp)>1e-10){
+						cout<<i<<" "<<j<<" "<<k<<" "<<xi<<" "<<yi<<endl;
+						cout<<"z function: "<<temp2<<endl;
+						z_function_with_modular_transform_(&x,&y,&L1,&L2,&zero,&NPhi,&temp2,sl2z);
+						cout<<"z function mod: "<<temp2<<endl;
+//						int tx=supermod(xi,NPhi), ty=supermod(yi,NPhi);
+//						temp=lattice_z_(&NPhi,&tx,&ty,&L1,&L2,&one);
+//						cout<<"unmodded: "<<temp<<endl;
+						cout<<"modded: "<<temp<<endl;
+					}
+					product*=temp2;
 				}
 				newMatrix(i,j)=product;
 			}
 		}
 		detSolver.compute(newMatrix);
-		if(type=="CFL") newDeterminant=detSolver.determinant();
+		newDeterminant=detSolver.determinant();
 		prob*=( norm( newDeterminant/oldDeterminant) );
 	}
 
@@ -429,5 +441,20 @@ void LATTICE::cold_start(){
 		locs[i][0]=i;
 		locs[i][1]=i;
 	}
+}
+
+//call's duncan's lattice_z function, if the arguments x or y are outside of the range (0,NPhi) it shifts them into that range
+//and multiplies by the appropriate phase
+//only works for a square torus
+//on a square torus, the phase is always +- 1? 
+complex<double> LATTICE::modded_lattice_z(int x, int y){
+	int modx=supermod(x,NPhi);
+	int mody=supermod(y,NPhi);
+	complex<double> out=lattice_z_(&NPhi,&modx,&mody,&L1,&L2,&one);
+	int j=(modx-x)/NPhi, k=(mody-y)/NPhi;
+	out*=polar(1.,-M_PI/(1.*NPhi)*(mody*j-modx*k));
+//	cout<<polar(1.,-M_PI/(1.*NPhi)*(y*j-x*k))<<endl;
+	if(j%2 || k%2) return -out;
+	else return out;
 }
 LATTICE::~LATTICE(){ delete []sl2z; }

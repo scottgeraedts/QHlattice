@@ -11,6 +11,7 @@ using namespace std;
 
 extern"C"{
 	void z_function_(double *x, double *y, complex<double> *l1, complex<double> *l2, int * rationalize, int *denom, complex<double> *z);
+	void z_function_with_modular_transform_(double *x, double *y, complex<double> *l1, complex<double> *l2, int * rationalize, int *denom, complex<double> *z, int *sl2z);
 	complex<double> lattice_z_(int *NPhi, int *x, int *y, complex<double> *l1, complex<double> *l2, int * use_table);
 	double v_coulomb_(int *NPhi, int *m, int *n, complex<double> *l1, complex <double> *l2);
 	void setup_z_function_table_();
@@ -29,6 +30,7 @@ public:
 	int simple_update();
 	vector<int> random_move(const vector<int> &oldsite);
 	void make_fermi_surface(double* center_frac);
+	complex<double> modded_lattice_z(int x, int y);
 	void print_ds();
 	double coulomb_energy();
 	void setup_coulomb();
