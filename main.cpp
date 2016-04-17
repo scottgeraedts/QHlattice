@@ -13,7 +13,7 @@ int main(){
 
 	for(int s=0;s<nBins;s++){
 	
-		ll.cold_start();		
+		ll.reset();		
 		ll.step(nWarmup);
 		double E=0,E2=0,P=0,P2=0;
 		double e,p;

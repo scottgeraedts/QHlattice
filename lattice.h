@@ -26,18 +26,13 @@ public:
 	~LATTICE();
 	void step(int);
 	double get_weight();
-	void sum_locs(int []);
-	int simple_update();
-	vector<int> random_move(const vector<int> &oldsite);
 	void make_fermi_surface(double* center_frac);
 	complex<double> modded_lattice_z(int x, int y);
 	void print_ds();
 	double coulomb_energy();
-	void setup_coulomb();
-	void setup_weierstrass();
 	void update_structure_factors();
 	void print_structure_factors(int nMeas);
-	void cold_start();
+	void reset();
 	
 	int Ne;
 	bool testing;
@@ -45,7 +40,13 @@ public:
 	int tries,accepts;
 	
 private:
+	void sum_locs(int []);
+	void setup_coulomb();
+	void setup_weierstrass();
+	int simple_update();
+	vector<int> random_move(const vector<int> &oldsite);
 	int p(int); int m(int);
+	void cold_start();
 
 	int NPhi, invNu;
 	complex<double> L1,L2;

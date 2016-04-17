@@ -1,6 +1,6 @@
 #include "lattice.h"
 
-int supermod(int x, int NPhi){	return (x%NPhi+NPhi)%NPhi; }
+int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 
 LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	//various parameters from input file
@@ -10,7 +10,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	if(NPhi%invNu) cout<<"NPhi not divisible by filling!"<<endl;
 	Ne=NPhi/invNu;
 	fermions=true;
-	testing=true;
+	testing=false;
 	type="CFL";
 
 //	cout<<NPhi<<" "<<invNu<<" "<<Ne<<" "<<L1<<" "<<L2<<endl;
@@ -18,7 +18,6 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 
 	//****initialize z's, w's, d's
 	locs=vector< vector<int> >(Ne, vector<int>(2,0));//initalize locations of all electrons
-	cold_start();
 
 	ws=vector< vector<double> > (invNu, vector<double>(2,0) );
 	for( int i=0;i<invNu;i++) ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
@@ -29,44 +28,21 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	print_ds();
 	dsum=vector<double>(2,0);
 	for(int i=0;i<Ne;i++){
-		dsum[0]+=ds[i][0]/(1.*Ne); dsum[1]+=ds[i][1]/(1.*Ne);
+		dsum[0]+=ds[i][0]/(1.*Ne)*NPhi; dsum[1]+=ds[i][1]/(1.*Ne)*NPhi;
 	}
-	
+
 	//********calls to duncan's functions
 	set_l_(&NPhi, &L1, &L2);
 	setup_z_function_table_();
 	sl2z=new int[4];
 	sl2z[0]=1; sl2z[1]=0; sl2z[2]=0; sl2z[3]=1;
 	setup_laughlin_state_(&Ne,&invNu,sl2z,&zero);
-	running_weight=get_weight();
 //	cout<<"starting weight "<<running_weight<<endl;
 
-	//**** setting up the initial determinant matrix
-	if(type=="CFL"){
-		complex<double> temp,product;
-		double x,y;
-		oldMatrix=Eigen::MatrixXcd(Ne,Ne);
-		for(int i=0;i<Ne;i++){
-			for(int j=0;j<Ne;j++){
-				product=1;
-				for(int k=0;k<Ne;k++){
-					if(k==i) continue;
-					x=(locs[i][0]-locs[k][0])/(1.*NPhi)-(ds[j][0]-dsum[0])/(1.*Ne);
-					y=(locs[i][1]-locs[k][1])/(1.*NPhi)-(ds[j][1]-dsum[1])/(1.*Ne);
-					z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-					product*=temp;
-				}
-				oldMatrix(i,j)=product;
-			}
-		}
-		detSolver.compute(oldMatrix);
-		oldDeterminant=detSolver.determinant();
-	}
 	//*****some counters
-	tries=0; accepts=0;
 	setup_coulomb();
-	omega=vector <complex<double> >(NPhi);
-	for(int i=0;i<NPhi;i++) omega[i]=polar(1.,2*M_PI*i/(1.*NPhi));
+	omega=vector <complex<double> >(2*NPhi);
+	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi)); //note that spacings of these is pi/N, not 2pi/N
 	sq=vector<vector<complex<double> > > (NPhi, vector<complex<double> >(NPhi,0));
 	sq2=vector<vector<double> > (NPhi, vector<double>(NPhi,0));
 }
@@ -82,9 +58,9 @@ int LATTICE::simple_update(){
 
 	//find a new position for a randomly chosen electron
 	int electron=ran.randInt(Ne-1);
-	cout<<"simple update with electon at "<<locs[electron][0]<<" "<<locs[electron][1]<<endl;
+//	cout<<"simple update with electon at "<<locs[electron][0]<<" "<<locs[electron][1]<<endl;
 	vector<int> newloc=random_move(locs[electron]);
-	cout<<"moving to "<<newloc[0]<<" "<<newloc[1]<<endl;
+//	cout<<"moving to "<<newloc[0]<<" "<<newloc[1]<<endl;
 	vector< vector<int> >::iterator it=find(locs.begin(),locs.end(),newloc);
 	if(it!=locs.end()) return 0;
 	double prob=1;
@@ -132,6 +108,17 @@ int LATTICE::simple_update(){
 	}
 	newCOM[0]=oldCOM[0]-locs[electron][0]+newloc[0];
 	newCOM[1]=oldCOM[1]-locs[electron][1]+newloc[1];
+//	double tx,ty;
+//	for( int i=0;i<invNu;i++){
+//		tx=oldCOM[0]/(1.*NPhi)-ws[i][0];
+//		ty=oldCOM[1]/(1.*NPhi)-ws[i][1];
+//		z_function_(&tx,&ty,&L1,&L2,&zero,&NPhi,&temp);
+//		prob/=norm(temp);
+//		tx=newCOM[0]/(1.*NPhi)-ws[i][0];
+//		ty=newCOM[1]/(1.*NPhi)-ws[i][1];
+//		z_function_(&tx,&ty,&L1,&L2,&zero,&NPhi,&temp);
+//		prob*=norm(temp);
+//	}
 
 	get_laughlin_cm_(oldCOM,&temp);
 	prob/=norm(temp);	
@@ -141,51 +128,75 @@ int LATTICE::simple_update(){
 	///***********determinant part
 	complex<double> temp2;
 	complex<double> newDeterminant;
+	Eigen::MatrixXcd newMatrix=oldMatrix;//could speed this up a little bit by copying oldmatrix and modifying its elements
 	if(type=="CFL"){
 		complex<double> product;
-		double x,y;
-		Eigen::MatrixXcd newMatrix(Ne,Ne);//could speed this up a little bit by copying oldmatrix and modifying its elements
+//		double x,y;
 		for(int i=0;i<Ne;i++){
 			for(int j=0;j<Ne;j++){
-				product=1;
-				for(int k=0;k<Ne;k++){
-					if(k==i) continue;
-					if(i==electron){
-						x=(newloc[0]-locs[k][0])/(1.*NPhi)-(ds[j][0]-dsum[0])/(1.*Ne);
-						y=(newloc[1]-locs[k][1])/(1.*NPhi)-(ds[j][1]-dsum[1])/(1.*Ne);
-					}else if(k==electron){
-						x=(locs[i][0]-newloc[0])/(1.*NPhi)-(ds[j][0]-dsum[0])/(1.*Ne);
-						y=(locs[i][1]-newloc[1])/(1.*NPhi)-(ds[j][1]-dsum[1])/(1.*Ne);
+				if(i==electron){
+					product=1;
+					for(int k=0;k<Ne;k++){
+						if(k==i) continue;
+						xi=(newloc[0]-locs[k][0])-(ds[j][0]-dsum[0])*invNu;
+						yi=(newloc[1]-locs[k][1])-(ds[j][1]-dsum[1])*invNu;
+						if(floor(xi)!=xi || floor(yi) != yi){
+							cout<<"can't call lattice_z, likely this is because of dsum not begin in the form n/NPhi"<<endl;
+							cout<<xi<<" "<<yi<<endl;
+						}
+	//					x=xi/(1.*NPhi);
+	//					y=yi/(1.*NPhi);
+	//					z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp2);
+						temp=modded_lattice_z(xi,yi);
+	//					cout<<i<<" "<<j<<" "<<k<<" "<<xi<<" "<<yi<<" "<<x<<" "<<y<<endl;
+	//					if(abs(temp2-temp)>1e-10){
+	//						cout<<"z function: "<<temp2<<endl;
+	//						z_function_with_modular_transform_(&x,&y,&L1,&L2,&zero,&NPhi,&temp2,sl2z);
+	//						cout<<"z function mod: "<<temp2<<endl;
+	//						int tx=supermod(xi,NPhi), ty=supermod(yi,NPhi);
+	//						temp=lattice_z_(&NPhi,&tx,&ty,&L1,&L2,&one);
+	//						cout<<"unmodded: "<<temp<<endl;
+	//						temp=modded_lattice_z(xi,yi);
+	//						cout<<"modded: "<<temp<<endl;
+	//					}
+						product*=temp;
+					}
+					newMatrix(i,j)=product;
+				}else{//all other elements just need to be updated by the ratio of a sigma function
+					if(newMatrix(i,j)==0.){//if zero, need to recompute the whole thing
+						product=1;
+						for(int k=0;k<Ne;k++){
+							if(k==i) continue;
+							if(k==electron){
+								xi=(locs[i][0]-newloc[0])-(ds[j][0]-dsum[0])*invNu;
+								yi=(locs[i][1]-newloc[1])-(ds[j][1]-dsum[1])*invNu;
+							}else{
+								xi=(locs[i][0]-locs[k][0])-(ds[j][0]-dsum[0])*invNu;
+								yi=(locs[i][1]-locs[k][1])-(ds[j][1]-dsum[1])*invNu;
+							}
+							temp=modded_lattice_z(xi,yi);
+							product*=temp;							
+						}
+						newMatrix(i,j)=product;
 					}else{
-						x=(locs[i][0]-locs[k][0])/(1.*NPhi)-(ds[j][0]-dsum[0])/(1.*Ne);
-						y=(locs[i][1]-locs[k][1])/(1.*NPhi)-(ds[j][1]-dsum[1])/(1.*Ne);
+						xi=(locs[i][0]-locs[electron][0])-(ds[j][0]-dsum[0])*invNu;
+						yi=(locs[i][1]-locs[electron][1])-(ds[j][1]-dsum[1])*invNu;
+						temp=modded_lattice_z(xi,yi);
+						newMatrix(i,j)/=temp;
+						xi=(locs[i][0]-newloc[0])-(ds[j][0]-dsum[0])*invNu;
+						yi=(locs[i][1]-newloc[1])-(ds[j][1]-dsum[1])*invNu;
+						temp=modded_lattice_z(xi,yi);
+						newMatrix(i,j)*=temp;
 					}
-					xi=x*NPhi;
-					yi=y*NPhi;
-					if(floor(xi)!=xi || floor(yi) != yi){
-						cout<<"can't call lattice_z, likely this is because of dsum not begin in the form n/NPhi"<<endl;
-						cout<<xi<<" "<<yi<<endl;
-					}
-					z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp2);
-					temp=modded_lattice_z(xi,yi);
-					if(abs(temp2-temp)>1e-10){
-						cout<<i<<" "<<j<<" "<<k<<" "<<xi<<" "<<yi<<endl;
-						cout<<"z function: "<<temp2<<endl;
-						z_function_with_modular_transform_(&x,&y,&L1,&L2,&zero,&NPhi,&temp2,sl2z);
-						cout<<"z function mod: "<<temp2<<endl;
-//						int tx=supermod(xi,NPhi), ty=supermod(yi,NPhi);
-//						temp=lattice_z_(&NPhi,&tx,&ty,&L1,&L2,&one);
-//						cout<<"unmodded: "<<temp<<endl;
-						cout<<"modded: "<<temp<<endl;
-					}
-					product*=temp2;
 				}
-				newMatrix(i,j)=product;
 			}
 		}
+//		cout<<electron<<endl;
+//		cout<<oldMatrix<<endl<<endl<<newMatrix<<endl;
 		detSolver.compute(newMatrix);
 		newDeterminant=detSolver.determinant();
 		prob*=( norm( newDeterminant/oldDeterminant) );
+//		cout<<newDeterminant<<" "<<oldDeterminant<<endl;
 	}
 
 	//*******************update or not
@@ -198,6 +209,7 @@ int LATTICE::simple_update(){
 		running_weight*=prob;
 		if(testing) cout<<running_weight<<" "<<get_weight()<<endl;
 		oldDeterminant=newDeterminant;
+		oldMatrix=newMatrix;
 //		for(int i=0;i<Ne;i++) cout<<locs[i][0]<<" "<<locs[i][1]<<endl;
 		return 1;
 	}
@@ -358,6 +370,7 @@ make_fermi_surface(l1,l2,Ne,center_frac,ds);
  ds contains d s .
 */
 void LATTICE::make_fermi_surface(double* center_frac){
+	ds.clear();
     vector<vector<int> > d_list;
     double x0,y0; x0=center_frac[0]; y0=center_frac[1];
     //initial sub-lattice: L_{mn}/Ne where d s lives on.
@@ -412,7 +425,7 @@ void LATTICE::update_structure_factors(){
 		for(int qy=0; qy<NPhi; qy++){
 			temp=0;
 			for(int i=0;i<Ne;i++){
-				temp+=omega[supermod(qx*locs[i][0]+qy*locs[i][1],NPhi)];
+				temp+=omega[supermod(2*(qx*locs[i][0]+qy*locs[i][1]),2*NPhi)];
 				//polar(1.,qx*kappa*locs[i][0]+qy*kappa*locs[i][1]);
 			}
 			sq[qx][qy]+=temp;
@@ -435,7 +448,32 @@ void LATTICE::print_structure_factors(int nMeas){
 	sqout.close();
 	sqout2.close();
 }
-
+void LATTICE::reset(){
+	tries=0; accepts=0;
+	cold_start();
+	//**** setting up the initial determinant matrix
+	if(type=="CFL"){
+		complex<double> temp,product;
+		double x,y;
+		oldMatrix=Eigen::MatrixXcd(Ne,Ne);
+		for(int i=0;i<Ne;i++){
+			for(int j=0;j<Ne;j++){
+				product=1;
+				for(int k=0;k<Ne;k++){
+					if(k==i) continue;
+					x=(locs[i][0]-locs[k][0])/(1.*NPhi)-(ds[j][0]-dsum[0])/(1.*Ne);
+					y=(locs[i][1]-locs[k][1])/(1.*NPhi)-(ds[j][1]-dsum[1])/(1.*Ne);
+					z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+					product*=temp;
+				}
+				oldMatrix(i,j)=product;
+			}
+		}
+		detSolver.compute(oldMatrix);
+		oldDeterminant=detSolver.determinant();
+	}
+	running_weight=get_weight();
+}
 void LATTICE::cold_start(){
 	for(int i=0;i<Ne;i++){
 		locs[i][0]=i;
@@ -452,7 +490,8 @@ complex<double> LATTICE::modded_lattice_z(int x, int y){
 	int mody=supermod(y,NPhi);
 	complex<double> out=lattice_z_(&NPhi,&modx,&mody,&L1,&L2,&one);
 	int j=(modx-x)/NPhi, k=(mody-y)/NPhi;
-	out*=polar(1.,-M_PI/(1.*NPhi)*(mody*j-modx*k));
+	out*=omega[supermod(-mody*j+modx*k,2*NPhi)];
+//	out*=polar(1.,-M_PI/(1.*NPhi)*(mody*j-modx*k));
 //	cout<<polar(1.,-M_PI/(1.*NPhi)*(y*j-x*k))<<endl;
 	if(j%2 || k%2) return -out;
 	else return out;
