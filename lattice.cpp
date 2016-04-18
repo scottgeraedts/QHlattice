@@ -20,7 +20,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	locs=vector< vector<int> >(Ne, vector<int>(2,0));//initalize locations of all electrons
 
 	ws=vector< vector<double> > (invNu, vector<double>(2,0) );
-	for( int i=0;i<invNu;i++) ws[i][1]=( (i+0.5)/(1.*invNu)-0.5);
+	for( int i=0;i<invNu;i++) ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
 
 	double center_frac[2]={0.,0.};
 	if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
@@ -229,16 +229,17 @@ vector<int> LATTICE::random_move( const vector<int> &in){
 	int n=pow(2*hoplength+1,2)-1;
 	vector<int> newx(n),newy(n);
 	vector<double> newprob(n);
-	int xi,yi;
+	int xi,yi,counter=0;
 	for(int i=0;i<=2*hoplength;i++){
 		xi=i-hoplength+in[0]; 
 		for(int j=0;j<=2*hoplength;j++){
 			yi=j-hoplength+in[1];
 			if(xi==in[0] && yi==in[1]) continue;
-			newx[i]=supermod(xi,NPhi);
-			newy[i]=supermod(yi,NPhi);
+			counter++;
+			newx[counter]=supermod(xi,NPhi);
+			newy[counter]=supermod(yi,NPhi);
 //			newprob.push_back( exp(-0.5*( pow(in[0]-i,2)+pow(in[1]-j,2) )/pow(hoplength,2) ) );
-			newprob[i]=1.;
+			newprob[counter]=1.;
 		}
 	}
 	double r=ran.rand();
