@@ -25,7 +25,7 @@ public:
 	LATTICE(int, int, int);
 	~LATTICE();
 	void step(int);
-	double get_weight();
+	double get_weight(const vector< vector<int> > &zs);
 	void make_fermi_surface(double* center_frac);
 	complex<double> modded_lattice_z(int x, int y);
 	void print_ds();
@@ -33,6 +33,7 @@ public:
 	void update_structure_factors();
 	void print_structure_factors(int nMeas);
 	void reset();
+	vector <vector<int> > get_locs();
 	
 	int Ne;
 	bool testing;
@@ -53,7 +54,7 @@ private:
 	vector <vector <double> > coulomb_table,sq2;
 	vector <vector <complex<double> > > sq;
 	vector <vector <int> > ds;
-	vector<double> dsum;
+	vector<int> dsum;
 	Eigen::MatrixXcd oldMatrix;
 	complex<double> oldDeterminant;
 	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;	

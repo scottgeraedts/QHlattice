@@ -10,7 +10,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	if(NPhi%invNu) cout<<"NPhi not divisible by filling!"<<endl;
 	Ne=NPhi/invNu;
 	fermions=true;
-	testing=false;
+	testing=true;
 	type="CFL";
 
 //	cout<<NPhi<<" "<<invNu<<" "<<Ne<<" "<<L1<<" "<<L2<<endl;
@@ -20,16 +20,17 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	locs=vector< vector<int> >(Ne, vector<int>(2,0));//initalize locations of all electrons
 
 	ws=vector< vector<double> > (invNu, vector<double>(2,0) );
-	for( int i=0;i<invNu;i++) ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
+	for( int i=0;i<invNu;i++) ws[i][1]=( (i+0.5)/(1.*invNu)-0.5);
 
 	double center_frac[2]={0.,0.};
 	if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 	make_fermi_surface(center_frac);
 	print_ds();
-	dsum=vector<double>(2,0);
+	dsum=vector<int>(2,0);
 	for(int i=0;i<Ne;i++){
-		dsum[0]+=ds[i][0]/(1.*Ne)*NPhi; dsum[1]+=ds[i][1]/(1.*Ne)*NPhi;
+		dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu;
 	}
+	if(dsum[0]%Ne || dsum[1]&Ne) cout<<"Warning! The average of the ds is not on a lattice point!"<<endl;
 
 	//********calls to duncan's functions
 	set_l_(&NPhi, &L1, &L2);
@@ -103,8 +104,8 @@ int LATTICE::simple_update(){
 	int oldCOM[2], newCOM[2];
 	sum_locs(oldCOM);
 	if(type=="CFL"){
-		oldCOM[0]-=dsum[0]/(1.*invNu);
-		oldCOM[1]-=dsum[1]/(1.*invNu);
+		oldCOM[0]-=dsum[0]/invNu;
+		oldCOM[1]-=dsum[1]/invNu;
 	}
 	newCOM[0]=oldCOM[0]-locs[electron][0]+newloc[0];
 	newCOM[1]=oldCOM[1]-locs[electron][1]+newloc[1];
@@ -207,7 +208,7 @@ int LATTICE::simple_update(){
 	if(update){
 		locs[electron]=newloc;
 		running_weight*=prob;
-		if(testing) cout<<running_weight<<" "<<get_weight()<<endl;
+		if(testing) cout<<running_weight<<" "<<get_weight(locs)<<endl;
 		oldDeterminant=newDeterminant;
 		oldMatrix=newMatrix;
 //		for(int i=0;i<Ne;i++) cout<<locs[i][0]<<" "<<locs[i][1]<<endl;
@@ -268,7 +269,7 @@ int LATTICE::m(int site){
 	if(site==0) return NPhi-1;
 	else return site-1;
 }
-double LATTICE::get_weight(){
+double LATTICE::get_weight(const vector< vector<int> > &zs){
 	double out=1,x,y;
 	complex<double> temp;
 	//vandermonde piece
@@ -276,17 +277,21 @@ double LATTICE::get_weight(){
 	if(type=="CFL") vandermonde_exponent-=2;
 	for( int i=0;i<Ne;i++){
 		for( int j=i+1;j<Ne;j++){
-			x=(locs[i][0]-locs[j][0])/(1.*NPhi);
-			y=(locs[i][1]-locs[j][1])/(1.*NPhi);
+			x=(zs[i][0]-zs[j][0])/(1.*NPhi);
+			y=(zs[i][1]-zs[j][1])/(1.*NPhi);
 			z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);
 			out*=norm( pow(temp,vandermonde_exponent) );
 		}
 	}
-	int COM[2];
-	sum_locs(COM);
+	int COM[2]={0,0};
+	for( int i=0;i<Ne;i++){
+		COM[0]+=zs[i][0];
+		COM[1]+=zs[i][1];
+	}
+
 	if(type=="CFL"){
-		COM[0]-=dsum[0]/(1.*invNu);
-		COM[1]-=dsum[1]/(1.*invNu);
+		COM[0]-=dsum[0]/invNu;
+		COM[1]-=dsum[1]/invNu;
 	}
 	for( int i=0;i<invNu;i++){
 		x=COM[0]/(1.*NPhi)-ws[i][0];
@@ -294,6 +299,7 @@ double LATTICE::get_weight(){
 		z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
 		out*=norm(temp);
 	}
+	return out;
 	if(type=="CFL"){
 		complex<double> product;
 		Eigen::MatrixXcd M(Ne,Ne);
@@ -302,8 +308,8 @@ double LATTICE::get_weight(){
 				product=1;
 				for(int k=0;k<Ne;k++){
 					if(k==i) continue;
-					x=(locs[i][0]-locs[k][0])/(1.*NPhi)-(ds[j][0]-dsum[0])/(1.*Ne);
-					y=(locs[i][1]-locs[k][1])/(1.*NPhi)-(ds[j][1]-dsum[1])/(1.*Ne);
+					x=(zs[i][0]-zs[k][0])/(1.*NPhi)-(ds[j][0]-dsum[0])/(1.*Ne);
+					y=(zs[i][1]-zs[k][1])/(1.*NPhi)-(ds[j][1]-dsum[1])/(1.*Ne);
 					z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
 					product*=temp;
 				}
@@ -321,10 +327,11 @@ void LATTICE::sum_locs(int out[]){
 		out[0]+=locs[i][0];
 		out[1]+=locs[i][1];
 	}
-	out[0]=out[0]%NPhi;
-	out[1]=out[1]%NPhi;
+//	out[0]=out[0]%NPhi;
+//	out[1]=out[1]%NPhi;
 }
 
+vector< vector<int> > LATTICE::get_locs(){ return locs; }
 ///***********MEASUREMENT FUNCTIONS *******///////////////
 //right now I'm using Duncan's function for this
 //double LATTICE::two_body_coulomb(int dx, int dy){
@@ -472,7 +479,7 @@ void LATTICE::reset(){
 		detSolver.compute(oldMatrix);
 		oldDeterminant=detSolver.determinant();
 	}
-	running_weight=get_weight();
+	running_weight=get_weight(locs);
 }
 void LATTICE::cold_start(){
 	for(int i=0;i<Ne;i++){
