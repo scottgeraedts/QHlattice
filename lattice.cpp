@@ -22,6 +22,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 		locs[i][0]=i;
 		locs[i][1]=i;
 	}
+    
 
 	ws=vector< vector<double> > (invNu, vector<double>(2,0) );
 	for( int i=0;i<invNu;i++) ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
@@ -120,7 +121,7 @@ int LATTICE::simple_update(){
 	}
 //	cout<<"vandermond "<<prob<<endl;
 
-	///***************COM PART
+	//***************COM PART
 	//figure out the probability difference from the COM part
 	int oldCOM[2], newCOM[2];
 	sum_locs(oldCOM);
