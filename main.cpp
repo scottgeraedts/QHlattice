@@ -29,7 +29,7 @@ int main(){
 	
 		ll.reset();		
 		ll.step(nWarmup);
-		double E=0,E2=0,P=0,P2=0;
+		double E=0,E2=0,P=0,P2=0,three=0;
 		double e,p;
 		deque<double> e_tracker, p_tracker;
 		int Ntrack=500;
@@ -42,6 +42,7 @@ int main(){
 			p=log(ll.running_weight);
 			P+=p;
 			P2+=p*p;
+			three+=ll.threebody();
 			eout<<e<<endl;
 			//autocorrelations
 			e_tracker.push_front(e);
@@ -57,7 +58,7 @@ int main(){
 			
 			ll.update_structure_factors();
 		}
-		outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<endl;
+		outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<three/(1.*nMeas)<<endl;
 		cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
 	//	cout<<"almost done"<<endl;
 	
@@ -69,6 +70,7 @@ int main(){
 			auto_out<<endl;
 		}
 	}
+	cout<<"start print"<<endl;
 	ll.print_structure_factors(nMeas*nBins);
 	eout.close();
 	outfile.close();

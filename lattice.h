@@ -30,6 +30,7 @@ public:
 	complex<double> modded_lattice_z(int x, int y);
 	void print_ds();
 	double coulomb_energy();
+	double threebody();
 	void update_structure_factors();
 	void print_structure_factors(int nMeas);
 	void reset();
@@ -53,6 +54,7 @@ private:
 	complex<double> L1,L2;
 	vector <vector <double> > coulomb_table,sq2;
 	vector <vector <complex<double> > > sq;
+	vector < vector<int> > sx,sx2;
 	vector <vector <int> > ds;
 	vector<int> dsum;
 	Eigen::MatrixXcd oldMatrix;

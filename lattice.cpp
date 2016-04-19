@@ -10,8 +10,8 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	if(NPhi%invNu) cout<<"NPhi not divisible by filling!"<<endl;
 	Ne=NPhi/invNu;
 	fermions=true;
-	testing=true;
-	type="CFL";
+	testing=false;
+	type="laughlin";
 
 //	cout<<NPhi<<" "<<invNu<<" "<<Ne<<" "<<L1<<" "<<L2<<endl;
 	one=1; zero=0; //useful for fortran calls
@@ -23,15 +23,17 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	for( int i=0;i<invNu;i++) ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
 
 	double center_frac[2]={0.,0.};
-	if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
-	make_fermi_surface(center_frac);
-	print_ds();
-	dsum=vector<int>(2,0);
-	for(int i=0;i<Ne;i++){
-		dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu;
+	if(type=="CFL"){
+		if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
+		make_fermi_surface(center_frac);
+		print_ds();
+		dsum=vector<int>(2,0);
+		for(int i=0;i<Ne;i++){
+			dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu;
+		}
+		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
 	}
-	if(dsum[0]%Ne || dsum[1]&Ne) cout<<"Warning! The average of the ds is not on a lattice point!"<<endl;
-
+	
 	//********calls to duncan's functions
 	set_l_(&NPhi, &L1, &L2);
 	setup_z_function_table_();
@@ -46,6 +48,8 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi)); //note that spacings of these is pi/N, not 2pi/N
 	sq=vector<vector<complex<double> > > (NPhi, vector<complex<double> >(NPhi,0));
 	sq2=vector<vector<double> > (NPhi, vector<double>(NPhi,0));
+	sx=vector<vector<int> > (NPhi, vector<int>(NPhi,0));
+	sx2=vector<vector<int> > (NPhi, vector<int>(NPhi,0));
 }
 void LATTICE::step(int Nsteps){
 	
@@ -224,8 +228,8 @@ vector<int> LATTICE::random_move( const vector<int> &in){
 //	newloc[0]=ran.randInt(NPhi-1);
 //	newloc[1]=ran.randInt(NPhi-1);
 
-	int hoplength=Ne/10;
-	if(Ne<10) hoplength=1;
+	int hoplength=Ne/5;
+	if(Ne<10) hoplength=2;
 	int n=pow(2*hoplength+1,2)-1;
 	vector<int> newx(n),newy(n);
 	vector<double> newprob(n);
@@ -235,11 +239,11 @@ vector<int> LATTICE::random_move( const vector<int> &in){
 		for(int j=0;j<=2*hoplength;j++){
 			yi=j-hoplength+in[1];
 			if(xi==in[0] && yi==in[1]) continue;
-			counter++;
 			newx[counter]=supermod(xi,NPhi);
 			newy[counter]=supermod(yi,NPhi);
 //			newprob.push_back( exp(-0.5*( pow(in[0]-i,2)+pow(in[1]-j,2) )/pow(hoplength,2) ) );
 			newprob[counter]=1.;
+			counter++;
 		}
 	}
 	double r=ran.rand();
@@ -300,7 +304,6 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 		z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
 		out*=norm(temp);
 	}
-	return out;
 	if(type=="CFL"){
 		complex<double> product;
 		Eigen::MatrixXcd M(Ne,Ne);
@@ -427,34 +430,66 @@ void LATTICE::print_ds(){
 		dout<<ds[i][0]<<" "<<ds[i][1]<<endl;
 	dout.close();
 }
+double LATTICE::threebody(){
+	int has_right,has_top,has_diag;
+	int three_counter=0, two_counter=0;
+	double out=0;
+	for(int i=0;i<Ne;i++){
+		has_right=0;
+		has_top=0;
+		has_diag=0;
+		for(int j=0;j<Ne;j++){
+			if(locs[j][0]==p(p(locs[i][0])) && locs[j][1]==locs[i][1]) has_right=1;
+			if(locs[j][0]==locs[i][0] && locs[j][1]==p(p(locs[i][1]))) has_top=1;
+			if(locs[j][0]==p(locs[i][0]) && locs[j][1]==p(locs[i][1]) ) has_diag=1;
+		}
+		if(has_right and has_top) three_counter++;
+		two_counter+=has_right+has_top+has_diag;
+	}
+	out=(three_counter-0.5*(two_counter)+0.5*Ne)/(1.*NPhi);
+	return out;
+}
 void LATTICE::update_structure_factors(){
 	complex<double>temp;
-	for(int qx=0;qx<NPhi;qx++){
-		for(int qy=0; qy<NPhi; qy++){
-			temp=0;
-			for(int i=0;i<Ne;i++){
-				temp+=omega[supermod(2*(qx*locs[i][0]+qy*locs[i][1]),2*NPhi)];
-				//polar(1.,qx*kappa*locs[i][0]+qy*kappa*locs[i][1]);
-			}
-			sq[qx][qy]+=temp;
-			sq2[qx][qy]+=norm(temp);
-		}
+//	for(int qx=0;qx<NPhi;qx++){
+//		for(int qy=0; qy<NPhi; qy++){
+//			temp=0;
+//			for(int i=0;i<Ne;i++){
+//				temp+=omega[supermod(2*(qx*locs[i][0]+qy*locs[i][1]),2*NPhi)];
+//				//polar(1.,qx*kappa*locs[i][0]+qy*kappa*locs[i][1]);
+//			}
+//			sq[qx][qy]+=temp;
+//			sq2[qx][qy]+=norm(temp);
+//		}
+//	}
+	for(int i=0;i<Ne;i++){
+		sx[locs[i][0]][locs[i][1]]++;
+		for(int j=0;j<i;j++)
+			sx2[supermod(locs[i][0]-locs[j][0],NPhi)][supermod(locs[i][1]-locs[j][1],NPhi)]++;
 	}
+	sx2[0][0]+=Ne;
+	
 }
+			
 void LATTICE::print_structure_factors(int nMeas){
-	ofstream sqout("sq");
-	ofstream sqout2("sq2");
+	ofstream sqout("sq"), sqout2("sq2"), sxout("sx"), sxout2("sx2");
 //	double kappa=2.*M_PI/(1.*NPhi);
 	for(int qx=0;qx<NPhi;qx++){
 		for(int qy=0; qy<NPhi; qy++){
-			sqout2<<sq2[qx][qy]/(1.*nMeas)<<" ";
-			sqout<<abs(sq[qx][qy]/(1.*nMeas))<<" ";
+//			sqout2<<sq2[qx][qy]/(1.*nMeas)<<" ";
+//			sqout<<abs(sq[qx][qy]/(1.*nMeas))<<" ";
+			sxout<<sx[qx][qy]/(1.*nMeas)<<" ";
+			sxout2<<sx2[qx][qy]/(1.*nMeas)<<" ";
 		}
-		sqout<<endl;
-		sqout2<<endl;
+//		sqout<<endl;
+//		sqout2<<endl;
+		sxout<<endl;
+		sxout2<<endl;
 	}
-	sqout.close();
-	sqout2.close();
+//	sqout.close();
+//	sqout2.close();
+	sxout.close();
+	sxout2.close();
 }
 void LATTICE::reset(){
 	tries=0; accepts=0;
