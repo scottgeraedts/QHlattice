@@ -106,7 +106,7 @@ int LATTICE::simple_update(){
 	}
 //	cout<<"vandermond "<<prob<<endl;
 
-	///***************COM PART
+	//***************COM PART
 	//figure out the probability difference from the COM part
 	int oldCOM[2], newCOM[2];
 	sum_locs(oldCOM);
