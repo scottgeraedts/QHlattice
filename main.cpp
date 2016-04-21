@@ -32,7 +32,7 @@ int main(){
 		double E=0,E2=0,P=0,P2=0,three=0;
 		double e,p;
 		deque<double> e_tracker, p_tracker;
-		int Ntrack=500;
+		int Ntrack=10;
 		vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
 		for(int i=0;i<nMeas;i++){
 			ll.step(nSteps);
