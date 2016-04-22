@@ -368,10 +368,10 @@ endif
 
 tau = l(2)/l(1)
 call  optimize_tau(tau,new_tau,sl2z)  
-sl2z(1,1)=1
-sl2z(2,1)=0
-sl2z(1,2)=0
-sl2z(2,2)=1
+!sl2z(1,1)=1
+!sl2z(2,1)=0
+!sl2z(1,2)=0
+!sl2z(2,2)=1
 if (allocated(z_function_table)) deallocate(z_function_table)
 allocate (z_function_table(-norb:norb,-norb:norb))
 if (allocated(log_z_function_table)) deallocate(z_function_table)
