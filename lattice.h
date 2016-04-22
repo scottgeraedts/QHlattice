@@ -27,6 +27,7 @@ public:
 
 	void step(int);// step(int Nsteps); Nsetps = total MC steps. tries:steps, accepts:updated steps.
 	double get_weight(const vector< vector<int> > &zs);
+	complex<double> get_wf(const vector< vector<int> > &zs,const vector< vector<int> > &ds);
 	void make_fermi_surface(double* center_frac);
 	complex<double> modded_lattice_z(int x, int y);
 	void print_ds();
@@ -55,11 +56,13 @@ private:
 	vector<int> random_move(const vector<int> &oldsite);
 	int p(int); int m(int);
 	void cold_start();
+	int det_helper(int z1, int z2, int d, int dbar);
 
 	int NPhi, invNu;
 	complex<double> L1,L2;
 	vector <vector <double> > coulomb_table,sq2;
 	vector <vector <complex<double> > > sq;
+	vector <vector <vector <vector< complex<double> > > > > sq3;
 	vector < vector<int> > sx,sx2;
 	vector <vector <int> > ds;
 	vector<int> dsum;
