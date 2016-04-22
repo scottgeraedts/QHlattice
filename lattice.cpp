@@ -29,7 +29,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 		print_ds();
 		dsum=vector<int>(2,0);
 		for(int i=0;i<Ne;i++){
-			dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu;
+			dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu; //?? why multiply invNu
 		}
 		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
 	}
@@ -109,7 +109,7 @@ int LATTICE::simple_update(){
 	sum_locs(oldCOM);
 	if(type=="CFL"){
 		oldCOM[0]-=dsum[0]/invNu;
-		oldCOM[1]-=dsum[1]/invNu;
+		oldCOM[1]-=dsum[1]/invNu; //?? why COM = COM - dsum???
 	}
 	newCOM[0]=oldCOM[0]-locs[electron][0]+newloc[0];
 	newCOM[1]=oldCOM[1]-locs[electron][1]+newloc[1];
@@ -528,7 +528,7 @@ void LATTICE::cold_start(){
 //and multiplies by the appropriate phase
 //only works for a square torus
 //on a square torus, the phase is always +- 1? 
-complex<double> LATTICE::modded_lattice_z(int x, int y){
+complex<double> LATTICE::modded_lattice_z(int x, int y){//??? why need this function??
 	int modx=supermod(x,NPhi);
 	int mody=supermod(y,NPhi);
 	complex<double> out=lattice_z_(&NPhi,&modx,&mody,&L1,&L2,&one);
@@ -538,5 +538,14 @@ complex<double> LATTICE::modded_lattice_z(int x, int y){
 //	cout<<polar(1.,-M_PI/(1.*NPhi)*(y*j-x*k))<<endl;
 	if(j%2 || k%2) return -out;
 	else return out;
+}
+void LATTICE::dbar_as_parameter(complex<double> dbar, double& co_energy){
+    co_energy=0;
+}
+void LATTICE::get_CFL_cm(complex<double> dbar){
+    
+}
+void LATTICE::get_CFL_det(complex<double> dbar){
+    
 }
 LATTICE::~LATTICE(){ delete []sl2z; }
