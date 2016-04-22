@@ -116,22 +116,22 @@ int LATTICE::simple_update(){
 	}
 	newCOM[0]=oldCOM[0]-locs[electron][0]+newloc[0];
 	newCOM[1]=oldCOM[1]-locs[electron][1]+newloc[1];
-	double tx,ty;
-	for( int i=0;i<invNu;i++){
-		tx=oldCOM[0]/(1.*NPhi)-ws[i][0];
-		ty=oldCOM[1]/(1.*NPhi)-ws[i][1];
-		z_function_(&tx,&ty,&L1,&L2,&zero,&NPhi,&temp);
-		prob/=norm(temp);
-		tx=newCOM[0]/(1.*NPhi)-ws[i][0];
-		ty=newCOM[1]/(1.*NPhi)-ws[i][1];
-		z_function_(&tx,&ty,&L1,&L2,&zero,&NPhi,&temp);
-		prob*=norm(temp);
-	}
+//	double tx,ty;
+//	for( int i=0;i<invNu;i++){
+//		tx=oldCOM[0]/(1.*NPhi)-ws[i][0];
+//		ty=oldCOM[1]/(1.*NPhi)-ws[i][1];
+//		z_function_(&tx,&ty,&L1,&L2,&zero,&NPhi,&temp);
+//		prob/=norm(temp);
+//		tx=newCOM[0]/(1.*NPhi)-ws[i][0];
+//		ty=newCOM[1]/(1.*NPhi)-ws[i][1];
+//		z_function_(&tx,&ty,&L1,&L2,&zero,&NPhi,&temp);
+//		prob*=norm(temp);
+//	}
 
-//	get_laughlin_cm_(oldCOM,&temp);
-//	prob/=norm(temp);	
-//	get_laughlin_cm_(newCOM,&temp);
-//	prob*=norm(temp);	
+	get_laughlin_cm_(oldCOM,&temp);
+	prob/=norm(temp);	
+	get_laughlin_cm_(newCOM,&temp);
+	prob*=norm(temp);	
 
 	///***********determinant part
 	complex<double> temp2;
@@ -152,21 +152,21 @@ int LATTICE::simple_update(){
 							cout<<"can't call lattice_z, likely this is because of dsum not begin in the form n/NPhi"<<endl;
 							cout<<xi<<" "<<yi<<endl;
 						}
-						x=xi/(1.*NPhi);
-						y=yi/(1.*NPhi);
-						z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp2);
+//						x=xi/(1.*NPhi);
+//						y=yi/(1.*NPhi);
+//						z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp2);
 						temp=modded_lattice_z(xi,yi);
-						cout<<i<<" "<<j<<" "<<k<<" "<<xi<<" "<<yi<<" "<<x<<" "<<y<<endl;
-						if(abs(temp2-temp)>1e-10){
-							cout<<"z function: "<<temp2<<endl;
-							z_function_with_modular_transform_(&x,&y,&L1,&L2,&zero,&NPhi,&temp2,sl2z);
-							cout<<"z function mod: "<<temp2<<endl;
-							int tx=supermod(xi,NPhi), ty=supermod(yi,NPhi);
-							temp=lattice_z_(&NPhi,&tx,&ty,&L1,&L2,&one);
-							cout<<"unmodded: "<<temp<<endl;
-							temp=modded_lattice_z(xi,yi);
-							cout<<"modded: "<<temp<<endl;
-						}
+//						cout<<i<<" "<<j<<" "<<k<<" "<<xi<<" "<<yi<<" "<<x<<" "<<y<<endl;
+//						if(abs(temp2-temp)>1e-10){
+//							cout<<"z function: "<<temp2<<endl;
+//							z_function_with_modular_transform_(&x,&y,&L1,&L2,&zero,&NPhi,&temp2,sl2z);
+//							cout<<"z function mod: "<<temp2<<endl;
+//							int tx=supermod(xi,NPhi), ty=supermod(yi,NPhi);
+//							temp=lattice_z_(&NPhi,&tx,&ty,&L1,&L2,&one);
+//							cout<<"unmodded: "<<temp<<endl;
+//							temp=modded_lattice_z(xi,yi);
+//							cout<<"modded: "<<temp<<endl;
+//						}
 						product*=temp;
 					}
 					newMatrix(i,j)=product;
