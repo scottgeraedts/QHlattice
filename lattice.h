@@ -44,6 +44,10 @@ public:
 	double running_weight;
 	int tries,accepts;
 	
+    void dbar_as_parameter(complex<double> dbar, double& co_energy);//output coulomb energy of CFL w.f. with dbar as variational parameter.
+    void get_CFL_cm(complex<double> dbar);
+    void get_CFL_det(complex<double> dbar);
+    
 private:
 	void sum_locs(int []);
 	void setup_coulomb();
