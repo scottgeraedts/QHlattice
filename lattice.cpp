@@ -645,7 +645,7 @@ complex<double> LATTICE::modded_lattice_z(int x, int y){//??? why need this func
 void LATTICE::dbar_as_parameter(complex<double> dbar, double& co_energy){
     co_energy=0;
 }
-void LATTICE::get_CFL_cm(complex<double> dbar){
+void LATTICE::get_CFL_cm(complex<double> dbar){//.
     
 }
 void LATTICE::get_CFL_det(complex<double> dbar){
