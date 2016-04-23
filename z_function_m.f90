@@ -547,6 +547,3 @@ subroutine z_function(x,y,l1,l2,rationalize,denom,zz)
 
   return
 end subroutine z_function
-
-
-
