@@ -30,7 +30,7 @@ public:
 	complex<double> get_wf(const vector< vector<int> > &zs,const vector< vector<int> > &ds);
 	void make_fermi_surface(double* center_frac);
 	complex<double> modded_lattice_z(int x, int y);
-	void print_ds();
+	void print_ds();//.
 	double coulomb_energy();
 	double threebody();
 	void update_structure_factors();

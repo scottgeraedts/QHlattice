@@ -10,7 +10,7 @@
  
 !  A collection of code  for the
 !  "z-function" (Weiestrass times Gaussian) 
-!
+! 
 ! contents
 !
 !   module z_function_m
