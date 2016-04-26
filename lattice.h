@@ -22,7 +22,8 @@ extern"C"{
 
 class LATTICE{
 public:
-	LATTICE(int, int, int); // LATTICE(int Nphi_t, int invNu_t, int seed);
+	LATTICE(int, int, int, double*); // LATTICE(int Nphi_t, int invNu_t, int seed, double* dbar_parameter);
+    LATTICE(int, int, int); // LATTICE(int Nphi_t, int invNu_t, int seed);
 	~LATTICE();
 
 	void step(int);// step(int Nsteps); Nsetps = total MC steps. tries:steps, accepts:updated steps.
@@ -38,15 +39,16 @@ public:
 	void reset();
 	vector <vector<int> > get_locs();
 
+    vector <vector<int> > get_ds();
 	
 	int Ne;
 	bool testing; // output 'running_weight' and 'get_weight()', useful in debug.
 	double running_weight;
-	int tries,accepts;
-	
-    void dbar_as_parameter(complex<double> dbar, double& co_energy);//output coulomb energy of CFL w.f. with dbar as variational parameter.
-    void get_CFL_cm(complex<double> dbar);
-    void get_CFL_det(complex<double> dbar);
+    int tries,accepts;
+    double dbar_parameter[2];
+    
+    void make_CFL_COM(complex<double>& value);
+    void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value);
     
 private:
 	void sum_locs(int []);
@@ -56,7 +58,8 @@ private:
 	vector<int> random_move(const vector<int> &oldsite);
 	int p(int); int m(int);
 	void cold_start();
-	int det_helper(int z1, int z2, int d, int dbar);
+//	int det_helper(int z1, int z2, int d, int dbar);
+    double det_helper(int z1, int z2, int d, double dbar_parameter);
 
 	int NPhi, invNu;
 	complex<double> L1,L2;
