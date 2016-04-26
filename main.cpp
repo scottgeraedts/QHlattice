@@ -22,11 +22,11 @@ int main(){
 //	cout<<ll.get_weight(tlocs)<<endl;
 //	for(int i=0;i<ll.Ne;i++) tlocs[i][1]++;
 //	cout<<ll.get_weight(tlocs)<<endl;
-//	for(int i=0;i<ll.Ne;i++) tlocs[i][1]++;
+//	for(int i=0;i<ll.Ne;i++) tlocs[i][1]++;   
 //	cout<<ll.get_weight(tlocs)<<endl;
 	
 	for(int s=0;s<nBins;s++){
-	
+    
 		ll.reset();		
 		ll.step(nWarmup);
 		double E=0,E2=0,P=0,P2=0,three=0;
