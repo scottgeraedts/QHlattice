@@ -28,7 +28,7 @@ public:
 	void step(int);// step(int Nsteps); Nsetps = total MC steps. tries:steps, accepts:updated steps.
 	double get_weight(const vector< vector<int> > &zs);  
 	complex<double> get_wf(const vector< vector<int> > &zs,const vector< vector<int> > &ds);
-	void make_fermi_surface(double* center_frac);
+	void make_fermi_surface(double* center_frac, int N);
 	complex<double> modded_lattice_z(int x, int y);
 	void print_ds();//.
 	double coulomb_energy();

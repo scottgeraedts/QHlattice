@@ -24,8 +24,12 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 
 	double center_frac[2]={0.,0.};
 	if(type=="CFL"){
+		vector<int> temp(2);
+		temp[0]=3; temp[1]=0;
 		if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
-		make_fermi_surface(center_frac);
+		make_fermi_surface(center_frac, Ne);
+//		ds.push_back(temp);
+				
 		print_ds();
 		dsum=vector<int>(2,0);
 		for(int i=0;i<Ne;i++){
@@ -139,7 +143,7 @@ int LATTICE::simple_update(){
 	Eigen::MatrixXcd newMatrix=oldMatrix;//could speed this up a little bit by copying oldmatrix and modifying its elements
 	if(type=="CFL"){
 		complex<double> product;
-		double x,y;
+//		double x,y;
 		for(int i=0;i<Ne;i++){
 			for(int j=0;j<Ne;j++){
 				if(i==electron){
@@ -279,8 +283,8 @@ int LATTICE::m(int site){
 	else return site-1;
 }
 double LATTICE::get_weight(const vector< vector<int> > &zs){
-	double out=1,x,y;
-	complex<double> temp;
+	double out=exp(-Ne*Ne),x,y;
+	complex<double> temp,temp2;
 	//vandermonde piece
 	int vandermonde_exponent=invNu;
 	if(type=="CFL") vandermonde_exponent-=2;
@@ -322,16 +326,20 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 					x=det_helper(zs[i][0],zs[k][0],ds[j][0],dsum[0])/(1.*NPhi);
 					y=det_helper(zs[i][1],zs[k][1],ds[j][1],dsum[1])/(1.*NPhi);
 					z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+//					cout<<temp<<" "<<x<<" "<<y<<endl;
 					product*=temp;
 				}
 				M(i,j)=product;
 			}
 		}
 		detSolver.compute(M);
-//		cout<<"old:"<<endl<<M<<endl;
-		out=out*norm(detSolver.determinant());
+		temp=detSolver.determinant(); //the ridiculous order of operators here is try to ameliorate the fact that the determinant is so big the program thinks its infinity
+		temp2=temp*out;
+		out=real(temp2*conj(temp));
+//		out*=conj(temp);
+//		out=out*norm(detSolver.determinant());
 	}		
-	return out*exp(-Ne*Ne);
+	return out;
 } 
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
 //also different compared to get_weight: this function uses the precomputed lattice_z data
@@ -379,7 +387,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs, const vector <v
 					if(k==i) continue;
 					ix=det_helper(zs[i][0],zs[k][0],tds[j][0],tdsum[0]);
 					iy=det_helper(zs[i][1],zs[k][1],tds[j][1],tdsum[1]);
-					temp=lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one);
+					temp=modded_lattice_z(ix,iy);
 					product*=temp;
 				}
 				M(i,j)=product;
@@ -443,11 +451,12 @@ double LATTICE::coulomb_energy(){
 }
 /*
 make_fermi_surface(l1,l2,Ne,center_frac,ds);
- l1, l2 are primitive lattice. Ne is #e.
+ l1, l2 are primitive lattice. N is #e.
+ N might differ from Ne because if you want to calculate Berry phases, you don't want to place all the electrons
  center_frac = (x0,y0). x0*l1+y0*l2 is the center position of fermi surface.
  ds contains d s .
 */
-void LATTICE::make_fermi_surface(double* center_frac){
+void LATTICE::make_fermi_surface(double* center_frac, int N){
 	ds.clear();
     vector<vector<int> > d_list;
     double x0,y0; x0=center_frac[0]; y0=center_frac[1];
@@ -472,7 +481,7 @@ void LATTICE::make_fermi_surface(double* center_frac){
     int x,y; double min,min_;
     vector< vector<int> >::iterator it;
     
-    for (int k=0; k<Ne; k++) {
+    for (int k=0; k<N; k++) {
         it=d_list.begin();
         
         x=d_list[0][0]; y=d_list[0][1]; min = norm(L1*((double)x/(1.*Ne)-x0)+L2*((double)y/(1.*Ne)-y0));
@@ -528,57 +537,43 @@ void LATTICE::update_structure_factors(){
 			sq2[qx][qy]+=norm(temp[qx][qy]);
 		}
 	}
-	int qx3,qy3;
-	for(int qx1=0;qx1<NPhi;qx1++){
-		for(int qx2=0;qx2<NPhi;qx2++){
-			for(int qy1=0;qy1<NPhi;qy1++){
-				for(int qy2=0;qy2<NPhi;qy2++){
-					qx3=supermod(-qx1-qx2,NPhi);
-					qy3=supermod(-qy1-qy2,NPhi);
-					sq3[qx1][qx2][qy1][qy2]+=temp[qx1][qy1]*temp[qx2][qy2]*temp[qx3][qy3];
-				}
-			}
-		}
-	}
-//	for(int i=0;i<Ne;i++){
-//		sx[locs[i][0]][locs[i][1]]++;
-//		for(int j=0;j<i;j++)
-//			sx2[supermod(locs[i][0]-locs[j][0],NPhi)][supermod(locs[i][1]-locs[j][1],NPhi)]+=2;//the two comes from double counting
+//	int qx3,qy3;
+//	for(int qx1=0;qx1<NPhi;qx1++){
+//		for(int qx2=0;qx2<NPhi;qx2++){
+//			for(int qy1=0;qy1<NPhi;qy1++){
+//				for(int qy2=0;qy2<NPhi;qy2++){
+//					qx3=supermod(-qx1-qx2,NPhi);
+//					qy3=supermod(-qy1-qy2,NPhi);
+//					sq3[qx1][qx2][qy1][qy2]+=temp[qx1][qy1]*temp[qx2][qy2]*temp[qx3][qy3];
+//				}
+//			}
+//		}
 //	}
-//	sx2[0][0]+=Ne;
-	
 }
 			
 void LATTICE::print_structure_factors(int nMeas){
-	ofstream sqout("sq"), sqout2("sq2"), sxout("sx"), sxout2("sx2"),sqout3("sq3");
-//	double kappa=2.*M_PI/(1.*NPhi);
+	ofstream sqout("sq"), sqout2("sq2"),sqout3("sq3");
 	for(int qx=0;qx<NPhi;qx++){
 		for(int qy=0; qy<NPhi; qy++){
 			sqout2<<sq2[qx][qy]/(1.*nMeas)<<" ";
 			sqout<<abs(sq[qx][qy]/(1.*nMeas))<<" ";
-//			sxout<<sx[qx][qy]/(1.*nMeas)<<" ";
-//			sxout2<<sx2[qx][qy]/(1.*nMeas)<<" ";
 		}
 		sqout<<endl;
 		sqout2<<endl;
-//		sxout<<endl;
-//		sxout2<<endl;
 	}
 	
-	for(int qx1=0;qx1<NPhi;qx1++){
-		for(int qy1=0;qy1<NPhi;qy1++){
-			for(int qx2=0;qx2<NPhi;qx2++){
-				for(int qy2=0;qy2<NPhi;qy2++)
-					sqout3<<real(sq3[qx1][qx2][qy1][qy2])/(1.*nMeas)<<" ";
-				sqout3<<endl;
-			}
-		}
-	}
+//	for(int qx1=0;qx1<NPhi;qx1++){
+//		for(int qy1=0;qy1<NPhi;qy1++){
+//			for(int qx2=0;qx2<NPhi;qx2++){
+//				for(int qy2=0;qy2<NPhi;qy2++)
+//					sqout3<<real(sq3[qx1][qx2][qy1][qy2])/(1.*nMeas)<<" ";
+//				sqout3<<endl;
+//			}
+//		}
+//	}
 	sqout3.close();
 	sqout.close();
 	sqout2.close();
-//	sxout.close();
-//	sxout2.close();
 }
 void LATTICE::reset(){
 	tries=0; accepts=0;
