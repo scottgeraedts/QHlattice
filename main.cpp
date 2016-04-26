@@ -35,6 +35,7 @@ int main(){
 		int Ntrack=10;
 		vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
 		for(int i=0;i<nMeas;i++){
+			cout<<ll.get_weight(ll.get_locs())<<" "<<norm(ll.get_wf(ll.get_locs(),ll.get_ds()))*exp(-ll.Ne*ll.Ne)<<endl;
 			ll.step(nSteps);
 			e=ll.coulomb_energy();
 			E+=e;

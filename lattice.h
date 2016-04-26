@@ -37,7 +37,7 @@ public:
 	void print_structure_factors(int nMeas);
 	void reset();
 	vector <vector<int> > get_locs();
-
+	vector <vector<int> > get_ds();
 	
 	int Ne;
 	bool testing; // output 'running_weight' and 'get_weight()', useful in debug.

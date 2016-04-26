@@ -33,8 +33,8 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 		}
 		//the average d should also be on a lattice point, so dividing dsum by Ne should yield an integer
 		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
+		cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
 	}
-	cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
 	
 	//********calls to duncan's functions
 	set_l_(&NPhi, &L1, &L2);
@@ -336,17 +336,17 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
 //also different compared to get_weight: this function uses the precomputed lattice_z data
 complex<double> LATTICE::get_wf(const vector< vector<int> > &zs, const vector <vector<int> > &tds){
-	double out=1,x,y;
-	complex<double> temp;
+	complex<double> out=1,temp;
+	int ix,iy;
 	//vandermonde piece
 	int vandermonde_exponent=invNu;
 	if(type=="CFL") vandermonde_exponent-=2;
 	if(vandermonde_exponent!=0){
 		for( int i=0;i<Ne;i++){
 			for( int j=i+1;j<Ne;j++){
-				x=(zs[i][0]-zs[j][0]);
-				y=(zs[i][1]-zs[j][1]);
-				//out*=lattice_z_(&NPhi,&x,&y,&L1,&L2,&one);
+				ix=(zs[i][0]-zs[j][0]);
+				iy=(zs[i][1]-zs[j][1]);
+				out*=lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one);
 			}
 		}
 	}
@@ -366,12 +366,9 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs, const vector <v
 		COM[0]-=tdsum[0]/invNu;
 		COM[1]-=tdsum[1]/invNu;
 	}
-	for( int i=0;i<invNu;i++){
-		x=COM[0]/(1.*NPhi)-ws[i][0];
-		y=COM[1]/(1.*NPhi)-ws[i][1];
-		z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-		out*=norm(temp);
-	}
+	get_laughlin_cm_(COM,&temp);
+	out*=temp;
+
 	if(type=="CFL"){
 		complex<double> product;
 		Eigen::MatrixXcd M(Ne,Ne);
@@ -380,18 +377,18 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs, const vector <v
 				product=1;
 				for(int k=0;k<Ne;k++){
 					if(k==i) continue;
-					x=(zs[i][0]-zs[k][0])/(1.*NPhi)-(tds[j][0]-tdsum[0])/(1.*Ne);
-					y=(zs[i][1]-zs[k][1])/(1.*NPhi)-(tds[j][1]-tdsum[1])/(1.*Ne);
-					z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+					ix=det_helper(zs[i][0],zs[k][0],tds[j][0],tdsum[0]);
+					iy=det_helper(zs[i][1],zs[k][1],tds[j][1],tdsum[1]);
+					temp=lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one);
 					product*=temp;
 				}
 				M(i,j)=product;
 			}
 		}
 		detSolver.compute(M);
-		out=out*norm(detSolver.determinant());
+		out=out*detSolver.determinant();
 	}		
-	return out*exp(-Ne*Ne);
+	return out;
 } 
 
 void LATTICE::sum_locs(int out[]){
@@ -405,6 +402,7 @@ void LATTICE::sum_locs(int out[]){
 }
 
 vector< vector<int> > LATTICE::get_locs(){ return locs; }
+vector< vector<int> > LATTICE::get_ds(){ return ds; }
 ///***********MEASUREMENT FUNCTIONS *******///////////////
 //right now I'm using Duncan's function for this
 //double LATTICE::two_body_coulomb(int dx, int dy){
