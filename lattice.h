@@ -38,6 +38,7 @@ public:
 	void print_structure_factors(int nMeas);
 	void reset();
 	void change_dbar_parameter(double dbarx, double dbary);
+	void set_ds(vector< vector<int> > ds);//sets a custom set of composite fermion dipole moments
 	vector <vector<int> > get_locs();
 
 	vector <vector<int> > get_ds();

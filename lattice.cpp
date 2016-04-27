@@ -11,7 +11,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	Ne=NPhi/invNu;
     
 	fermions=true;
-	testing=false;
+	testing=true;
 	type="CFL";
 
 //	cout<<NPhi<<" "<<invNu<<" "<<Ne<<" "<<L1<<" "<<L2<<endl;
@@ -28,11 +28,8 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 
 	double center_frac[2]={0.,0.};
 	if(type=="CFL"){
-		vector<int> temp(2);
-		temp[0]=3; temp[1]=0;
 		if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
-//		ds.push_back(temp);
 				
 		print_ds();
 		dsum=vector<int>(2,0);
@@ -326,7 +323,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 		detSolver.compute(M);
 		out=out*detSolver.determinant();
 	}		
-	return out;
+	return conj(out);
 } 
 
 void LATTICE::sum_locs(int out[]){
@@ -567,6 +564,18 @@ void LATTICE::change_dbar_parameter(double dbarx, double dbary){
 	}
 	
 }
+void LATTICE::set_ds(vector< vector<int> > tds){
+	ds=tds;
+	dsum=vector<int>(2,0);
+	for(int i=0;i<Ne;i++){
+		dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu;
+        //dsum=NPhi * Ne dbar, i.e. it is the point on the lattice of electrons where the TOTAL d lives
+        //'ds' is defined on L/Ne lattice, 'dsum' in this way is defined on L/Nphi lattice.
+	}
+	change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));	
+	reset();
+}
+
 inline void LATTICE::det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z){
 	z[0]=z1[0]-z2[0]-d[0]*invNu;
 	z[1]=z1[1]-z2[1]-d[1]*invNu;
@@ -617,7 +626,7 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
 //                    cout<<xi<<" "<<yi<<" "<<z[0]<<" "<<z[1]<<endl;
                     x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
 //                    cout<<temp<<"....";
-					temp=modded_lattice_z(z[0],z[1]);
+//					temp=modded_lattice_z(z[0],z[1]);
 //					cout<<temp<<endl;
                     product*=temp;
                 }
@@ -639,7 +648,7 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
                             yi=det_helper(locs[i][1],locs[k][1],ds[j][1],dbar_parameter[1]);
                         }
                         x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-                        temp=modded_lattice_z(z[0],z[1]);
+ //                       temp=modded_lattice_z(z[0],z[1]);
                         product*=temp;
                     }
                     newMatrix(i,j)=product;
@@ -649,13 +658,13 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
                     yi=det_helper(locs[i][1],locs[electron][1],ds[j][1],dbar_parameter[1]);
                     det_helper(locs[i],locs[electron],ds[j],z);
                     x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-                    temp=modded_lattice_z(z[0],z[1]);
+ //                   temp=modded_lattice_z(z[0],z[1]);
                     newMatrix(i,j)/=temp;
                     xi=det_helper(locs[i][0],newloc[0],ds[j][0],dbar_parameter[0]);
                     yi=det_helper(locs[i][1],newloc[1],ds[j][1],dbar_parameter[1]);
 					det_helper(locs[i],newloc,ds[j],z);
                     x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-                    temp=modded_lattice_z(z[0],z[1]);
+//                    temp=modded_lattice_z(z[0],z[1]);
                     newMatrix(i,j)*=temp;
                 }
             }

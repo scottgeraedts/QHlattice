@@ -15,7 +15,23 @@ int main(){
     double dbar_parameter[2] = {0., 1.};
     dbar_parameter[0]=1; dbar_parameter[1]=0;
 	LATTICE ll(NPhi,invNu, seed);
-    
+
+	//stuff for initializing with a custom set of ds (for the Berry phase calculation)
+	double center_frac[2]={0.,0.};
+//	if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
+	ll.make_fermi_surface(center_frac, Ne-1);
+	vector <vector <int> > tempds=ll.get_ds();
+	vector<int> dpoint(2);
+	dpoint[0]=3; dpoint[1]=0;
+	tempds.push_back(dpoint);
+//	ll.set_ds(tempds);
+	
+//	LATTICE ll2(NPhi,invNu,seed);
+//	ll2.make_fermi_surface(center_frac,Ne-1);
+//	tempds=ll.get_ds();
+//	dpoint[0]=2; dpoint[1]=1;
+//	ll2.set_ds(tempds);
+	    
 //    ofstream eout_dbar("energy_dbar");
     
     
@@ -41,6 +57,7 @@ int main(){
 		ll.step(nWarmup);
 		double E=0,E2=0,P=0,P2=0,three=0;
 		double e,p;
+		complex<double> berry_phase(0,0);
 		deque<double> e_tracker, p_tracker;
 		int Ntrack=10;
 		vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
@@ -50,6 +67,7 @@ int main(){
 			e=ll.coulomb_energy();
 			E+=e;
 			E2+=e*e;
+			berry_phase+=ll.get_weight(ll.get_locs())/ll.get_weight(ll.get_locs());
 //			p=log(ll.running_weight);
 //			P+=p;
 //			P2+=p*p;
@@ -70,7 +88,7 @@ int main(){
 			ll.update_structure_factors();
 		}
 //		outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<three/(1.*nMeas)<<endl;
-        outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<endl;
+        outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<berry_phase<<endl;
 		cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
 	//	cout<<"almost done"<<endl;
 	
