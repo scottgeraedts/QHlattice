@@ -22,7 +22,7 @@ extern"C"{
 
 class LATTICE{
 public:
-	LATTICE(int, int, int, double*); // LATTICE(int Nphi_t, int invNu_t, int seed, double* dbar_parameter);
+	LATTICE(int, int, int); // LATTICE(int Nphi_t, int invNu_t, int seed);
     // dbar = (dbar_parameter[0]/NPhi*L1, dbar_parameter[1]/NPhi*L2);
 	~LATTICE();
 
@@ -37,6 +37,7 @@ public:
 	void update_structure_factors();
 	void print_structure_factors(int nMeas);
 	void reset();
+	void change_dbar_parameter(double dbarx, double dbary);
 	vector <vector<int> > get_locs();
 
 	vector <vector<int> > get_ds();

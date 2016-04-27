@@ -2,7 +2,7 @@
 
 int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 
-LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed, double* dbar_parameter_input):NPhi(NPhi_t),invNu(invNu_t){
+LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	//various parameters from input file
 	L1=sqrt(2*M_PI*NPhi)/sqrt(2.);//these are only used for calls to Duncan's functions, if you use them in other places there will be problems due to 
 	L2=complex<double> (0,real(L1));//the different definitions of magnetic length
@@ -41,13 +41,9 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed, double* dbar_parameter_input
             //dsum=NPhi * Ne dbar, i.e. it is the point on the lattice of electrons where the TOTAL d lives
             //'ds' is defined on L/Ne lattice, 'dsum' in this way is defined on L/Nphi lattice.
 		}
-		if(dbar_parameter_input[0]==-1){
-			dbar_parameter[0]=dsum[0];
-			dbar_parameter[1]=dsum[1];
-		}else{
-			dbar_parameter[0]=dbar_parameter_input[0];
-			dbar_parameter[1]=dbar_parameter_input[1];
-		}    
+		dbar_parameter[0]=dsum[0];
+		dbar_parameter[1]=dsum[1];
+
 		//the average d should also be on a lattice point, so dividing dsum by Ne should yield an integer
 		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
 		cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
@@ -566,8 +562,13 @@ void LATTICE::reset(){
 	}
     
 }
+//changes the dbar (which ordinarily is the sum of d's) to whatever we want
+void LATTICE::change_dbar_parameter(double dbarx, double dbary){
+	dbar_parameter[0]=dbarx;
+	dbar_parameter[1]=dbary;
+}
 //inline int LATTICE::det_helper(int z1, int z2, int d, int dbar){ return z1-z2-d*invNu+dbar/Ne;}
-inline double LATTICE::det_helper(int z1, int z2, int d, double dbar_parameter){ return z1-z2-d*invNu+dbar_parameter;}
+inline double LATTICE::det_helper(int z1, int z2, int d, double dbarp){ return z1-z2-d*invNu+dbarp;}
 
 void LATTICE::cold_start(){
 	for(int i=0;i<Ne;i++){
