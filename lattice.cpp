@@ -41,8 +41,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
             //dsum=NPhi * Ne dbar, i.e. it is the point on the lattice of electrons where the TOTAL d lives
             //'ds' is defined on L/Ne lattice, 'dsum' in this way is defined on L/Nphi lattice.
 		}
-		dbar_parameter[0]=dsum[0];
-		dbar_parameter[1]=dsum[1];
+		change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));
 
 		//the average d should also be on a lattice point, so dividing dsum by Ne should yield an integer
 		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
@@ -61,11 +60,10 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	setup_coulomb();
 	omega=vector <complex<double> >(2*NPhi);
 	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi)); //note that spacings of these is pi/N, not 2pi/N
+
 	sq=vector<vector<complex<double> > > (NPhi, vector<complex<double> >(NPhi,0));
 	sq2=vector<vector<double> > (NPhi, vector<double>(NPhi,0));
 	sq3=vector <vector< vector< vector <complex<double> > > > >(NPhi, vector <vector <vector< complex<double> > > >(NPhi, vector <vector <complex<double> > >(NPhi, vector<complex<double> >(NPhi,0))));
-	sx=vector<vector<int> > (NPhi, vector<int>(NPhi,0));
-	sx2=vector<vector<int> > (NPhi, vector<int>(NPhi,0));
 }
 void LATTICE::step(int Nsteps){
 	for(int i=0;i<Nsteps*Ne;i++){
@@ -76,9 +74,7 @@ void LATTICE::step(int Nsteps){
 int LATTICE::simple_update(){
 	//find a new position for a randomly chosen electron
 	int electron=ran.randInt(Ne-1);
-//	cout<<"simple update with electon at "<<locs[electron][0]<<" "<<locs[electron][1]<<endl;
 	vector<int> newloc=random_move(locs[electron]);
-//	cout<<"moving to "<<newloc[0]<<" "<<newloc[1]<<endl;
 	vector< vector<int> >::iterator it=find(locs.begin(),locs.end(),newloc);
 	if(it!=locs.end()) return 0;
 	double prob=1;
@@ -89,7 +85,6 @@ int LATTICE::simple_update(){
 	else vandermonde_exponent=invNu-2;
 	complex<double> temp;
 	int xi,yi;
-//    double xi, yi;
 	
 	if(vandermonde_exponent!=0){
 		for(int i=0;i<Ne;i++){
@@ -101,7 +96,6 @@ int LATTICE::simple_update(){
 				xi=-xi; yi=-yi;
 			}		
 			temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
-	//		z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);
 			prob/=norm( pow(temp,vandermonde_exponent) );
 
 			//multiply new part
@@ -111,11 +105,9 @@ int LATTICE::simple_update(){
 				xi=-xi; yi=-yi;
 			}		
 			temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
-	//		z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);
 			prob*=norm( pow(temp,vandermonde_exponent) );
 		}
 	}
-//	cout<<"vandermond "<<prob<<endl;
 
 	//***************COM PART
 	//figure out the probability difference from the COM part
@@ -281,14 +273,12 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 		temp=detSolver.determinant(); //the ridiculous order of operators here is try to ameliorate the fact that the determinant is so big the program thinks its infinity
 		temp2=temp*out;
 		out=real(temp2*conj(temp));
-//		out*=conj(temp);
-//		out=out*norm(detSolver.determinant());
 	}		
 	return out;
 } 
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
 //also different compared to get_weight: this function uses the precomputed lattice_z data
-complex<double> LATTICE::get_wf(const vector< vector<int> > &zs, const vector <vector<int> > &tds){
+complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 	complex<double> out=1,temp;
 	int ix,iy;
 	//vandermonde piece
@@ -310,29 +300,24 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs, const vector <v
 		COM[0]+=zs[i][0];
 		COM[1]+=zs[i][1];
 	}
-	vector<int> tdsum(2,0);
-	for(int i=0;i<Ne;i++){
-		tdsum[0]+=tds[i][0]*invNu;
-		tdsum[1]+=tds[i][1]*invNu;
-	}
 	if(type=="CFL"){
-		COM[0]-=tdsum[0]/invNu;
-		COM[1]-=tdsum[1]/invNu;
+		COM[0]-=dsum[0]/invNu;
+		COM[1]-=dsum[1]/invNu;
 	}
 	get_laughlin_cm_(COM,&temp);
 	out*=temp;
 
 	if(type=="CFL"){
 		complex<double> product;
+		vector<int> z(2);
 		Eigen::MatrixXcd M(Ne,Ne);
 		for(int i=0;i<Ne;i++){
 			for(int j=0;j<Ne;j++){
 				product=1;
 				for(int k=0;k<Ne;k++){
 					if(k==i) continue;
-					ix=det_helper(zs[i][0],zs[k][0],tds[j][0],tdsum[0]);
-					iy=det_helper(zs[i][1],zs[k][1],tds[j][1],tdsum[1]);
-					temp=modded_lattice_z(ix,iy);
+					det_helper(zs[i],zs[k],ds[j],z);
+					temp=modded_lattice_z(z[0],z[1]);
 					product*=temp;
 				}
 				M(i,j)=product;
@@ -566,8 +551,26 @@ void LATTICE::reset(){
 void LATTICE::change_dbar_parameter(double dbarx, double dbary){
 	dbar_parameter[0]=dbarx;
 	dbar_parameter[1]=dbary;
+	cout<<"dbar "<<dbar_parameter[0]<<" "<<dbar_parameter[1]<<endl;
+
+	complex<double> temp;
+	double x,y;
+	shifted_ztable=vector< vector< complex<double> > > (NPhi,vector< complex<double> >(NPhi,0));
+
+	for(int ix=0;ix<NPhi;ix++){
+		x=(ix+dbar_parameter[0])/(1.*NPhi);
+		for(int iy=0;iy<NPhi;iy++){
+			y=(iy+dbar_parameter[1])/(1.*NPhi);
+			z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+			shifted_ztable[ix][iy]=temp;
+		}
+	}
+	
 }
-//inline int LATTICE::det_helper(int z1, int z2, int d, int dbar){ return z1-z2-d*invNu+dbar/Ne;}
+inline void LATTICE::det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z){
+	z[0]=z1[0]-z2[0]-d[0]*invNu;
+	z[1]=z1[1]-z2[1]-d[1]*invNu;
+}
 inline double LATTICE::det_helper(int z1, int z2, int d, double dbarp){ return z1-z2-d*invNu+dbarp;}
 
 void LATTICE::cold_start(){
@@ -584,9 +587,11 @@ void LATTICE::cold_start(){
 complex<double> LATTICE::modded_lattice_z(int x, int y){// why need this function? because want to use z_function table, which is given in first BZ.
 	int modx=supermod(x,NPhi);
 	int mody=supermod(y,NPhi);
-	complex<double> out=lattice_z_(&NPhi,&modx,&mody,&L1,&L2,&one);
+//	complex<double> out=lattice_z_(&NPhi,&modx,&mody,&L1,&L2,&one);
+	complex<double> out=shifted_ztable[modx][mody];
 	int j=(modx-x)/NPhi, k=(mody-y)/NPhi;
-	out*=omega[supermod(-mody*j+modx*k,2*NPhi)];
+//	out*=omega[supermod(-(mody+dbar_parameter[1])*j+(modx+dbar_parameter[0])*k,2*NPhi)];
+	out*=polar( 1., (-(mody+dbar_parameter[1])*j+(modx+dbar_parameter[0])*k)*M_PI/(1.*NPhi));
 //	out*=polar(1.,-M_PI/(1.*NPhi)*(mody*j-modx*k));
 //	cout<<polar(1.,-M_PI/(1.*NPhi)*(y*j-x*k))<<endl;
 	if(j%2 || k%2) return -out;
@@ -597,6 +602,7 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
     complex<double> product;
     double x,y;
     double xi,yi;
+    vector<int> z(2);
     complex<double> temp;
     
     for(int i=0;i<Ne;i++){
@@ -605,9 +611,14 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
                 product=1.;
                 for(int k=0;k<Ne;k++){
                     if(k==i) continue;
+                    det_helper(newloc,locs[k],ds[j],z);
                     xi=det_helper(newloc[0],locs[k][0],ds[j][0],dbar_parameter[0]);
                     yi=det_helper(newloc[1],locs[k][1],ds[j][1],dbar_parameter[1]);
-                    x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);//temp=modded_lattice_z(xi,yi);
+//                    cout<<xi<<" "<<yi<<" "<<z[0]<<" "<<z[1]<<endl;
+                    x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+//                    cout<<temp<<"....";
+					temp=modded_lattice_z(z[0],z[1]);
+//					cout<<temp<<endl;
                     product*=temp;
                 }
                 newMatrix(i,j)=product;
@@ -618,14 +629,17 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
                     for(int k=0;k<Ne;k++){
                         if(k==i) continue;
                         if(k==electron){
+                            det_helper(locs[i],newloc,ds[j],z);
                             xi=det_helper(locs[i][0],newloc[0],ds[j][0],dbar_parameter[0]);
                             yi=det_helper(locs[i][1],newloc[1],ds[j][1],dbar_parameter[1]);
                         }
                         else{
+							det_helper(locs[i],locs[k],ds[j],z);
                             xi=det_helper(locs[i][0],locs[k][0],ds[j][0],dbar_parameter[0]);
                             yi=det_helper(locs[i][1],locs[k][1],ds[j][1],dbar_parameter[1]);
                         }
-                        x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);//temp=modded_lattice_z(xi,yi);
+                        x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+                        temp=modded_lattice_z(z[0],z[1]);
                         product*=temp;
                     }
                     newMatrix(i,j)=product;
@@ -633,11 +647,15 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
                 else if(newMatrix(i,j)!=0.){
                     xi=det_helper(locs[i][0],locs[electron][0],ds[j][0],dbar_parameter[0]);
                     yi=det_helper(locs[i][1],locs[electron][1],ds[j][1],dbar_parameter[1]);
-                    x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);//temp=modded_lattice_z(xi,yi);
+                    det_helper(locs[i],locs[electron],ds[j],z);
+                    x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+                    temp=modded_lattice_z(z[0],z[1]);
                     newMatrix(i,j)/=temp;
                     xi=det_helper(locs[i][0],newloc[0],ds[j][0],dbar_parameter[0]);
                     yi=det_helper(locs[i][1],newloc[1],ds[j][1],dbar_parameter[1]);
-                    x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);//temp=modded_lattice_z(xi,yi);
+					det_helper(locs[i],newloc,ds[j],z);
+                    x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+                    temp=modded_lattice_z(z[0],z[1]);
                     newMatrix(i,j)*=temp;
                 }
             }

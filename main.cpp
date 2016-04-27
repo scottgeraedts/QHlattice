@@ -22,19 +22,19 @@ int main(){
     void coul_energy_dbar(LATTICE& edbar, double&, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter );
     
     
-    for (int i=0; i<5; i++) {
-        for (int j=0; j<5; j++) {
-//            cout<<"\ndbar_parameter = ("<<i<<", "<<j<<")/NPhi"<<endl;
-			dbar_parameter[0]=0.2*i;
-			dbar_parameter[1]=0.2*j;
-            coul_energy_dbar(ll,ave_E,nWarmup,nMeas,nSteps,nBins,dbar_parameter);
-//            cout<<"coulomb energy = "<<ave_E<<endl;
-            out_co_dbar<<i<<"   "<<j<<"   "<<ave_E<<endl;
-        }
-    }
+//    for (int i=0; i<5; i++) {
+//        for (int j=0; j<5; j++) {
+////            cout<<"\ndbar_parameter = ("<<i<<", "<<j<<")/NPhi"<<endl;
+//			dbar_parameter[0]=0.2*i;
+//			dbar_parameter[1]=0.2*j;
+//            coul_energy_dbar(ll,ave_E,nWarmup,nMeas,nSteps,nBins,dbar_parameter);
+////            cout<<"coulomb energy = "<<ave_E<<endl;
+//            out_co_dbar<<i<<"   "<<j<<"   "<<ave_E<<endl;
+//        }
+//    }
     
     
-/*    
+ //   ll.change_dbar_parameter(0.2,0.4);
 	for(int s=0;s<nBins;s++){
     
 		ll.reset();
@@ -89,7 +89,7 @@ int main(){
 //	ll.print_structure_factors(nMeas*nBins);
 	eout.close();
 	outfile.close();
- */   
+   
 }
 
 void coul_energy_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter ){

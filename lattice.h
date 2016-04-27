@@ -28,7 +28,7 @@ public:
 
 	void step(int);// step(int Nsteps); Nsetps = total MC steps. tries:steps, accepts:updated steps.
 	double get_weight(const vector< vector<int> > &zs);  
-	complex<double> get_wf(const vector< vector<int> > &zs,const vector< vector<int> > &ds);
+	complex<double> get_wf(const vector< vector<int> > &zs);
 	void make_fermi_surface(double* center_frac, int N);
 	complex<double> modded_lattice_z(int x, int y);
 	void print_ds();//.
@@ -59,7 +59,7 @@ private:
 	vector<int> random_move(const vector<int> &oldsite);
 	int p(int); int m(int);
 	void cold_start();
-//	int det_helper(int z1, int z2, int d, int dbar);
+	void det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z);
     double det_helper(int z1, int z2, int d, double dbar_parameter);
 
 	int NPhi, invNu;
@@ -69,6 +69,7 @@ private:
 	vector <vector <vector <vector< complex<double> > > > > sq3;
 	vector < vector<int> > sx,sx2;
 	vector <vector <int> > ds;
+	vector <vector <complex<double> > > shifted_ztable;
 	vector<int> dsum;
 	Eigen::MatrixXcd oldMatrix;
 	complex<double> oldDeterminant;
