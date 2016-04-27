@@ -13,44 +13,26 @@ int main(){
     double Ne=1.*NPhi/(1.*invNu);
     double ave_E=0.;
     double dbar_parameter[2] = {0., 1.};
-    dbar_parameter[0]=10.; dbar_parameter[1]=2.;
+    dbar_parameter[0]=-1; dbar_parameter[1]=2.;
 	LATTICE ll(NPhi,invNu, seed, dbar_parameter);
     
 //    ofstream eout_dbar("energy_dbar");
     
     
-    void coul_energy_dbar(LATTICE& edbar, double&, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter );
+//    void coul_energy_dbar(LATTICE& edbar, double&, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter );
+//    
+//    
+//    for (int i=0; i<NPhi; i++) {
+//        for (int j=0; j<NPhi; j++) {
+////            cout<<"\ndbar_parameter = ("<<i<<", "<<j<<")/NPhi"<<endl;
+//            coul_energy_dbar(ll,ave_E,nWarmup,nMeas,nSteps,nBins,dbar_parameter);
+////            cout<<"coulomb energy = "<<ave_E<<endl;
+//            out_co_dbar<<i<<"   "<<j<<"   "<<ave_E<<endl;
+//        }
+//    }
     
     
-    for (int i=0; i<NPhi; i++) {
-        for (int j=0; j<NPhi; j++) {
-//            cout<<"\ndbar_parameter = ("<<i<<", "<<j<<")/NPhi"<<endl;
-            coul_energy_dbar(ll,ave_E,nWarmup,nMeas,nSteps,nBins,dbar_parameter);
-//            cout<<"coulomb energy = "<<ave_E<<endl;
-            out_co_dbar<<i<<"   "<<j<<"   "<<ave_E<<endl;
-        }
-    }
     
-    
-    
-//	//take steps
-//	ll.reset();
-//	vector< vector<int> > tlocs=ll.get_locs();
-//	cout<<ll.get_weight(tlocs)<<endl;
-//	for(int i=0;i<ll.Ne;i++) tlocs[i][0]++;
-//	cout<<ll.get_weight(tlocs)<<endl;
-//	for(int i=0;i<ll.Ne;i++) tlocs[i][0]++;
-//	cout<<ll.get_weight(tlocs)<<endl;
-//	cout<<endl;
-//	tlocs=ll.get_locs();
-//	cout<<ll.get_weight(tlocs)<<endl;
-//	for(int i=0;i<ll.Ne;i++) tlocs[i][1]++;
-//	cout<<ll.get_weight(tlocs)<<endl;
-//	for(int i=0;i<ll.Ne;i++) tlocs[i][1]++;
-//	cout<<ll.get_weight(tlocs)<<endl;
-//	
-
-    /*
 	for(int s=0;s<nBins;s++){
     
 		ll.reset();
@@ -106,7 +88,6 @@ int main(){
 	eout.close();
 	outfile.close();
     
-    */
 }
 
 void coul_energy_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter ){

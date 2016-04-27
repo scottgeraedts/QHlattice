@@ -10,9 +10,6 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed, double* dbar_parameter_input
 	if(NPhi%invNu) cout<<"NPhi not divisible by filling!"<<endl;
 	Ne=NPhi/invNu;
     
-    dbar_parameter[0]=dbar_parameter_input[0];
-    dbar_parameter[1]=dbar_parameter_input[1];
-    
 	fermions=true;
 	testing=false;
 	type="CFL";
@@ -44,6 +41,13 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed, double* dbar_parameter_input
             //dsum=NPhi * Ne dbar, i.e. it is the point on the lattice of electrons where the TOTAL d lives
             //'ds' is defined on L/Ne lattice, 'dsum' in this way is defined on L/Nphi lattice.
 		}
+		if(dbar_parameter_input[0]==-1){
+			dbar_parameter[0]=dsum[0];
+			dbar_parameter[1]=dsum[1];
+		}else{
+			dbar_parameter[0]=dbar_parameter_input[0];
+			dbar_parameter[1]=dbar_parameter_input[1];
+		}    
 		//the average d should also be on a lattice point, so dividing dsum by Ne should yield an integer
 		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
 		cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
