@@ -23,7 +23,7 @@ extern"C"{
 class LATTICE{
 public:
 	LATTICE(int, int, int, double*); // LATTICE(int Nphi_t, int invNu_t, int seed, double* dbar_parameter);
-    LATTICE(int, int, int); // LATTICE(int Nphi_t, int invNu_t, int seed);
+    // dbar = (dbar_parameter[0]/NPhi*L1, dbar_parameter[1]/NPhi*L2);
 	~LATTICE();
 
 	void step(int);// step(int Nsteps); Nsetps = total MC steps. tries:steps, accepts:updated steps.

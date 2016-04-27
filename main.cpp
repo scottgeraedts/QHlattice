@@ -8,19 +8,29 @@ int main(){
 	//initialize MC object
 	
 	ofstream outfile("out"),eout("energy");
+    ofstream out_co_dbar("co_dbar");
     
     double Ne=1.*NPhi/(1.*invNu);
+    double ave_E=0.;
     double dbar_parameter[2] = {0., 1.};
-//    dbar_parameter[0]=6./Ne*(sqrt(2*M_PI*NPhi)/sqrt(2.)/(1.*NPhi));
-//    dbar_parameter[1]=15./Ne*(sqrt(2*M_PI*NPhi)/sqrt(2.)/(1.*NPhi));
-//    dbar_parameter[0]=6./Ne/(1.*NPhi);
-//    dbar_parameter[1]=15./Ne/(1.*NPhi);
-//    dbar_parameter[0]=6./(1.*NPhi*Ne);
-//    dbar_parameter[1]=15./(1.*NPhi*Ne);
-//    dbar_parameter[0]=6;
-//    dbar_parameter[1]=15;
+    dbar_parameter[0]=10.; dbar_parameter[1]=2.;
 	LATTICE ll(NPhi,invNu, seed, dbar_parameter);
-//    LATTICE ll(NPhi,invNu, seed);
+    
+//    ofstream eout_dbar("energy_dbar");
+    
+    
+    void coul_energy_dbar(LATTICE& edbar, double&, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter );
+    
+    
+    for (int i=0; i<NPhi; i++) {
+        for (int j=0; j<NPhi; j++) {
+//            cout<<"\ndbar_parameter = ("<<i<<", "<<j<<")/NPhi"<<endl;
+            coul_energy_dbar(ll,ave_E,nWarmup,nMeas,nSteps,nBins,dbar_parameter);
+//            cout<<"coulomb energy = "<<ave_E<<endl;
+            out_co_dbar<<i<<"   "<<j<<"   "<<ave_E<<endl;
+        }
+    }
+    
     
     
 //	//take steps
@@ -40,6 +50,7 @@ int main(){
 //	cout<<ll.get_weight(tlocs)<<endl;
 //	
 
+    /*
 	for(int s=0;s<nBins;s++){
     
 		ll.reset();
@@ -94,4 +105,26 @@ int main(){
 //	ll.print_structure_factors(nMeas*nBins);
 	eout.close();
 	outfile.close();
+    
+    */
+}
+
+void coul_energy_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter ){
+    double sumE=0;
+    for (int s=0; s<nBins; s++) {
+        edbar.reset();
+        edbar.step(nWarmup);
+        double E=0, E2=0, e;
+        for(int i=0;i<nMeas;i++){
+            edbar.step(nSteps);
+            e=edbar.coulomb_energy();
+            E+=e;
+            E2+=e*e;
+        }
+//        cout<<E/(1.*nMeas*edbar.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*edbar.Ne)<<endl;
+        sumE+=E/(1.*nMeas*edbar.Ne);
+    }
+    ave_E=sumE/(1.*nBins);
+//    outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<endl;
+//    cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
 }
