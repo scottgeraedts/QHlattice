@@ -373,7 +373,7 @@ call  optimize_tau(tau,new_tau,sl2z)
 
 if (allocated(z_function_table)) deallocate(z_function_table)
 allocate (z_function_table(-norb:norb,-norb:norb))
-if (allocated(log_z_function_table)) deallocate(z_function_table)
+if (allocated(log_z_function_table)) deallocate(log_z_function_table)
 allocate (log_z_function_table(-norb:norb,-norb:norb))
 
 do i = -1,1

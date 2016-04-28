@@ -11,7 +11,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	Ne=NPhi/invNu;
     
 	fermions=true;
-	testing=true;
+	testing=false;
 	type="CFL";
 
 //	cout<<NPhi<<" "<<invNu<<" "<<Ne<<" "<<L1<<" "<<L2<<endl;
@@ -572,6 +572,7 @@ void LATTICE::set_ds(vector< vector<int> > tds){
         //dsum=NPhi * Ne dbar, i.e. it is the point on the lattice of electrons where the TOTAL d lives
         //'ds' is defined on L/Ne lattice, 'dsum' in this way is defined on L/Nphi lattice.
 	}
+	print_ds();
 	change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));	
 	reset();
 }
@@ -621,13 +622,7 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
                 for(int k=0;k<Ne;k++){
                     if(k==i) continue;
                     det_helper(newloc,locs[k],ds[j],z);
-                    xi=det_helper(newloc[0],locs[k][0],ds[j][0],dbar_parameter[0]);
-                    yi=det_helper(newloc[1],locs[k][1],ds[j][1],dbar_parameter[1]);
-//                    cout<<xi<<" "<<yi<<" "<<z[0]<<" "<<z[1]<<endl;
-                    x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-//                    cout<<temp<<"....";
-//					temp=modded_lattice_z(z[0],z[1]);
-//					cout<<temp<<endl;
+					temp=modded_lattice_z(z[0],z[1]);
                     product*=temp;
                 }
                 newMatrix(i,j)=product;
@@ -639,32 +634,21 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
                         if(k==i) continue;
                         if(k==electron){
                             det_helper(locs[i],newloc,ds[j],z);
-                            xi=det_helper(locs[i][0],newloc[0],ds[j][0],dbar_parameter[0]);
-                            yi=det_helper(locs[i][1],newloc[1],ds[j][1],dbar_parameter[1]);
                         }
                         else{
 							det_helper(locs[i],locs[k],ds[j],z);
-                            xi=det_helper(locs[i][0],locs[k][0],ds[j][0],dbar_parameter[0]);
-                            yi=det_helper(locs[i][1],locs[k][1],ds[j][1],dbar_parameter[1]);
                         }
-                        x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
- //                       temp=modded_lattice_z(z[0],z[1]);
+                        temp=modded_lattice_z(z[0],z[1]);
                         product*=temp;
                     }
                     newMatrix(i,j)=product;
                 }
                 else if(newMatrix(i,j)!=0.){
-                    xi=det_helper(locs[i][0],locs[electron][0],ds[j][0],dbar_parameter[0]);
-                    yi=det_helper(locs[i][1],locs[electron][1],ds[j][1],dbar_parameter[1]);
                     det_helper(locs[i],locs[electron],ds[j],z);
-                    x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
- //                   temp=modded_lattice_z(z[0],z[1]);
+                    temp=modded_lattice_z(z[0],z[1]);
                     newMatrix(i,j)/=temp;
-                    xi=det_helper(locs[i][0],newloc[0],ds[j][0],dbar_parameter[0]);
-                    yi=det_helper(locs[i][1],newloc[1],ds[j][1],dbar_parameter[1]);
 					det_helper(locs[i],newloc,ds[j],z);
-                    x=xi/(1.*NPhi); y=yi/(1.*NPhi); z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-//                    temp=modded_lattice_z(z[0],z[1]);
+                    temp=modded_lattice_z(z[0],z[1]);
                     newMatrix(i,j)*=temp;
                 }
             }
