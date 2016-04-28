@@ -2,7 +2,7 @@
 int main(){
 	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
 	ifstream infile("params");
-	infile>>NPhi>>invNu;
+	infile>>NPhi>>invNu; 
 	infile>>nWarmup>>nMeas>>nSteps>>nBins;
 	infile>>seed;
 	//initialize MC object
@@ -40,7 +40,6 @@ int main(){
     
     void coul_energy_dbar(LATTICE& edbar, double&, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter );
     
-    
 //    for (int i=0; i<5; i++) {
 //        for (int j=0; j<5; j++) {
 ////            cout<<"\ndbar_parameter = ("<<i<<", "<<j<<")/NPhi"<<endl;
@@ -65,7 +64,6 @@ int main(){
 		int Ntrack=10;
 		vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
 		for(int i=0;i<nMeas;i++){
-	//		cout<<ll.get_weight(ll.get_locs())<<" "<<norm(ll.get_wf(ll.get_locs(),ll.get_ds()))*exp(-ll.Ne*ll.Ne)<<endl;
 			ll.step(nSteps);
 			e=ll.coulomb_energy();
 			E+=e;
@@ -73,8 +71,6 @@ int main(){
 			if(berry) berry_phase+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
 //			p=log(ll.running_weight);
 //			P+=p;
-//			P2+=p*p;
-//			three+=ll.threebody();
 			eout<<e<<endl;
 //			//autocorrelations
 //			e_tracker.push_front(e);
@@ -90,10 +86,8 @@ int main(){
 			
 			ll.update_structure_factors();
 		}
-//		outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<three/(1.*nMeas)<<endl;
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
 		cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
-	//	cout<<"almost done"<<endl;
 	
 //		ofstream auto_out("auto");
 //		for(int j=0;j<Ntrack;j++){
@@ -101,13 +95,11 @@ int main(){
 //			auto_out<<autocorr_e[j]/(1.*(nMeas-Ntrack))<<" "<<pow(E/(1.*nMeas),2)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))<<" ";
 //			auto_out<<autocorr_p[j]/(1.*(nMeas-Ntrack))<<" "<<pow(P/(1.*nMeas),2)<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<" ";
 //			auto_out<<endl;
+
 //		}
 	}
     outfile<<endl;
-    
-    
-//	cout<<"start print"<<endl;
-//	ll.print_structure_factors(nMeas*nBins);
+	ll.print_structure_factors(nMeas*nBins);
 	eout.close();
 	outfile.close();
    
