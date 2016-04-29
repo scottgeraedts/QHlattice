@@ -332,7 +332,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 					temp=modded_lattice_z(z[0],z[1]);
 					product*=temp;
 				}
-				M(i,j)=product*exp( (zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu));
+				M(i,j)=product*polar(1., 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
 			}
 		}
 		detSolver.compute(M);
