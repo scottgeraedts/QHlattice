@@ -147,7 +147,9 @@ int LATTICE::simple_update(){
 		//sometimes newDeterminant is way to big, can ameliorate this by dividing it by a number about as large as it
 		newDivisor=abs(real(newDeterminant))+abs(imag(newDeterminant));
 		oldDivisor=abs(real(oldDeterminant))+abs(imag(oldDeterminant));
+//		cout<<prob<<".....";
 		prob+=log(norm( newDeterminant/newDivisor)) - log(norm(oldDeterminant/oldDivisor)) + 2*(log(newDivisor)-log(oldDivisor)) ;
+//		cout<<prob<<endl;
 	}
 	  
     //*******************update or not
@@ -157,7 +159,7 @@ int LATTICE::simple_update(){
 	
 	if(update){
 		locs[electron]=newloc;
-		running_weight*=exp(prob);
+		running_weight+=prob;
 //		cout<<prob<<endl;
 		if(testing) cout<<running_weight<<" "<<get_weight(locs)<<endl;
 //		cout<<"new:"<<endl<<newMatrix<<endl;
@@ -176,7 +178,7 @@ vector<int> LATTICE::random_move( const vector<int> &in){
 //	newloc[0]=ran.randInt(NPhi-1);
 //	newloc[1]=ran.randInt(NPhi-1);
 
-	int hoplength=Ne/5;
+	int hoplength=Ne/10;
 	if(Ne<10) hoplength=2;
 	int n=pow(2*hoplength+1,2)-1;
 	vector<int> newx(n),newy(n);
@@ -223,7 +225,7 @@ int LATTICE::m(int site){
 	else return site-1;
 }
 double LATTICE::get_weight(const vector< vector<int> > &zs){
-	double out=exp(-Ne*Ne),x,y;
+	double out=0,x,y;
 	complex<double> temp,temp2;
 	//vandermonde piece
 	int vandermonde_exponent=invNu;
@@ -235,7 +237,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 			y=(zs[i][1]-zs[j][1])/(1.*NPhi);
 			z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);
 //			temp=jies_weierstrass(x,y);
-			out*=norm( pow(temp,vandermonde_exponent) );
+			out+=log(norm( pow(temp,vandermonde_exponent) ));
 		}
 	}
 	
@@ -254,9 +256,10 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 		x=COM[0]/(1.*NPhi)-ws[i][0];
 		y=COM[1]/(1.*NPhi)-ws[i][1];
 		z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-		out*=norm(temp);
+		out+=log(norm(temp));
 	}
 	//determinant part
+	double oldDivisor;
 	if(type=="CFL"){
 		complex<double> product;
 		Eigen::MatrixXcd M(Ne,Ne);
@@ -277,10 +280,11 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 			}
 		}
 		detSolver.compute(M);
-		temp=detSolver.determinant(); //the ridiculous order of operators here is try to ameliorate the fact that the determinant is so big the program thinks its infinity
-		// a different (and better) approach was taken in simple_update
-		temp2=temp*out;
-		out=real(temp2*conj(temp));
+		temp=detSolver.determinant(); 
+		oldDivisor=abs(real(temp))+abs(imag(temp));
+		out+=log(norm(temp/oldDivisor))+2*log(oldDivisor);
+//		temp2=temp*out;
+//		out=real(temp2*conj(temp));
 	}		
 	return out;
 } 
