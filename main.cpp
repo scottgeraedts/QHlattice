@@ -1,10 +1,14 @@
 #include "lattice.h"
 int main(){
 	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+	bool testing;
+	string type;
 	ifstream infile("params");
 	infile>>NPhi>>invNu; 
 	infile>>nWarmup>>nMeas>>nSteps>>nBins;
 	infile>>seed;
+	infile>>testing;
+	infile>>type;
 	//initialize MC object
 	
 	ofstream outfile("out"),eout("energy");
@@ -14,8 +18,8 @@ int main(){
     double ave_E=0.;
     double dbar_parameter[2] = {0., 1.};
     dbar_parameter[0]=1; dbar_parameter[1]=0;
-	LATTICE ll(NPhi,invNu, seed);
-	LATTICE ll2(NPhi,invNu,seed);
+	LATTICE ll(NPhi,invNu, testing, type, seed);
+	LATTICE ll2(NPhi,invNu, testing, type, seed);
 	bool berry=false;
 
 	if(berry){

@@ -2,7 +2,7 @@
 
 int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 
-LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
+LATTICE::LATTICE(int NPhi_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0):NPhi(NPhi_t),invNu(invNu_t),testing(testing_t),type(type_t){
 	//various parameters from input file
 	L1=sqrt(2*M_PI*NPhi)/sqrt(2.);//these are only used for calls to Duncan's functions, if you use them in other places there will be problems due to 
 	L2=complex<double> (0,real(L1));//the different definitions of magnetic length
@@ -11,9 +11,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
 	Ne=NPhi/invNu;
     
 	fermions=true;
-	testing=false;
-	type="laughlin";
-
+	cout<<testing<<" "<<type<<endl;
 	//setting up jie's function, might never use this
     vector<complex<double> > zeros; for(int i=0; i<NPhi; i++) zeros.push_back(complex<double>(0,0));
 //	weiers=weierstrass(.5*L1, .5*L2, zeros);
@@ -269,7 +267,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 //					cout<<temp<<" "<<x<<" "<<y<<endl;
 					product*=temp;
 				}
-				M(i,j)=product;
+				M(i,j)=product*exp( (zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu));//this part is only valid on a square torus!
 			}
 		}
 		detSolver.compute(M);
@@ -323,7 +321,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 					temp=modded_lattice_z(z[0],z[1]);
 					product*=temp;
 				}
-				M(i,j)=product;
+				M(i,j)=product*exp( (zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu));
 			}
 		}
 		detSolver.compute(M);
@@ -540,7 +538,7 @@ void LATTICE::reset(){
 						z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
 						product*=temp;
 					}
-					oldMatrix(i,j)=product;
+					oldMatrix(i,j)=product*exp( (locs[i][1]*ds[j][0] -locs[i][0]*ds[j][1])/(2.*invNu));
 				}
 			}
 			detSolver.compute(oldMatrix);
@@ -625,8 +623,6 @@ complex<double> LATTICE::modded_lattice_z(int x, int y){// why need this functio
 
 void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& new_det){
     complex<double> product;
-    double x,y;
-    double xi,yi;
     vector<int> z(2);
     complex<double> temp;
     
@@ -640,7 +636,7 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
 					temp=modded_lattice_z(z[0],z[1]);
                     product*=temp;
                 }
-                newMatrix(i,j)=product;
+                newMatrix(i,j)=product*exp( (newloc[1]*ds[j][0] - newloc[0]*ds[j][1])/(2.*invNu));
             }
             else if(i!=electron){//all other elements just need to be updated by the ratio of a sigma function
                 if(newMatrix(i,j)==0.){//if zero, need to recompute the whole thing
@@ -656,7 +652,7 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
                         temp=modded_lattice_z(z[0],z[1]);
                         product*=temp;
                     }
-                    newMatrix(i,j)=product;
+                    newMatrix(i,j)=product*exp( (locs[i][1]*ds[j][0] - locs[i][0]*ds[j][1])/(2.*invNu));
                 }
                 else if(newMatrix(i,j)!=0.){
                     det_helper(locs[i],locs[electron],ds[j],z);
