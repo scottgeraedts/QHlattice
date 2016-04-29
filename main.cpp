@@ -16,7 +16,7 @@ int main(){
     dbar_parameter[0]=1; dbar_parameter[1]=0;
 	LATTICE ll(NPhi,invNu, seed);
 	LATTICE ll2(NPhi,invNu,seed);
-	bool berry=true;
+	bool berry=false;
 
 	if(berry){
 		//stuff for initializing with a custom set of ds (for the Berry phase calculation)
@@ -38,7 +38,7 @@ int main(){
 //    ofstream eout_dbar("energy_dbar");
     
     
-    void coul_energy_dbar(LATTICE& edbar, double&, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter );
+ //   void coul_energy_dbar(LATTICE& edbar, double&, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter );
     
 //    for (int i=0; i<5; i++) {
 //        for (int j=0; j<5; j++) {

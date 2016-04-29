@@ -6,6 +6,7 @@
 #include "MersenneTwister.h"
 #include <numeric>
 #include <deque>
+#include "weierstrass.h"
 
 using namespace std;
 
@@ -62,6 +63,8 @@ private:
 	void cold_start();
 	void det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z);
     double det_helper(int z1, int z2, int d, double dbar_parameter);
+    complex<double> jies_weierstrass(double x, double y);
+    weierstrass weiers;
 
 	int NPhi, invNu;
 	complex<double> L1,L2;

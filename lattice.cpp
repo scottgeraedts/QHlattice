@@ -12,8 +12,11 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, int seed):NPhi(NPhi_t),invNu(invNu_t){
     
 	fermions=true;
 	testing=false;
-	type="CFL";
+	type="laughlin";
 
+	//setting up jie's function, might never use this
+    vector<complex<double> > zeros; for(int i=0; i<NPhi; i++) zeros.push_back(complex<double>(0,0));
+//	weiers=weierstrass(.5*L1, .5*L2, zeros);
 //	cout<<NPhi<<" "<<invNu<<" "<<Ne<<" "<<L1<<" "<<L2<<endl;
 	one=1; zero=0; //useful for fortran calls
 
@@ -136,13 +139,14 @@ int LATTICE::simple_update(){
 
 	///***********determinant part
 	complex<double> newDeterminant;
-    
-    Eigen::MatrixXcd newMatrix=oldMatrix;
-    
-    make_CFL_det(newMatrix, newloc, electron, newDeterminant);
-    
-    prob*=( norm( newDeterminant/oldDeterminant) );
-  
+	Eigen::MatrixXcd newMatrix=oldMatrix;
+    if(type=="CFL"){
+		
+		make_CFL_det(newMatrix, newloc, electron, newDeterminant);
+		
+		prob*=( norm( newDeterminant/oldDeterminant) );
+	}
+	  
     //*******************update or not
 	bool update=false;
 	if(prob>1) update=true;
@@ -220,11 +224,13 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 	//vandermonde piece
 	int vandermonde_exponent=invNu;
 	if(type=="CFL") vandermonde_exponent-=2;
+	complex<double> z;
 	for( int i=0;i<Ne;i++){
 		for( int j=i+1;j<Ne;j++){
 			x=(zs[i][0]-zs[j][0])/(1.*NPhi);
 			y=(zs[i][1]-zs[j][1])/(1.*NPhi);
 			z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);
+//			temp=jies_weierstrass(x,y);
 			out*=norm( pow(temp,vandermonde_exponent) );
 		}
 	}
@@ -546,6 +552,10 @@ void LATTICE::reset(){
 }
 //changes the dbar (which ordinarily is the sum of d's) to whatever we want
 void LATTICE::change_dbar_parameter(double dbarx, double dbary){
+	if(type!="CFL"){
+		cout<<"changing dbar, but not a CFL"<<endl;
+		exit(0);
+	}
 	dbar_parameter[0]=dbarx;
 	dbar_parameter[1]=dbary;
 	cout<<"dbar "<<dbar_parameter[0]<<" "<<dbar_parameter[1]<<endl;
@@ -583,6 +593,11 @@ inline void LATTICE::det_helper(const vector<int> &z1, const vector<int> &z2, co
 }
 inline double LATTICE::det_helper(int z1, int z2, int d, double dbarp){ return z1-z2-d*invNu+dbarp;}
 
+complex<double> LATTICE::jies_weierstrass(double x, double y){
+	complex<double> z(x,y);
+	complex<double> out=weiers.wsigma(z)*exp(-0.5*pow(z,2)*weiers.Gbar/(1.))*exp(-0.5*z*conj(z)/(1.*NPhi));
+	return out;
+}
 void LATTICE::cold_start(){
 	for(int i=0;i<Ne;i++){
 		locs[i][0]=i;
