@@ -2,8 +2,9 @@
 
 int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 
-LATTICE::LATTICE(int NPhi_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0):NPhi(NPhi_t),invNu(invNu_t),testing(testing_t),type(type_t){
+LATTICE::LATTICE(int NPhi_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0):NPhi(NPhi_t),invNu(invNu_t),type(type_t){
 	//various parameters from input file
+	testing=testing_t;
 	L1=sqrt(2*M_PI*NPhi)/sqrt(2.);//these are only used for calls to Duncan's functions, if you use them in other places there will be problems due to 
 	L2=complex<double> (0,real(L1));//the different definitions of magnetic length
 	ran.seed(seed);
@@ -75,7 +76,7 @@ int LATTICE::simple_update(){
 	vector<int> newloc=random_move(locs[electron]);
 	vector< vector<int> >::iterator it=find(locs.begin(),locs.end(),newloc);
 	if(it!=locs.end()) return 0;
-	double prob=1;
+	double prob=0;
 
 	//***************vandermode part
 	int vandermonde_exponent;
@@ -94,7 +95,7 @@ int LATTICE::simple_update(){
 				xi=-xi; yi=-yi;
 			}		
 			temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
-			prob/=norm( pow(temp,vandermonde_exponent) );
+			prob-=log(norm( pow(temp,vandermonde_exponent) ));
 
 			//multiply new part
 			xi=(locs[i][0]-newloc[0]);
@@ -103,7 +104,7 @@ int LATTICE::simple_update(){
 				xi=-xi; yi=-yi;
 			}		
 			temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
-			prob*=norm( pow(temp,vandermonde_exponent) );
+			prob+=log(norm( pow(temp,vandermonde_exponent) ));
 		}
 	}
 
@@ -131,28 +132,33 @@ int LATTICE::simple_update(){
 //	}
 
 	get_laughlin_cm_(oldCOM,&temp);
-	prob/=norm(temp);	
+	prob-=log(norm(temp));	
 	get_laughlin_cm_(newCOM,&temp);
-	prob*=norm(temp);	
+	prob+=log(norm(temp));	
 
 	///***********determinant part
 	complex<double> newDeterminant;
+	double newDivisor, oldDivisor;
 	Eigen::MatrixXcd newMatrix=oldMatrix;
     if(type=="CFL"){
 		
 		make_CFL_det(newMatrix, newloc, electron, newDeterminant);
-		
-		prob*=( norm( newDeterminant/oldDeterminant) );
+	//	cout<<"dets: "<< newDeterminant <<" "<<oldDeterminant <<endl;
+		//sometimes newDeterminant is way to big, can ameliorate this by dividing it by a number about as large as it
+		newDivisor=abs(real(newDeterminant))+abs(imag(newDeterminant));
+		oldDivisor=abs(real(oldDeterminant))+abs(imag(oldDeterminant));
+		prob+=log(norm( newDeterminant/newDivisor)) - log(norm(oldDeterminant/oldDivisor)) + 2*(log(newDivisor)-log(oldDivisor)) ;
 	}
 	  
     //*******************update or not
 	bool update=false;
-	if(prob>1) update=true;
-	else if( ran.rand()<prob) update=true;
+	if(prob>0) update=true;
+	else if( ran.rand()<exp(prob)) update=true;
 	
 	if(update){
 		locs[electron]=newloc;
-		running_weight*=prob;
+		running_weight*=exp(prob);
+//		cout<<prob<<endl;
 		if(testing) cout<<running_weight<<" "<<get_weight(locs)<<endl;
 //		cout<<"new:"<<endl<<newMatrix<<endl;
 		oldDeterminant=newDeterminant;
@@ -267,11 +273,12 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 //					cout<<temp<<" "<<x<<" "<<y<<endl;
 					product*=temp;
 				}
-				M(i,j)=product*exp( (zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu));//this part is only valid on a square torus!
+				M(i,j)=product*polar(1., 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );//this part is only valid on a square torus!
 			}
 		}
 		detSolver.compute(M);
 		temp=detSolver.determinant(); //the ridiculous order of operators here is try to ameliorate the fact that the determinant is so big the program thinks its infinity
+		// a different (and better) approach was taken in simple_update
 		temp2=temp*out;
 		out=real(temp2*conj(temp));
 	}		
@@ -538,7 +545,7 @@ void LATTICE::reset(){
 						z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
 						product*=temp;
 					}
-					oldMatrix(i,j)=product*exp( (locs[i][1]*ds[j][0] -locs[i][0]*ds[j][1])/(2.*invNu));
+					oldMatrix(i,j)=product*polar(1., M_PI*(locs[i][1]*ds[j][0] - locs[i][0]*ds[j][1])/(1.*NPhi) );
 				}
 			}
 			detSolver.compute(oldMatrix);
@@ -636,7 +643,7 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
 					temp=modded_lattice_z(z[0],z[1]);
                     product*=temp;
                 }
-                newMatrix(i,j)=product*exp( (newloc[1]*ds[j][0] - newloc[0]*ds[j][1])/(2.*invNu));
+                newMatrix(i,j)=product*omega[supermod(newloc[1]*ds[j][0] - newloc[0]*ds[j][1],2*NPhi)];
             }
             else if(i!=electron){//all other elements just need to be updated by the ratio of a sigma function
                 if(newMatrix(i,j)==0.){//if zero, need to recompute the whole thing
@@ -652,7 +659,7 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
                         temp=modded_lattice_z(z[0],z[1]);
                         product*=temp;
                     }
-                    newMatrix(i,j)=product*exp( (locs[i][1]*ds[j][0] - locs[i][0]*ds[j][1])/(2.*invNu));
+                    newMatrix(i,j)=product*omega[supermod(locs[i][1]*ds[j][0] - locs[i][0]*ds[j][1],2*NPhi) ];
                 }
                 else if(newMatrix(i,j)!=0.){
                     det_helper(locs[i],locs[electron],ds[j],z);

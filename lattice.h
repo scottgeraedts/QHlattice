@@ -27,6 +27,7 @@ public:
     // dbar = (dbar_parameter[0]/NPhi*L1, dbar_parameter[1]/NPhi*L2);
 	~LATTICE();
 
+	bool testing; // output 'running_weight' and 'get_weight()', useful in debug.
 	void step(int);// step(int Nsteps); Nsetps = total MC steps. tries:steps, accepts:updated steps.
 	double get_weight(const vector< vector<int> > &zs);  
 	complex<double> get_wf(const vector< vector<int> > &zs);
@@ -45,7 +46,6 @@ public:
 	vector <vector<int> > get_ds();
 	
 	int Ne;
-	bool testing; // output 'running_weight' and 'get_weight()', useful in debug.
 	double running_weight;
     int tries,accepts;
     double dbar_parameter[2];
@@ -66,23 +66,23 @@ private:
     complex<double> jies_weierstrass(double x, double y);
     weierstrass weiers;
 
-	int NPhi, invNu;
+	int NPhi,invNu;
+	string type;
 	complex<double> L1,L2;
 	vector <vector <double> > coulomb_table,sq2;
 	vector <vector <complex<double> > > sq;
 	vector <vector <vector <vector< complex<double> > > > > sq3;
 	vector < vector<int> > sx,sx2;
-	vector <vector <int> > ds;
+	vector <vector <int> > ds;//an integer defined on an Ne lattice
 	vector <vector <complex<double> > > shifted_ztable;
-	vector<int> dsum;
+	vector<int> dsum;//an integer defined on an NPhi lattice
 	Eigen::MatrixXcd oldMatrix;
 	complex<double> oldDeterminant;
 	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;	
 	MTRand ran;
 	bool fermions;
-	vector< vector<int> > locs;
+	vector< vector<int> > locs;//an integer defined on an NPhi lattice
 	vector< vector<double> > ws;
-	string type;
 	int one,zero;
 	int * sl2z;
 	vector< complex<double> > omega;
