@@ -563,7 +563,7 @@ void LATTICE::reset(){
 void LATTICE::change_dbar_parameter(double dbarx, double dbary){
 	if(type!="CFL"){
 		cout<<"changing dbar, but not a CFL"<<endl;
-		exit(0);
+		//exit(0);
 	}
 	dbar_parameter[0]=dbarx;
 	dbar_parameter[1]=dbary;

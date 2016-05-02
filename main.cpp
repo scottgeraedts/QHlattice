@@ -105,6 +105,7 @@ void berry_phase(){
 	dcenter[13]={1,-3};
 	dcenter[14]={2,-2};
 	dcenter[15]={3,-1};
+    int supermod(int k, int n);
 	for(int i=0;i<nds;i++){
 		d2[supermod(i-1,nds)]=dcenter[i];
 		d3[supermod(i+1,nds)]=dcenter[i];
@@ -158,31 +159,35 @@ void berry_phase(){
 	
 		
 }
-int main(){
-	berry_phase();
-//	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-//	bool testing;
-//	string type;
-//	ifstream infile("params");
-//	infile>>NPhi>>invNu; 
-//	infile>>nWarmup>>nMeas>>nSteps>>nBins;
-//	infile>>seed;
-//	infile>>testing;
-//	infile>>type;
-//	//initialize MC object
-//	
-//    ofstream out_co_dbar("co_dbar");
-//    
-//    double Ne=1.*NPhi/(1.*invNu);
-//    double dbar_parameter[2] = {0., 1.};
-//    dbar_parameter[0]=1; dbar_parameter[1]=0;
-//	LATTICE ll(NPhi,invNu, testing, type, seed);
 
-////    ofstream eout_dbar("energy_dbar");
-//    
-//    
-////    void coul_energy_dbar(LATTICE& edbar, double&, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter );
-//    
+int main(){
+	//berry_phase();
+	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+	bool testing;
+	string type;
+	ifstream infile("params");
+	infile>>NPhi>>invNu; 
+	infile>>nWarmup>>nMeas>>nSteps>>nBins;
+	infile>>seed;
+	infile>>testing;
+	infile>>type;
+	//initialize MC object
+
+    ofstream out_co_dbar("co_dbar");
+    
+    double Ne=1.*NPhi/(1.*invNu);
+    double dbar_parameter[2] = {0., 1.};
+    dbar_parameter[0]=1; dbar_parameter[1]=0;
+	LATTICE ll(NPhi,invNu, testing, type, seed);
+
+    //ofstream eout_dbar("energy_dbar");
+
+    
+    void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins);
+    double eval=0.;
+    coul_energy_laughlin(ll, eval, nWarmup, nMeas, nSteps, nBins);
+    cout<<"laughlin state coulomb energy is"<<eval<<endl;
+
 ////    for (int i=0; i<5; i++) {
 ////        for (int j=0; j<5; j++) {
 //////            cout<<"\ndbar_parameter = ("<<i<<", "<<j<<")/NPhi"<<endl;
@@ -197,7 +202,7 @@ int main(){
 //	single_run(ll,nWarmup,nMeas,nSteps,nBins);    
 }
 
-void coul_energy_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter ){
+void coul_energy_CFL_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter){
     double sumE=0;
     edbar.change_dbar_parameter(dbar_parameter[0],dbar_parameter[1]);
     for (int s=0; s<nBins; s++) {
@@ -210,10 +215,24 @@ void coul_energy_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int
             E+=e;
             E2+=e*e;
         }
-//        cout<<E/(1.*nMeas*edbar.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*edbar.Ne)<<endl;
         sumE+=E/(1.*nMeas*edbar.Ne);
     }
     ave_E=sumE/(1.*nBins);
-//    outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<endl;
-//    cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
+}
+
+void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins){
+    double sumE=0;
+    for (int s=0; s<nBins; s++) {
+        edbar.reset();
+        edbar.step(nWarmup);
+        double E=0, E2=0, e;
+        for(int i=0;i<nMeas;i++){
+            edbar.step(nSteps);
+            e=edbar.coulomb_energy();
+            E+=e;
+            E2+=e*e;
+        }
+        sumE+=E/(1.*nMeas*edbar.Ne);
+    }
+    ave_E=sumE/(1.*nBins);
 }

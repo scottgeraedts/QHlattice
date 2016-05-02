@@ -88,4 +88,5 @@ private:
 	int * sl2z;
 	vector< complex<double> > omega;
 };
+
 #endif
