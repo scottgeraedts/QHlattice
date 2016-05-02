@@ -55,6 +55,12 @@ void single_run(LATTICE &ll, int nWarmup, int nMeas, int nSteps, int nBins){
 
 }
 
+double phasemod(complex<double> in){ 
+	double out=arg(in);
+	if(out<0) return out+2*M_PI;
+	else if (out>2*M_PI) return out-2*M_PI;
+	else return out;
+}
 void berry_phase(){
 	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
 	bool testing;
@@ -75,7 +81,11 @@ void berry_phase(){
 	vector<vector<int> > dcenter, d2, d3; 
 	
 	//here I'm initializing the ds for a system with 22 electrons
-	int nds=nds;
+	if(NPhi!=46){
+		cout<<"the berry phase calculator only works for 44 flux quanta right now!"<<endl;
+		exit(0);
+	}
+	int nds=16;
 	dcenter=vector <vector<int> >(nds,vector<int>(2));
 	d2=vector <vector<int> >(nds,vector<int>(2));
 	d3=vector <vector<int> >(nds,vector<int>(2));
@@ -99,66 +109,92 @@ void berry_phase(){
 		d2[supermod(i-1,nds)]=dcenter[i];
 		d3[supermod(i+1,nds)]=dcenter[i];
 	}
+	
+	double energy;
+	complex<double> berry2,berry3;
+	vector <vector <int> > tempds;
+	vector<int> dpoint(2);
+	ofstream bout("berry");
+	for(int b=0;b<nds;b++){
+		//stuff for initializing with a custom set of ds (for the Berry phase calculation)
+		double center_frac[2]={0.,0.}; //might need to change this for different N, but it works for N=22
+		ll.make_fermi_surface(center_frac, ll.Ne-2);
+		tempds=ll.get_ds();
+		dpoint[0]=dcenter[b][0]; dpoint[1]=dcenter[b][1];
+		tempds.push_back(dpoint);
+		dpoint[0]=-dcenter[b][0]; dpoint[1]=-dcenter[b][1];
+		tempds.push_back(dpoint);
+		ll.set_ds(tempds);
+	
+		ll2.make_fermi_surface(center_frac,ll.Ne-2);
+		tempds=ll2.get_ds();
+		dpoint[0]=d2[b][0]; dpoint[1]=d2[b][1];
+		tempds.push_back(dpoint);
+		dpoint[0]=-d2[b][0]; dpoint[1]=-d2[b][1];
+		tempds.push_back(dpoint);
+		ll2.set_ds(tempds);
 
+		ll3.make_fermi_surface(center_frac,ll.Ne-2);
+		tempds=ll3.get_ds();
+		dpoint[0]=d3[b][0]; dpoint[1]=d3[b][1];
+		tempds.push_back(dpoint);
+		dpoint[0]=-d3[b][0]; dpoint[1]=-d3[b][1];
+		tempds.push_back(dpoint);
+		ll3.set_ds(tempds);
+		
+		energy=0;
+		berry2=0; berry3=0;
+		ll.step(nWarmup);
+		for(int i=0;i<nMeas;i++){
+			ll.step(nSteps);
+			energy+=ll.coulomb_energy();
+			berry2+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+			berry3+=ll3.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+		}
+		bout<<dcenter[b][0]<<" "<<dcenter[b][1]<<" "<<d2[b][0]<<" "<<d2[b][1]<<" "<<abs(berry2)/(1.*nMeas)<<" "<<phasemod(berry2)<<" "<<energy/(1.*nMeas*ll.Ne)<<endl;
+		bout<<dcenter[b][0]<<" "<<dcenter[b][1]<<" "<<d3[b][0]<<" "<<d3[b][1]<<" "<<abs(berry3)/(1.*nMeas)<<" "<<phasemod(berry3)<<" "<<energy/(1.*nMeas*ll.Ne)<<endl;
+	}
 	
 	
 		
 }
 int main(){
-	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-	bool testing;
-	string type;
-	ifstream infile("params");
-	infile>>NPhi>>invNu; 
-	infile>>nWarmup>>nMeas>>nSteps>>nBins;
-	infile>>seed;
-	infile>>testing;
-	infile>>type;
-	//initialize MC object
-	
-    ofstream out_co_dbar("co_dbar");
-    
-    double Ne=1.*NPhi/(1.*invNu);
-    double dbar_parameter[2] = {0., 1.};
-    dbar_parameter[0]=1; dbar_parameter[1]=0;
-	LATTICE ll(NPhi,invNu, testing, type, seed);
-	LATTICE ll2(NPhi,invNu, testing, type, seed);
-	bool berry=false;
+	berry_phase();
+//	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+//	bool testing;
+//	string type;
+//	ifstream infile("params");
+//	infile>>NPhi>>invNu; 
+//	infile>>nWarmup>>nMeas>>nSteps>>nBins;
+//	infile>>seed;
+//	infile>>testing;
+//	infile>>type;
+//	//initialize MC object
+//	
+//    ofstream out_co_dbar("co_dbar");
+//    
+//    double Ne=1.*NPhi/(1.*invNu);
+//    double dbar_parameter[2] = {0., 1.};
+//    dbar_parameter[0]=1; dbar_parameter[1]=0;
+//	LATTICE ll(NPhi,invNu, testing, type, seed);
 
-	if(berry){
-		//stuff for initializing with a custom set of ds (for the Berry phase calculation)
-		double center_frac[2]={0.,0.};
-	//	if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
-		ll.make_fermi_surface(center_frac, Ne-1);
-		vector <vector <int> > tempds=ll.get_ds();
-		vector<int> dpoint(2);
-		dpoint[0]=3; dpoint[1]=0;
-		tempds.push_back(dpoint);
-		ll.set_ds(tempds);
-	
-		ll2.make_fermi_surface(center_frac,Ne-1);
-		tempds=ll2.get_ds();
-		dpoint[0]=3; dpoint[1]=1;
-		tempds.push_back(dpoint);
-		ll2.set_ds(tempds);
-	}	    
-//    ofstream eout_dbar("energy_dbar");
-    
-    
-//    void coul_energy_dbar(LATTICE& edbar, double&, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter );
-    
-//    for (int i=0; i<5; i++) {
-//        for (int j=0; j<5; j++) {
-////            cout<<"\ndbar_parameter = ("<<i<<", "<<j<<")/NPhi"<<endl;
-//			dbar_parameter[0]=0.2*i;
-//			dbar_parameter[1]=0.2*j;
-//            coul_energy_dbar(ll,ave_E,nWarmup,nMeas,nSteps,nBins,dbar_parameter);
-////            cout<<"coulomb energy = "<<ave_E<<endl;
-//            out_co_dbar<<i<<"   "<<j<<"   "<<ave_E<<endl;
-//        }
-//    }
-    
-	single_run(ll,nWarmup,nMeas,nSteps,nBins);    
+////    ofstream eout_dbar("energy_dbar");
+//    
+//    
+////    void coul_energy_dbar(LATTICE& edbar, double&, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter );
+//    
+////    for (int i=0; i<5; i++) {
+////        for (int j=0; j<5; j++) {
+//////            cout<<"\ndbar_parameter = ("<<i<<", "<<j<<")/NPhi"<<endl;
+////			dbar_parameter[0]=0.2*i;
+////			dbar_parameter[1]=0.2*j;
+////            coul_energy_dbar(ll,ave_E,nWarmup,nMeas,nSteps,nBins,dbar_parameter);
+//////            cout<<"coulomb energy = "<<ave_E<<endl;
+////            out_co_dbar<<i<<"   "<<j<<"   "<<ave_E<<endl;
+////        }
+////    }
+//    
+//	single_run(ll,nWarmup,nMeas,nSteps,nBins);    
 }
 
 void coul_energy_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter ){

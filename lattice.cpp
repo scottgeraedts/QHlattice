@@ -376,7 +376,7 @@ void LATTICE::setup_coulomb(){
 //	coulomb_table[0][0]=v_coulomb_(&NPhi,&NPhi,&NPhi,&L1,&L2);
 	for(int m=0;m<NPhi;m++){
 		for(int n=0;n<NPhi;n++){
-			coulomb_table[m][n]=v_coulomb_(&NPhi,&m,&n,&L1,&L2);
+			coulomb_table[m][n]=new_v_coulomb_(&NPhi,&m,&n,&L1,&L2);
 		}
 	}
 }
