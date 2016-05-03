@@ -2,15 +2,10 @@
 ! (c) F. Duncan M. Haldane, March 2016
 ! haldane@princeton.edu
 !   v0.1   2016-03-08
-!   v0.2   2016-04-23   
-!  changed phase definition of z_function to restore
-!  full modular invariance
 
-
- 
 !  A collection of code  for the
 !  "z-function" (Weiestrass times Gaussian) 
-! 
+!
 ! contents
 !
 !   module z_function_m
@@ -276,6 +271,9 @@ endif
 
 call z_function(x1,y1,new_l1,new_l2,rationalize,denom,zz)
 
+phase_factor = sqrt(new_l1/conjg(new_l1))
+zz = phase_factor*zz
+
 return
 end subroutine z_function_with_modular_transform
 
@@ -442,7 +440,7 @@ subroutine z_function(x,y,l1,l2,rationalize,denom,zz)
   logical, intent(in) :: rationalize
   integer, intent(in) :: denom
   !-------------------------------------------------------------------------------
-  ! computes the modular invariant "Z-function"
+  ! computes the "Z-function"
   ! 
   !  ZZ = sigma( z | L)  * exp ( - (abs(z)**2)/(2*A) )
   !
@@ -451,7 +449,7 @@ subroutine z_function(x,y,l1,l2,rationalize,denom,zz)
   !
   !  |conjg(L1)*L2 - conjg(L2)*L1)| = 2*pi*A > 0
   !
-  ! sigma(z) is the modified Weierstrass sigma function of the complex lattice
+  ! sigma(z) is the modifed Weierstrass sigma function of the complex lattice
   !  {m*L1 + n*L2}
   !
   ! for A = norb, x = m/norb, y= n/norb, tau = l2/l1 will return  the
@@ -478,9 +476,6 @@ subroutine z_function(x,y,l1,l2,rationalize,denom,zz)
      stop
   endif
   
-
-! decompose (x,y) as (x1,y1) + (j,k)
-! with smallest x1 and y1
 
   if (rationalize) then
      m = nint(x*denom)
@@ -515,18 +510,19 @@ subroutine z_function(x,y,l1,l2,rationalize,denom,zz)
      theta = pi*(j*y1 - k*x1)
   endif
 
-! now compute zz = z-function 
-
-  zz = l1/cmplx(0,2*pi,kind=dp)
+  tau = l2/l1  
+  scale = abs(scale/aimag(tau))
+  zz = sqrt(scale)/cmplx(0,2*pi,kind=dp)
   zz = zz*cmplx(cos(theta),sin(theta),kind=dp)
   if(mod(j,2)/= 0 .or. mod(k,2) /= 0) zz = -zz
   
 
-  tau = l2/l1  
+
   gamma =  exp(cmplx(0,pi*y1,kind=dp)*tau)
   theta = pi*x1
   gamma = gamma*cmplx(cos(theta),sin(theta),kind=dp)  
   gamma = gamma - 1/gamma
+  
   zz = zz*gamma
   
   theta = pi*y1
@@ -543,7 +539,9 @@ subroutine z_function(x,y,l1,l2,rationalize,denom,zz)
      zz = zz*(one-factor)
      if(real(zz) == real(z_prev) .and. aimag(zz) == aimag(z_prev)) exit
   enddo
- 
-
+  
   return
 end subroutine z_function
+
+
+

@@ -11,30 +11,139 @@
 ! are the lattice coordinates of the particles
 ! to get the energy u.
 !
-module new_coulomb_m
+module coulomb_m
 integer, parameter :: dp = kind(1.0d0)
 integer :: norb_coulomb = 0
 complex (kind=dp) :: l1_coulomb, l2_coulomb
 real (kind=dp), allocatable :: coulomb(:,:)
 
-end module new_coulomb_m
+complex(kind=dp), allocatable :: landau_mxel(:,:)
+end module coulomb_m
 
-function new_coulomb(norb,m,n) result(v)
-  use new_coulomb_m
+
+
+subroutine make_landau_coulomb
+use coulomb_m
+implicit none
+!------------------------------------------
+! setup the landau_basis coulomb matrix elements
+!-----------------------------------------------
+
+complex(kind=dp), allocatable :: temp_basis(:,:,:),basis(:,:), wf1(:), wf2(:)
+real (kind=dp), allocatable :: vv(:,:)
+integer :: sl2z(2,2), shape(2)
+integer :: norb, x1,y1,x2,y2,norb2,i,j
+complex (kind=dp) :: l1,l2
+integer :: k1,k2,k3,k4,q1,q2
+real (kind=dp) :: coulomb_table
+
+call get_l(norb,l1,l2)
+write(6,'(" make Landau Coulomb matrix elements: norb = ",2i5)') norb, norb_coulomb
+if (norb == 0 .or. norb /= norb_coulomb) stop
+if (l1 /= l1_coulomb .or. l2 /= l2_coulomb) then
+   write(6,'( "mismatch with coulomb table")')
+   write(6,'("L1=",2f25.16, 5x,2f25.16)') l1, l1_coulomb
+   write(6,'("L2=",2f25.16, 5x,2f25.16)') l2, l2_coulomb
+   stop
+endif
+
+if(allocated(landau_mxel)) deallocate(landau_mxel)
+allocate (landau_mxel(norb,norb))
+
+
+
+write(6,'("vv")')
+norb2 = norb**2 
+allocate (vv(norb2,norb2))
+do  i = 1,norb2
+   x1 = 1 + mod(i-1,norb)
+   y1 = 1 + (i-1)/norb
+   do j = 1,norb2
+      x2 = 1 + mod(j-1,norb)
+      y2 = 1 + (j-1)/norb
+      vv(i,j) = coulomb_table(norb,modulo(x1-x2,norb),modulo(y1-y2,norb))
+   enddo
+enddo
+
+sl2z(1,1) = 1
+sl2z(1,2) = 0
+sl2z(2,1) = 0
+sl2z(2,2) = 1
+write(6,'("basis")')
+allocate(basis(norb2,norb),temp_basis(norb,norb,norb))
+call create_one_particle_landau_basis(norb,sl2z,temp_basis)  
+shape(1) = norb2
+shape(2) = norb
+write(6,'("reshape basis")')
+basis = reshape(temp_basis,shape)
+deallocate(temp_basis)
+allocate(wf1(norb2),wf2(norb2))
+do  q1  = 1,norb
+      write(6,'("q1",i5)') q1
+   k1 = 1
+   k4 = 1 + modulo( -1 + k1  -q1,norb)
+   forall (i = 1:norb2) wf1(i) = conjg(basis(i,k1))*basis(i,k4)/norb2
+   do q2 = 1,norb
+      k3 = 1 + modulo( -1 + k1 - q2,norb)
+      k2 = 1 + modulo( k3 + k4 - k1 -1,norb)
+      forall (i = 1:norb2) wf2(i) = sum(vv(i,:)*conjg(basis(:,k2))*basis(:,k3))
+      landau_mxel(q1,q2) = sum(wf1*wf2)
+   enddo
+enddo
+write(6,'("done")')
+deallocate (wf1,wf2,basis)
+return
+end subroutine make_landau_coulomb
+
+function madelung() result(e)
+  use coulomb_m
+  real(kind=dp) :: e
+  e = -coulomb(norb_coulomb,norb_coulomb)/norb_coulomb
+  return
+end function madelung
+
+function landau_coulomb(k1,k2,k3,k4) result(v)
+  use coulomb_m
+  integer, intent(in) :: k1,k2,k3,k4
+  complex(kind=dp) :: v
+!------------------------
+! returns the landau-basis matrix elements for the current
+! lattice compactification  of the coulomb interaction
+! |k> = |k,L1,l2>
+! v =  <k1,2|V|k4,k3>
+!   the lattice implemenation replace the coulomb potentia
+! by the madelung energy wehen two particles are on the
+! same lattice site.
+!----------------------------------------
+  integer :: q1, q2
+  if(modulo(k1 + k2  -k3 -k4,norb_coulomb) /=  0) then
+     v = cmplx(0,kind=dp)
+     return
+  endif
+  q1 = 1 + modulo(k1-k4-1,norb_coulomb)
+  q2 = 1 + modulo(k1-k3-1,norb_coulomb)
+  v = landau_mxel(q1,q2)
+  return
+end function landau_coulomb
+
+
+
+function coulomb_table(norb,m,n) result(v)
+  use coulomb_m
   integer, intent(in) :: norb,m,n
   real(kind=dp) :: v
   
   if(norb /= norb_coulomb) then
-     write(6,'(" coulomb: norb mismatch:",2i10)') norb, norb_coulomb
+     write(6,'(" coulomb_table: norb mismatch:",2i10)') norb, norb_coulomb
      stop
   endif
   
   v = coulomb(1 + modulo(m-1,norb), 1 + modulo(n-1,norb))
   return
-end function new_coulomb
+end function coulomb_table
 
 subroutine coulomb_energy(nel,norb,x,u)
-  use new_coulomb_m
+  use coulomb_m
   implicit none
   integer, intent(in) :: nel, norb
   integer, intent(in) :: x(2,nel)
@@ -47,8 +156,8 @@ subroutine coulomb_energy(nel,norb,x,u)
      write(6,'(" COULOMB_ENERGY: mismatched norb",2i5)') norb,norb_coulomb
      stop
   endif
-! madelung energy
-  u = nel*coulomb(norb,norb)/2
+! madelung energy (from neutralizing background)
+  u = -nel*coulomb(norb,norb)/(2*norb)
   do i = 1,nel
      do j = 1, i-1
         m = 1 + modulo(x(1,i) - x(1,j) -1,norb)
@@ -69,7 +178,7 @@ end subroutine coulomb_energy
 
 
 
-function new_v_coulomb(norb,m,n, l1,l2) result(v)
+function v_coulomb(norb,m,n, l1,l2) result(v)
   implicit none
   integer, parameter :: dp = kind(1.0d0)
   integer, intent(in) :: norb,m,n
@@ -82,17 +191,27 @@ function new_v_coulomb(norb,m,n, l1,l2) result(v)
  
   call coulomb_1(m,n,norb,l1,l2,a,v1,v2)
   v = v1+v2
+! when  (m,n) = (0,0) mod norb, v1 + v2 is the
+! Madelung energy. now convert it to the onsite effective
+! potential
+  if (mod (m, norb) == 0 .and. mod(n,norb) == 0) then
+     write(6,'("contact",f25.16)') v
+     v = -norb*v
+     write(6,'("contact",f25.16)') v
+  endif
   return
-end function new_v_coulomb
+end function v_coulomb
 
 
 subroutine coulomb_setup
-  use new_coulomb_m
+  use coulomb_m
   implicit none
   real(kind=dp) :: a, v1,v2
   complex(kind=dp) :: l1,l2, new_tau,l1a,l2a
   integer :: norb, m, n, sl2z(2,2), m1,n1
   
+  real(kind=dp) :: v_coulomb
+
   call get_l(norb,l1,l2)
   if(allocated(coulomb)) deallocate(coulomb)
   allocate (coulomb(norb,norb))
@@ -105,17 +224,13 @@ subroutine coulomb_setup
 
 
   a   =real(1,kind=dp)
-  do  m = 1,norb_coulomb
-     do n = 1,norb_coulomb
+  do  m = 1,norb
+     do n = 1,norb
         m1 = sl2z(2,2)*m - sl2z(2,1)*n
         n1 = -sl2z(1,2)*m + sl2z(1,1)*n
         l1a = sl2z(1,1)*l1 + sl2z(1,2)*l2
         l2a = sl2z(2,1)*l1 + sl2z(2,2)*l2
-        call coulomb_1(m1,n1,norb,l1a,l2a,a,v1,v2)
-        coulomb(m,n) = v1 + v2
-!        call coulomb_1(m,n,norb,l1,l2,a,v1,v2)
-!        write(6,'(2f25.15,e12.3)') coulomb(m,n), v1 + v2, v1+v2 -coulomb(m,n)
-
+        coulomb(m,n) = v_coulomb(norb,m1,n1,l1a,l2a)
      enddo
   enddo
   return
