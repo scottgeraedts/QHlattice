@@ -12,11 +12,12 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, bool testing_t=false, string type_t="C
 	Ne=NPhi/invNu;
     
 	fermions=true;
-	cout<<testing<<" "<<type<<endl;
+    /*
 	//setting up jie's function, might never use this
     vector<complex<double> > zeros; for(int i=0; i<NPhi; i++) zeros.push_back(complex<double>(0,0));
-//	weiers=weierstrass(.5*L1, .5*L2, zeros);
-//	cout<<NPhi<<" "<<invNu<<" "<<Ne<<" "<<L1<<" "<<L2<<endl;
+	weiers=weierstrass(.5*L1, .5*L2, zeros);
+     */
+    
 	one=1; zero=0; //useful for fortran calls
 
 	//****initialize z's, w's, d's
@@ -33,7 +34,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, bool testing_t=false, string type_t="C
 		if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
 				
-		print_ds();
+		//print_ds();
 		dsum=vector<int>(2,0);
 		for(int i=0;i<Ne;i++){
 			dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu;
@@ -43,8 +44,8 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, bool testing_t=false, string type_t="C
 		change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));
 
 		//the average d should also be on a lattice point, so dividing dsum by Ne should yield an integer
-		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
-		cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
+//		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
+//		cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
 	}
 	
 	//********calls to duncan's functions
@@ -567,7 +568,7 @@ void LATTICE::change_dbar_parameter(double dbarx, double dbary){
 	}
 	dbar_parameter[0]=dbarx;
 	dbar_parameter[1]=dbary;
-	cout<<"dbar "<<dbar_parameter[0]<<" "<<dbar_parameter[1]<<endl;
+	//cout<<"dbar "<<dbar_parameter[0]<<" "<<dbar_parameter[1]<<endl;
 
 	complex<double> temp;
 	double x,y;
@@ -581,7 +582,6 @@ void LATTICE::change_dbar_parameter(double dbarx, double dbary){
 			shifted_ztable[ix][iy]=temp;
 		}
 	}
-	
 }
 void LATTICE::set_ds(vector< vector<int> > tds){
 	ds=tds;
@@ -591,7 +591,7 @@ void LATTICE::set_ds(vector< vector<int> > tds){
         //dsum=NPhi * Ne dbar, i.e. it is the point on the lattice of electrons where the TOTAL d lives
         //'ds' is defined on L/Ne lattice, 'dsum' in this way is defined on L/Nphi lattice.
 	}
-	print_ds();
+	//print_ds();
 	change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));	
 	reset();
 }

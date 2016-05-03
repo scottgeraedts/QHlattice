@@ -23,6 +23,7 @@ extern"C"{
 }
 
 class LATTICE{
+    friend class berry_phase;
 public:
 	LATTICE(int, int, bool, string, int seed); // LATTICE(int Nphi_t, int invNu_t, int seed);
     // dbar = (dbar_parameter[0]/NPhi*L1, dbar_parameter[1]/NPhi*L2);

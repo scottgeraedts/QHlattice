@@ -79,7 +79,7 @@ subroutine setup_laughlin_state(nel,m,sl2z,k)
   real (kind=dp) :: pin
   integer :: i,j
 
-  write(6,'("set up Laughlin state with  m = ",i5)') m
+!  write(6,'("set up Laughlin state with  m = ",i5)') m
   norb  = m*nel
   nbar = nel
   cm_zeroes = m
