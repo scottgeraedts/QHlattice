@@ -294,6 +294,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 	complex<double> out=1,temp;
 	int ix,iy;
+    
 	//vandermonde piece
 	int vandermonde_exponent=invNu;
 	if(type=="CFL") vandermonde_exponent-=2;
