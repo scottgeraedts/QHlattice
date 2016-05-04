@@ -2,10 +2,12 @@
 #include "berry_phase.h"
 
 int main(){
-    berry_phase bp(16);
-    bp.two_full_braiding();
+	void single_run();
+	single_run();
+//    berry_phase bp(16);
+//    bp.two_full_braiding();
     
-    /*
+ /*   
 	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
 	bool testing;
 	string type;
@@ -29,13 +31,27 @@ int main(){
     void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins);
     coul_energy_laughlin(ll, eval, nWarmup, nMeas, nSteps, nBins);
     cout<<"laughlin state coulomb energy is"<<eval<<endl;
-     */
+   */  
 }
 
-void single_run(LATTICE &ll, int nWarmup, int nMeas, int nSteps, int nBins){
-    ofstream outfile("out"),eout("energy");
+void single_run(){
+	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+	bool testing;
+	string type;
+	ifstream infile("params");
+	infile>>NPhi>>invNu; 
+	infile>>nWarmup>>nMeas>>nSteps>>nBins;
+	infile>>seed;
+	infile>>testing;
+	infile>>type;
+	//initialize MC object
+
+	LATTICE ll(NPhi,invNu, testing, type, seed);
+	
+	ofstream outfile("out"),eout("energy");
     double ave_E=0.;
     
+    ll.print_ds();
     for(int s=0;s<nBins;s++){
         
         ll.reset();
@@ -119,6 +135,7 @@ void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas,
             E2+=e*e;
         }
         sumE+=E/(1.*nMeas*edbar.Ne);
+        cout<<E/(1.*nMeas*edbar.Ne)<<endl;
     }
     ave_E=sumE/(1.*nBins);
 }
