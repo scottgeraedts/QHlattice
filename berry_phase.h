@@ -118,7 +118,7 @@ void berry_phase::two_full_braiding(){
             energy+=ll.coulomb_energy();
             berry2+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
             btemp=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
-            cout<<abs(btemp)<<" "<<arg(btemp)<<endl;
+			cout<<ll2.get_wf(ll.get_locs())<<" "<<ll.get_wf(ll.get_locs())<<" "<<abs(btemp)<<" "<<arg(btemp)<<endl;
             berry3+=ll3.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
         }
         bout<<dcenter[b][0]<<" "<<dcenter[b][1]<<" "<<d2[b][0]<<" "<<d2[b][1]<<"   "<<abs(berry2)/(1.*nMeas)<<"   "<<phasemod(berry2)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;

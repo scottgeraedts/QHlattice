@@ -2,8 +2,10 @@
 #include "berry_phase.h"
 
 int main(){
-    berry_phase bp(16);
-    bp.two_full_braiding();
+	void single_run();
+	single_run();
+//    berry_phase bp(16);
+//    bp.two_full_braiding();
     
  /*   
 	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
@@ -32,10 +34,24 @@ int main(){
    */  
 }
 
-void single_run(LATTICE &ll, int nWarmup, int nMeas, int nSteps, int nBins){
-    ofstream outfile("out"),eout("energy");
+void single_run(){
+	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+	bool testing;
+	string type;
+	ifstream infile("params");
+	infile>>NPhi>>invNu; 
+	infile>>nWarmup>>nMeas>>nSteps>>nBins;
+	infile>>seed;
+	infile>>testing;
+	infile>>type;
+	//initialize MC object
+
+	LATTICE ll(NPhi,invNu, testing, type, seed);
+	
+	ofstream outfile("out"),eout("energy");
     double ave_E=0.;
     
+    ll.print_ds();
     for(int s=0;s<nBins;s++){
         
         ll.reset();
