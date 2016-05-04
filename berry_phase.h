@@ -79,7 +79,7 @@ void berry_phase::two_full_braiding(){
     ofstream bout("berry");
     LATTICE ll(NPhi,invNu, testing, type, seed);
     LATTICE ll2(NPhi,invNu, testing, type, seed);
-//    LATTICE ll3(NPhi,invNu, testing, type, seed);
+    LATTICE ll3(NPhi,invNu, testing, type, seed);
     
     for(int b=0;b<nds;b++){
         //stuff for initializing with a custom set of ds (for the Berry phase calculation)
@@ -101,25 +101,28 @@ void berry_phase::two_full_braiding(){
         tempds.push_back(dpoint);
         ll2.set_ds(tempds);
         
-//        ll3.make_fermi_surface(center_frac,ll.Ne-2);
-//        tempds=ll3.get_ds();
-//        dpoint[0]=d3[b][0]; dpoint[1]=d3[b][1];
-//        tempds.push_back(dpoint);
-//        dpoint[0]=-d3[b][0]; dpoint[1]=-d3[b][1];
-//        tempds.push_back(dpoint);
-//        ll3.set_ds(tempds);
+        ll3.make_fermi_surface(center_frac,ll.Ne-2);
+        tempds=ll3.get_ds();
+        dpoint[0]=d3[b][0]; dpoint[1]=d3[b][1];
+        tempds.push_back(dpoint);
+        dpoint[0]=-d3[b][0]; dpoint[1]=-d3[b][1];
+        tempds.push_back(dpoint);
+        ll3.set_ds(tempds);
         
         energy=0;
         berry2=0; berry3=0;
         ll.step(nWarmup);
+        complex<double> btemp;
         for(int i=0;i<nMeas;i++){
             ll.step(nSteps);
             energy+=ll.coulomb_energy();
             berry2+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
-//            berry3+=ll3.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+            btemp=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+            cout<<abs(btemp)<<" "<<arg(btemp)<<endl;
+            berry3+=ll3.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
         }
         bout<<dcenter[b][0]<<" "<<dcenter[b][1]<<" "<<d2[b][0]<<" "<<d2[b][1]<<"   "<<abs(berry2)/(1.*nMeas)<<"   "<<phasemod(berry2)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
-//        bout<<dcenter[b][0]<<" "<<dcenter[b][1]<<" "<<d3[b][0]<<" "<<d3[b][1]<<"   "<<abs(berry3)/(1.*nMeas)<<"   "<<phasemod(berry3)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
+        bout<<dcenter[b][0]<<" "<<dcenter[b][1]<<" "<<d3[b][0]<<" "<<d3[b][1]<<"   "<<abs(berry3)/(1.*nMeas)<<"   "<<phasemod(berry3)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
         tot_berry_phase+=phasemod(berry2);
         cout<<"b="<<b<<endl;
     }

@@ -5,7 +5,7 @@ int main(){
     berry_phase bp(16);
     bp.two_full_braiding();
     
-    /*
+ /*   
 	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
 	bool testing;
 	string type;
@@ -29,7 +29,7 @@ int main(){
     void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins);
     coul_energy_laughlin(ll, eval, nWarmup, nMeas, nSteps, nBins);
     cout<<"laughlin state coulomb energy is"<<eval<<endl;
-     */
+   */  
 }
 
 void single_run(LATTICE &ll, int nWarmup, int nMeas, int nSteps, int nBins){
@@ -119,6 +119,7 @@ void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas,
             E2+=e*e;
         }
         sumE+=E/(1.*nMeas*edbar.Ne);
+        cout<<E/(1.*nMeas*edbar.Ne)<<endl;
     }
     ave_E=sumE/(1.*nBins);
 }

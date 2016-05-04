@@ -376,9 +376,11 @@ vector< vector<int> > LATTICE::get_ds(){ return ds; }
 void LATTICE::setup_coulomb(){
 	coulomb_table=vector<vector<double> >(NPhi,vector<double>(NPhi,0));
 //	coulomb_table[0][0]=v_coulomb_(&NPhi,&NPhi,&NPhi,&L1,&L2);
+	complex<double> eL1=L1*sqrt(2.);
+	complex<double> eL2=L2*sqrt(2.);
 	for(int m=0;m<NPhi;m++){
 		for(int n=0;n<NPhi;n++){
-			coulomb_table[m][n]=v_coulomb_(&NPhi,&m,&n,&L1,&L2);
+			coulomb_table[m][n]=v_coulomb_(&NPhi,&m,&n,&eL1,&eL2);
 		}
 	}
 }
