@@ -34,7 +34,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, bool testing_t=false, string type_t="C
 		if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
 				
-		//print_ds();
+		print_ds();
 		dsum=vector<int>(2,0);
 		for(int i=0;i<Ne;i++){
 			dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu;

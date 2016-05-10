@@ -2,34 +2,34 @@
 #include "berry_phase.h"
 
 int main(){
-    berry_phase bp(16);
+    berry_phase bp(20);
     bp.two_full_braiding();
     
-    /*
-	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-	bool testing;
-	string type;
-	ifstream infile("params");
-	infile>>NPhi>>invNu; 
-	infile>>nWarmup>>nMeas>>nSteps>>nBins;
-	infile>>seed;
-	infile>>testing;
-	infile>>type;
-	//initialize MC object
-
-    ofstream out_co_dbar("co_dbar");
     
-    double Ne=1.*NPhi/(1.*invNu);
-    double dbar_parameter[2] = {0., 1.};
-    dbar_parameter[0]=1; dbar_parameter[1]=0;
-	LATTICE ll(NPhi,invNu, testing, type, seed);
-
-     //test coulomb energy for laughlim m=3 state. For 4 particles, the energy should be -0.4141710479.
-    double eval=0.;
-    void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins);
-    coul_energy_laughlin(ll, eval, nWarmup, nMeas, nSteps, nBins);
-    cout<<"laughlin state coulomb energy is"<<eval<<endl;
-     */
+//	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+//	bool testing;
+//	string type;
+//	ifstream infile("params");
+//	infile>>NPhi>>invNu; 
+//	infile>>nWarmup>>nMeas>>nSteps>>nBins;
+//	infile>>seed;
+//	infile>>testing;
+//	infile>>type;
+//	//initialize MC object
+//
+//    ofstream out_co_dbar("co_dbar");
+//    
+//    double Ne=1.*NPhi/(1.*invNu);
+//    double dbar_parameter[2] = {0., 1.};
+//    dbar_parameter[0]=1; dbar_parameter[1]=0;
+//	LATTICE ll(NPhi,invNu, testing, type, seed);
+//
+//     //test coulomb energy for laughlim m=3 state. For 4 particles, the energy should be -0.4141710479.
+//    double eval=0.;
+//    void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins);
+//    coul_energy_laughlin(ll, eval, nWarmup, nMeas, nSteps, nBins);
+//    cout<<"laughlin state coulomb energy is"<<eval<<endl;
+    
 }
 
 void single_run(LATTICE &ll, int nWarmup, int nMeas, int nSteps, int nBins){

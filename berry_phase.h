@@ -33,7 +33,7 @@ berry_phase::berry_phase(int nds_t){
     infile>>testing;
     infile>>type;
     
-    if(NPhi!=46){
+    if(NPhi!=78){
         cout<<"the berry phase calculator only works for 44 flux quanta right now!"<<endl;
         exit(0);
     }
@@ -44,22 +44,26 @@ berry_phase::berry_phase(int nds_t){
     dcenter=vector <vector<int> >(nds,vector<int>(2));
     d2=vector <vector<int> >(nds,vector<int>(2));
     d3=vector <vector<int> >(nds,vector<int>(2));
-    dcenter[0]={3,0};
-    dcenter[1]={3,1};
-    dcenter[2]={2,2};
-    dcenter[3]={1,3};
-    dcenter[4]={0,3};
-    dcenter[5]={-1,3};
-    dcenter[6]={-2,2};
-    dcenter[7]={-3,1};
-    dcenter[8]={-3,0};
-    dcenter[9]={-3,-1};
-    dcenter[10]={-2,-2};
-    dcenter[11]={-1,-3};
-    dcenter[12]={0,-3};
-    dcenter[13]={1,-3};
-    dcenter[14]={2,-2};
-    dcenter[15]={3,-1};
+    dcenter[0]={4,0};
+    dcenter[1]={4,1};
+    dcenter[2]={3,2};
+    dcenter[3]={2,3};
+    dcenter[4]={1,4};
+    dcenter[5]={0,4};
+    dcenter[6]={-1,4};
+    dcenter[7]={-2,3};
+    dcenter[8]={-3,2};
+    dcenter[9]={-4,1};
+    dcenter[10]={-4,0};
+    dcenter[11]={-4,-1};
+    dcenter[12]={-3,-2};
+    dcenter[13]={-2,-3};
+    dcenter[14]={-1,-4};
+    dcenter[15]={0,-4};
+    dcenter[16]={1,-4};
+    dcenter[17]={2,-3};
+    dcenter[18]={3,-2};
+    dcenter[19]={4,-1};
     int supermod(int k, int n);
     for(int i=0;i<nds;i++){
         d2[supermod(i-1,nds)]=dcenter[i];
@@ -74,7 +78,9 @@ double berry_phase::phasemod(complex<double> in){
     return out;
 }
 void berry_phase::two_full_braiding(){
-    double tot_berry_phase=0.;
+    cout<<"start working"<<endl;
+    double tot_berry_phase2=0.;
+    double tot_berry_phase3=0.;
     
     ofstream bout("berry");
     LATTICE ll(NPhi,invNu, testing, type, seed);
@@ -120,11 +126,11 @@ void berry_phase::two_full_braiding(){
         }
         bout<<dcenter[b][0]<<" "<<dcenter[b][1]<<" "<<d2[b][0]<<" "<<d2[b][1]<<"   "<<abs(berry2)/(1.*nMeas)<<"   "<<phasemod(berry2)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
 //        bout<<dcenter[b][0]<<" "<<dcenter[b][1]<<" "<<d3[b][0]<<" "<<d3[b][1]<<"   "<<abs(berry3)/(1.*nMeas)<<"   "<<phasemod(berry3)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
-        tot_berry_phase+=phasemod(berry2);
-        cout<<"b="<<b<<endl;
+//        tot_berry_phase2+=phasemod(berry2);
+//        tot_berry_phase3+=phasemod(berry3);
     }
     
-    cout<<"total berry phase = "<<tot_berry_phase<<endl;
+//    cout<<"total berry phase2 = "<<tot_berry_phase2<<" total berry phase3 = "<<tot_berry_phase3<<endl;
 }
 
 
