@@ -6,6 +6,7 @@ class berry_phase{
     friend class LATTICE;
 private:
     int NPhi, invNu, nWarmup, nMeas, nSteps, nBins, seed;
+    int Ne;
     bool testing;
     string type;
     
@@ -24,14 +25,20 @@ public:
     void two_full_braiding();
     void two_half_braiding();
     void three_full_braiding();
+    
+    void laughlinberryphase();
 };
 berry_phase::berry_phase(int nds_t){
     ifstream infile("params");
-    infile>>NPhi>>invNu;
+    infile>>Ne>>invNu;
     infile>>nWarmup>>nMeas>>nSteps>>nBins;
     infile>>seed;
     infile>>testing;
     infile>>type;
+    
+    if (type=="CFL") {
+        NPhi=Ne*invNu;
+    }
     
     if(NPhi!=78){
         cout<<"the berry phase calculator only works for 78 flux quanta right now!"<<endl;
@@ -99,7 +106,7 @@ berry_phase::berry_phase(int nds_t){
     
 //    dcenter[0]={4,0};
 //    dcenter[1]={4,1};
-    cout<<"dcenter[1]={4,1}"<<dcenter[1][0]<<" "<<dcenter[1][1]<<endl;
+//    cout<<"dcenter[1]={4,1}"<<dcenter[1][0]<<" "<<dcenter[1][1]<<endl;
 //    dcenter[2]={3,2};
 //    dcenter[3]={2,3};
 //    dcenter[4]={1,4};
@@ -155,9 +162,9 @@ void berry_phase::two_full_braiding(){
     double tot_berry_phase3=0.;
     
     ofstream bout("berry");
-    LATTICE ll(NPhi,invNu, testing, type, seed);
-    LATTICE ll2(NPhi,invNu, testing, type, seed);
-//    LATTICE ll3(NPhi,invNu, testing, type, seed);
+    LATTICE ll(Ne,invNu, testing, type, seed);
+    LATTICE ll2(Ne,invNu, testing, type, seed);
+//    LATTICE ll3(Ne,invNu, testing, type, seed);
     
     for(int b=0;b<nds;b++){
         //stuff for initializing with a custom set of ds (for the Berry phase calculation)

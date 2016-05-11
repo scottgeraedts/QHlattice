@@ -366,7 +366,8 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
 			out*=temp;
 		}	
-	}else{
+	}
+    else{
 		if(type=="CFL"){
 			COM[0]-=dsum[0]/invNu;
 			COM[1]-=dsum[1]/invNu;
@@ -478,7 +479,6 @@ void LATTICE::make_fermi_surface(double* center_frac, int N){
     for (int i=0; i<(signed)d_list.size(); i++) {
         d_list[i][0]+=(int)(x0*Ne); d_list[i][1]+=(int)(y0*Ne);
     }
-    
     //fill electrons one by one, fill those close to center first.
     int x,y; double min,min_;
     vector< vector<int> >::iterator it;
@@ -494,7 +494,6 @@ void LATTICE::make_fermi_surface(double* center_frac, int N){
                 min=min_;
             }
         }
-
         vector<complex<double> > tmp;
 //        ds.push_back(1.*(*it)[0]*l1/(1.*Ne)+1.*(*it)[1]*l2/(1.*Ne));
 		ds.push_back(*it);

@@ -53,12 +53,15 @@ public:
 	vector <vector<int> > get_ds();
 	
 	int Ne;
-	double running_weight;
+	double running_weight;//running_weight is a global variable. need reset in every run.
     int tries,accepts;
     double dbar_parameter[2];
     
     void make_CFL_COM(complex<double>& value);
     void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value);
+    
+    vector<double> hole;
+    bool fermions,holes_set;
     
 private:
 	void sum_locs(int []);
@@ -81,14 +84,12 @@ private:
 	vector <vector <vector <vector< complex<double> > > > > sq3;
 	vector < vector<int> > sx,sx2;
 	vector <vector <int> > ds;//an integer defined on an Ne lattice
-	vector<double> hole;
 	vector <vector <complex<double> > > shifted_ztable;
 	vector<int> dsum;//an integer defined on an NPhi lattice
 	Eigen::MatrixXcd oldMatrix;
 	complex<double> oldDeterminant;
 	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;	
 	MTRand ran;
-	bool fermions,holes_set;
 	vector< vector<int> > locs;//an integer defined on an NPhi lattice
 	vector< vector<double> > ws;
 	int one,zero;
