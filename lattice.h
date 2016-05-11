@@ -28,7 +28,7 @@ extern"C"{
 class LATTICE{
     friend class berry_phase;
 public:
-	LATTICE(int, int, bool, string, int seed); // LATTICE(int Nphi_t, int invNu_t, int seed);
+	LATTICE(int, int, bool, string, int seed, int gs=0); // LATTICE(int Ne_t, int invNu_t, int seed);
     // dbar = (dbar_parameter[0]/NPhi*L1, dbar_parameter[1]/NPhi*L2);
 	~LATTICE();
 
@@ -46,7 +46,9 @@ public:
 	void reset();
 	void change_dbar_parameter(double dbarx, double dbary);
 	void set_ds(vector< vector<int> > ds);//sets a custom set of composite fermion dipole moments
+	void set_hole(vector<double> temphole);
 	vector <vector<int> > get_locs();
+	void check_sanity();
 
 	vector <vector<int> > get_ds();
 	
@@ -79,13 +81,14 @@ private:
 	vector <vector <vector <vector< complex<double> > > > > sq3;
 	vector < vector<int> > sx,sx2;
 	vector <vector <int> > ds;//an integer defined on an Ne lattice
+	vector<double> hole;
 	vector <vector <complex<double> > > shifted_ztable;
 	vector<int> dsum;//an integer defined on an NPhi lattice
 	Eigen::MatrixXcd oldMatrix;
 	complex<double> oldDeterminant;
 	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;	
 	MTRand ran;
-	bool fermions;
+	bool fermions,holes_set;
 	vector< vector<int> > locs;//an integer defined on an NPhi lattice
 	vector< vector<double> > ws;
 	int one,zero;
