@@ -10,6 +10,9 @@
 
 using namespace std;
 
+//this number is multiplied by every term in the determinants to ensure that they don't overflow
+const double in_determinant_rescaling=0.25;
+
 extern"C"{
 	void z_function_(double *x, double *y, complex<double> *l1, complex<double> *l2, int * rationalize, int *denom, complex<double> *z);
 	void z_function_with_modular_transform_(double *x, double *y, complex<double> *l1, complex<double> *l2, int * rationalize, int *denom, complex<double> *z, int *sl2z);

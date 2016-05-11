@@ -2,40 +2,75 @@
 #include "berry_phase.h"
 
 int main(){
+    cout<<"\nhello world!"<<endl;
     berry_phase bp(20);
-    bp.two_full_braiding();
+//    bp.two_full_braiding();
+
+//    berry_phase bp(16);
+//    bp.two_full_braiding();
     
+//	void single_run();
+//	single_run();
     
-//	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-//	bool testing;
-//	string type;
-//	ifstream infile("params");
-//	infile>>NPhi>>invNu; 
-//	infile>>nWarmup>>nMeas>>nSteps>>nBins;
-//	infile>>seed;
-//	infile>>testing;
-//	infile>>type;
-//	//initialize MC object
-//
-//    ofstream out_co_dbar("co_dbar");
 //    
-//    double Ne=1.*NPhi/(1.*invNu);
-//    double dbar_parameter[2] = {0., 1.};
-//    dbar_parameter[0]=1; dbar_parameter[1]=0;
-//	LATTICE ll(NPhi,invNu, testing, type, seed);
-//
-//     //test coulomb energy for laughlim m=3 state. For 4 particles, the energy should be -0.4141710479.
-//    double eval=0.;
-//    void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins);
-//    coul_energy_laughlin(ll, eval, nWarmup, nMeas, nSteps, nBins);
-//    cout<<"laughlin state coulomb energy is"<<eval<<endl;
+//    int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+//    bool testing;
+//    string type;
+//    ifstream infile("params");
+//    infile>>NPhi>>invNu;
+//    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+//    infile>>seed;
+//    infile>>testing;
+//    infile>>type;
+//    //initialize MC object
+//    
+//    LATTICE ll(NPhi,invNu, testing, type, seed);
     
+ /*   
+	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+	bool testing;
+	string type;
+	ifstream infile("params");
+	infile>>NPhi>>invNu; 
+	infile>>nWarmup>>nMeas>>nSteps>>nBins;
+	infile>>seed;
+	infile>>testing;
+	infile>>type;
+	//initialize MC object
+
+    ofstream out_co_dbar("co_dbar");
+    
+    double Ne=1.*NPhi/(1.*invNu);
+    double dbar_parameter[2] = {0., 1.};
+    dbar_parameter[0]=1; dbar_parameter[1]=0;
+	LATTICE ll(NPhi,invNu, testing, type, seed);
+
+     //test coulomb energy for laughlim m=3 state. For 4 particles, the energy should be -0.4141710479.
+    double eval=0.;
+    void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins);
+    coul_energy_laughlin(ll, eval, nWarmup, nMeas, nSteps, nBins);
+    cout<<"laughlin state coulomb energy is"<<eval<<endl;
+   */  
 }
 
-void single_run(LATTICE &ll, int nWarmup, int nMeas, int nSteps, int nBins){
-    ofstream outfile("out"),eout("energy");
+void single_run(){
+	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+	bool testing;
+	string type;
+	ifstream infile("params");
+	infile>>NPhi>>invNu; 
+	infile>>nWarmup>>nMeas>>nSteps>>nBins;
+	infile>>seed;
+	infile>>testing;
+	infile>>type;
+	//initialize MC object
+
+	LATTICE ll(NPhi,invNu, testing, type, seed);
+	
+	ofstream outfile("out"),eout("energy");
     double ave_E=0.;
     
+    ll.print_ds();
     for(int s=0;s<nBins;s++){
         
         ll.reset();
@@ -119,6 +154,7 @@ void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas,
             E2+=e*e;
         }
         sumE+=E/(1.*nMeas*edbar.Ne);
+        cout<<E/(1.*nMeas*edbar.Ne)<<endl;
     }
     ave_E=sumE/(1.*nBins);
 }
