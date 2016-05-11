@@ -2,15 +2,16 @@
 
 int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 
-LATTICE::LATTICE(int NPhi_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0):NPhi(NPhi_t),invNu(invNu_t),type(type_t){
+LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs):Ne(Ne_t),invNu(invNu_t),type(type_t){
 	//various parameters from input file
 	testing=testing_t;
+	NPhi=Ne*invNu;
+	if(type=="laughlin-hole"){
+		NPhi++;
+	}
 	L1=sqrt(2*M_PI*NPhi)/sqrt(2.);//these are only used for calls to Duncan's functions, if you use them in other places there will be problems due to 
 	L2=complex<double> (0,real(L1));//the different definitions of magnetic length
 	ran.seed(seed);
-	if(NPhi%invNu) cout<<"NPhi not divisible by filling!"<<endl;
-	Ne=NPhi/invNu;
-    
 	fermions=true;
     /*
 	//setting up jie's function, might never use this
@@ -23,11 +24,13 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, bool testing_t=false, string type_t="C
 	//****initialize z's, w's, d's
 	locs=vector< vector<int> >(Ne, vector<int>(2,0));//initalize locations of all electrons
 
+	//setting the ws. Note that the sum of these is ALWAYS zero, adding things like composite fermion momenta or holes doesn't change this.
+	//in the y direction these take the values gs*L/invNu, where gs in (0,invNu-1) is an integer which labels the ground state
 	ws=vector< vector<double> > (invNu, vector<double>(2,0) );
-	for( int i=0;i<invNu;i++) ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);// wssumx=wssumy=0;
-    double wssumx=0, wssumy=0;
-    for (int i=0; i<invNu; i++) {wssumx+=ws[i][0]; wssumy+=ws[i][1];};
-    //cout<<"\nwssumx="<<wssumx<<" \nwsuumy="<<wssumy<<endl;
+	for( int i=0;i<invNu;i++){
+		ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
+		ws[i][1]=gs/(1.*invNu);
+	}
 
 	double center_frac[2]={0.,0.};
 	if(type=="CFL"){
@@ -47,7 +50,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, bool testing_t=false, string type_t="C
 //		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
 //		cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
 	}
-	
+	holes_set=false;
 	
 	
 	//********calls to duncan's functions
@@ -55,7 +58,7 @@ LATTICE::LATTICE(int NPhi_t, int invNu_t, bool testing_t=false, string type_t="C
 	setup_z_function_table_();
 	sl2z=new int[4];
 	sl2z[0]=1; sl2z[1]=0; sl2z[2]=0; sl2z[3]=1;
-	setup_laughlin_state_(&Ne,&invNu,sl2z,&zero);
+	if(type!="laughlin-hole") setup_laughlin_state_(&Ne,&invNu,sl2z,&zero);
 //	cout<<"starting weight "<<running_weight<<endl;
 
 	//*****some counters
@@ -80,12 +83,25 @@ int LATTICE::simple_update(){
 	vector< vector<int> >::iterator it=find(locs.begin(),locs.end(),newloc);
 	if(it!=locs.end()) return 0;
 	double prob=0;
-
-	//***************vandermode part
-	int vandermonde_exponent;
-	if(type=="laughlin") vandermonde_exponent=invNu;
-	else vandermonde_exponent=invNu-2;
 	complex<double> temp;
+
+	//***************hole part
+	double dx,dy; //TODO: this calls z_function every time, should speed that up
+	if(type=="laughlin-hole"){
+		dx=(locs[electron][0]/(1.*NPhi)-hole[0]);	
+		dy=(locs[electron][1]/(1.*NPhi)-hole[1]);	
+		z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+		prob-=log(norm(temp));
+		dx=(newloc[0]/(1.*NPhi)-hole[0]);	
+		dy=(newloc[1]/(1.*NPhi)-hole[1]);	
+		z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+		prob+=log(norm(temp));
+		
+	}		
+		
+	//***************vandermode part
+	int vandermonde_exponent=invNu;
+	if(type=="CFL") invNu-=2;
 	int xi,yi;
 	
 	if(vandermonde_exponent!=0){
@@ -113,32 +129,37 @@ int LATTICE::simple_update(){
 
 	//***************COM PART
 	//figure out the probability difference from the COM part
+
+
 	int oldCOM[2], newCOM[2];
 	sum_locs(oldCOM);// 'locs' is defined on L/Nphi lattice. So does COM.
 	if(type=="CFL"){
 		oldCOM[0]-=dsum[0]/invNu;
 		oldCOM[1]-=dsum[1]/invNu;
-        //The reason for dividing invNu is: sum_{i=1}^{invNu}w_i = sum_{j=1}^{Ne}d_j, so dsum/invNu Actually means average of w_i. The w_i in this code sums to 0.
+	    //The reason for dividing invNu is: sum_{i=1}^{invNu}w_i = sum_{j=1}^{Ne}d_j, so dsum/invNu Actually means average of w_i. The w_i in this code sums to 0.
 	}
 	newCOM[0]=oldCOM[0]-locs[electron][0]+newloc[0];
 	newCOM[1]=oldCOM[1]-locs[electron][1]+newloc[1];
-//	double tx,ty;
-//	for( int i=0;i<invNu;i++){
-//		tx=oldCOM[0]/(1.*NPhi)-ws[i][0];
-//		ty=oldCOM[1]/(1.*NPhi)-ws[i][1];
-//		z_function_(&tx,&ty,&L1,&L2,&zero,&NPhi,&temp);
-//		prob/=norm(temp);
-//		tx=newCOM[0]/(1.*NPhi)-ws[i][0];
-//		ty=newCOM[1]/(1.*NPhi)-ws[i][1];
-//		z_function_(&tx,&ty,&L1,&L2,&zero,&NPhi,&temp);
-//		prob*=norm(temp);
-//	}
 
-	get_laughlin_cm_(oldCOM,&temp);
-	prob-=log(norm(temp));	
-	get_laughlin_cm_(newCOM,&temp);
-	prob+=log(norm(temp));	
+	if(type=="laughlin-hole"){
+		double dx,dy;
+		for( int i=0;i<invNu;i++){
+			dx=oldCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
+			dy=oldCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
+			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+			prob-=log(norm(temp));
+			dx=newCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
+			dy=newCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
+			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+			prob+=log(norm(temp));
+		}
+	}else{
 
+		get_laughlin_cm_(oldCOM,&temp);
+		prob-=log(norm(temp));	
+		get_laughlin_cm_(newCOM,&temp);
+		prob+=log(norm(temp));	
+	}
 	///***********determinant part
 	complex<double> newDeterminant;
 	Eigen::MatrixXcd newMatrix=oldMatrix;
@@ -157,7 +178,7 @@ int LATTICE::simple_update(){
 		locs[electron]=newloc;
 		running_weight+=prob;
 //		cout<<prob<<endl;
-		if(testing) cout<<running_weight<<" "<<get_weight(locs)<<endl;
+		if(testing) cout<<running_weight<<" "<<get_weight(locs)<<" "<<log(norm(get_wf(locs)))<<endl;
 //		cout<<"new:"<<endl<<newMatrix<<endl;
 		oldDeterminant=newDeterminant;
         oldMatrix=newMatrix;
@@ -223,6 +244,17 @@ int LATTICE::m(int site){
 double LATTICE::get_weight(const vector< vector<int> > &zs){
 	double out=0,x,y;
 	complex<double> temp,temp2;
+	//hole piece
+	if(type=="laughlin-hole"){
+		for(int i=0;i<Ne;i++){
+			x=(locs[i][0]/(1.*NPhi)-hole[0]);	
+			y=(locs[i][1]/(1.*NPhi)-hole[1]);	
+			z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+			out+=log(norm(temp));
+		}		
+	}		
+		
+
 	//vandermonde piece
 	int vandermonde_exponent=invNu;
 	if(type=="CFL") vandermonde_exponent-=2;
@@ -251,6 +283,10 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 	for( int i=0;i<invNu;i++){
 		x=COM[0]/(1.*NPhi)-ws[i][0];
 		y=COM[1]/(1.*NPhi)-ws[i][1];
+		if(type=="laughlin-hole"){
+			x+=hole[0]/(1.*invNu);
+			y+=hole[1]/(1.*invNu);
+		}
 		z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
 		out+=log(norm(temp));
 	}
@@ -291,6 +327,17 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 	complex<double> out=1,temp;
 	int ix,iy;
+
+	double x,y;
+	//hole part
+	if(type=="laughlin-hole"){
+		for(int i=0;i<Ne;i++){
+			x=(locs[i][0]/(1.*NPhi)-hole[0]);	
+			y=(locs[i][1]/(1.*NPhi)-hole[1]);	
+			z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+			out*=temp;
+		}		
+	}		
     
 	//vandermonde piece
 	int vandermonde_exponent=invNu;
@@ -300,7 +347,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 			for( int j=i+1;j<Ne;j++){
 				ix=(zs[i][0]-zs[j][0]);
 				iy=(zs[i][1]-zs[j][1]);
-				out*=lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one);
+				out*=pow(lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one),vandermonde_exponent);
 			}
 		}
 	}
@@ -311,12 +358,22 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 		COM[0]+=zs[i][0];
 		COM[1]+=zs[i][1];
 	}
-	if(type=="CFL"){
-		COM[0]-=dsum[0]/invNu;
-		COM[1]-=dsum[1]/invNu;
+	if(type=="laughlin-hole"){
+		double dx,dy;
+		for( int i=0;i<invNu;i++){
+			dx=COM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
+			dy=COM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
+			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+			out*=temp;
+		}	
+	}else{
+		if(type=="CFL"){
+			COM[0]-=dsum[0]/invNu;
+			COM[1]-=dsum[1]/invNu;
+		}
+		get_laughlin_cm_(COM,&temp);
+		out*=temp;
 	}
-	get_laughlin_cm_(COM,&temp);
-	out*=temp;
 
 	if(type=="CFL"){
 		complex<double> product;
@@ -528,6 +585,7 @@ void LATTICE::reset(){
 	//**** setting up the initial determinant matrix
 	running_weight=0;
 	int site=0;
+	int initial_state_counter=0;
 	
     while(running_weight==0){
 	//for some sizes the configuration specified by cold_start has zero weight
@@ -558,8 +616,29 @@ void LATTICE::reset(){
 //			cout<<in_determinant_rescaling<<" "<<oldDeterminant<<endl;
 		}
 		running_weight=get_weight(locs);
+		initial_state_counter++;
+		if(initial_state_counter>1000){
+			cout<<"couldn't find a good starting configuration"<<endl;
+			exit(0);
+		}
 	}
-    
+    check_sanity();
+}
+//checks a few different things to make sure that they make sense
+void LATTICE::check_sanity(){
+	if(type!="CFL" && type!="laughlin" && type!= "laughlin-hole"){
+		cout<<"type not recognized: "<<type<<endl;
+		exit(0);
+	}
+	if(type=="CFL" && shifted_ztable.size()==0){
+		cout<<"CFL but haven't set up the d's"<<endl;
+		exit(0);
+	}
+	if(type=="laughlin-hole" && holes_set==false){
+		cout<<"laughlin-hole but haven't set the hole position"<<endl;
+		exit(0);
+	}
+	
 }
 //changes the dbar (which ordinarily is the sum of d's) to whatever we want
 void LATTICE::change_dbar_parameter(double dbarx, double dbary){
@@ -595,6 +674,10 @@ void LATTICE::set_ds(vector< vector<int> > tds){
 	//print_ds();
 	change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));	
 	reset();
+}
+void LATTICE::set_hole(vector<double> temphole){
+	hole=temphole;
+	holes_set=true;
 }
 
 inline void LATTICE::det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z){

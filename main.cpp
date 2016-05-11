@@ -47,7 +47,8 @@ void single_run(){
 	//initialize MC object
 
 	LATTICE ll(NPhi,invNu, testing, type, seed);
-	
+	vector<double> hole(2); hole[0]=0.1; hole[1]=0.2;
+	ll.set_hole(hole);
 	ofstream outfile("out"),eout("energy");
     double ave_E=0.;
     
