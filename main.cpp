@@ -11,48 +11,9 @@ int main(){
 //	void single_run();
 //	single_run();
 
-    void laughlinberryphase();
-    laughlinberryphase();
+    void two_holes();
+    two_holes();
     
-//    
-//    int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-//    bool testing;
-//    string type;
-//    ifstream infile("params");
-//    infile>>NPhi>>invNu;
-//    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-//    infile>>seed;
-//    infile>>testing;
-//    infile>>type;
-//    //initialize MC object
-//    
-//    LATTICE ll(NPhi,invNu, testing, type, seed);
-    
- /*   
-	int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-	bool testing;
-	string type;
-	ifstream infile("params");
-	infile>>NPhi>>invNu; 
-	infile>>nWarmup>>nMeas>>nSteps>>nBins;
-	infile>>seed;
-	infile>>testing;
-	infile>>type;
-	//initialize MC object
-
-    ofstream out_co_dbar("co_dbar");
-    
-    double Ne=1.*NPhi/(1.*invNu);
-    double dbar_parameter[2] = {0., 1.};
-    dbar_parameter[0]=1; dbar_parameter[1]=0;
-	LATTICE ll(NPhi,invNu, testing, type, seed);
-
-     //test coulomb energy for laughlim m=3 state. For 4 particles, the energy should be -0.4141710479.
-    double eval=0.;
-    void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins);
-    coul_energy_laughlin(ll, eval, nWarmup, nMeas, nSteps, nBins);
-    cout<<"laughlin state coulomb energy is"<<eval<<endl;
-   */  
 }
 
 void laughlinberryphase(){
@@ -160,6 +121,64 @@ void laughlinberryphase(){
         bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes2[b][0]<<" "<<holes2[b][1]<<"   "<<sqrt(norm(A.determinant()))<<endl;
     }
     
+}
+void two_holes(){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    string type;
+    ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    vector<vector<double> > holes;
+    double x=0.;
+    vector<double> a(2);
+    while (x<0.2) {
+        a[0]=x; a[1]=0.;
+        holes.push_back(a);
+        x+=0.02;
+    }
+    int nds=holes.size();
+    
+    
+    ofstream bout("berry_laughlin");
+    vector<LATTICE> ll(invNu),ll2(invNu);
+    vector<Eigen::MatrixXcd> overlaps(nds,Eigen::MatrixXcd::Zero(invNu,invNu));
+//    for(int b=0;b<nds;b++) overlaps[b] =Eigen::MatrixXcd::Zero(invNu,invNu);
+	for(int gs=0;gs<invNu;gs++){
+		ll[gs]=LATTICE(Ne,invNu,testing,type,seed,gs);
+		ll[gs].set_hole(holes[0]);
+		ll2[gs]=LATTICE(Ne,invNu,testing,type,seed,gs);
+    }
+    
+    double energy=0.;
+    complex<double> berry;
+	for(int gs1=0;gs1<invNu;gs1++){    
+	    ll[gs1].reset();
+	    ll[gs1].step(nWarmup);
+	    complex<double> btemp;
+	    for(int i=0;i<nMeas;i++){
+	        ll[gs1].step(nSteps);
+	        energy+=ll[gs1].coulomb_energy();
+	        for(int gs2=0;gs2<invNu;gs2++){
+	        	for(int b=0;b<nds;b++){
+				    ll2[gs2].set_hole(holes[b]);
+				    ll2[gs2].reset();
+				    berry=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
+		        	overlaps[b](gs1,gs2)+=berry;
+		        }
+		    }
+	    }
+	}
+	cout<<energy/(1.*nMeas*Ne)<<endl;
+	for(int b=0;b<nds;b++){
+		cout<<holes[b][0]<<endl;
+		cout<<overlaps[b]/(1.*nMeas)<<endl;
+	}
 }
 
 void single_run(){

@@ -2,6 +2,9 @@
 
 int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 
+LATTICE::LATTICE(){
+	Ne=0;
+}
 LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs):Ne(Ne_t),invNu(invNu_t),type(type_t){
 	//various parameters from input file
 	testing=testing_t;
@@ -332,8 +335,8 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 	//hole part
 	if(type=="laughlin-hole"){
 		for(int i=0;i<Ne;i++){
-			x=(locs[i][0]/(1.*NPhi)-hole[0]);	
-			y=(locs[i][1]/(1.*NPhi)-hole[1]);	
+			x=(zs[i][0]/(1.*NPhi)-hole[0]);	
+			y=(zs[i][1]/(1.*NPhi)-hole[1]);	
 			z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
 			out*=temp;
 		}		
@@ -678,6 +681,7 @@ void LATTICE::set_hole(vector<double> temphole){
 	hole=temphole;
 	holes_set=true;
 }
+vector<double> LATTICE::get_hole(){ return hole; }
 
 inline void LATTICE::det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z){
 	z[0]=z1[0]-z2[0]-d[0]*invNu;
