@@ -67,102 +67,98 @@ void laughlinberryphase(){
     infile>>type;
     //initialize MC object
     
+    int STEPS=50;
     vector<vector<double> > holes;
-    double x=0., y=0.;
-    while (x<0.5) {
-        vector<double> a(2);
-        a[0]=x; a[1]=0.;
-        holes.push_back(a);
-        x+=0.05;
-    }
-    y=0.05;
-    while (y<0.5) {
-        vector<double> a(2);
-        a[0]=0.5; a[1]=y;
-        holes.push_back(a);
-        y+=0.05;
-    }
-    x=0.45;
-    while (x>0.) {
-        vector<double> a(2);
-        a[0]=x; a[1]=0.5;
-        holes.push_back(a);
-        x-=0.05;
-    }
-    y=0.45;
-    while (y>0.) {
-        vector<double> a(2);
-        a[0]=0.; a[1]=y;
-        holes.push_back(a);
-        y-=0.05;
-    }
-    holes.pop_back();
-//    cout<<"holes.size()="<<holes.size()<<endl;
-//    for (int i=0; i<holes.size(); i++) {cout<<holes[i][0]<<" "<<holes[i][1]<<endl;}
+    for (int i=0; i<STEPS; i++) {vector<double> a(2); a[0]=0.5/(1.*STEPS)*i;  a[1]=0.;     holes.push_back(a);}
+    for (int i=0; i<STEPS; i++) {vector<double> a(2); a[0]=0.5; a[1]=0.5/(1.*STEPS)*i;     holes.push_back(a);}
+    for (int i=0; i<STEPS; i++) {vector<double> a(2); a[0]=0.5-0.5/(1.*STEPS)*i; a[1]=0.5; holes.push_back(a);}
+    for (int i=0; i<STEPS; i++) {vector<double> a(2); a[0]=0.; a[1]=0.5-0.5/(1.*STEPS)*i;  holes.push_back(a);}
+    cout<<"holes.size()="<<holes.size()<<endl;
+    for (int i=0; i<holes.size(); i++) {cout<<holes[i][0]<<" "<<holes[i][1]<<endl;}
     int nds=holes.size();
+    
+    vector<int> hole_origin(2); hole_origin[0]=0.; hole_origin[1]=0.;
     
     
     int gs=0;
-//    vector<vector<double> > holes(nds, vector<double>(2,0));
-    
-//    for (int i=0; i<nds; i++) {
-//        holes[i][0]=0.1*i+0.1;
-//        holes[i][1]=0.1*i+0.1;
-//    }
-    
-    /*
-     inialization holes here.
-     */
     
     vector<vector<double> > holes2(nds, vector<double>(2,0));
-    vector<vector<double> > holes3(nds, vector<double>(2,0));
+//    vector<vector<double> > holes3(nds, vector<double>(2,0));
     
     int supermod(int k, int n);
     for(int i=0;i<nds;i++){
         holes2[supermod(i-1,nds)]=holes[i];
-        holes3[supermod(i+1,nds)]=holes[i];
+//        holes3[supermod(i+1,nds)]=holes[i];
     }
-        
-    ofstream bout("berry_laughlin");
-    LATTICE ll (Ne, invNu, testing, type, seed, gs);
-    LATTICE ll2(Ne, invNu, testing, type, seed, gs);
-    LATTICE ll3(Ne, invNu, testing, type, seed, gs);
     
-    double energy=0.;
-    complex<double> berry2=0., berry3=0.;
+    //ll_0, ll_1, ll_2 are 3 gs whose hole given by holes[b];
+    //pp_0, pp_1, pp_2 are 3 gs whose hole given by holes2[b];
+    ofstream bout("berry_laughlin");
+    LATTICE ll_0 (Ne, invNu, testing, type, seed, 0);
+    LATTICE pp_0(Ne, invNu, testing, type, seed, 0);
+    LATTICE ll_1 (Ne, invNu, testing, type, seed, 1);
+    LATTICE pp_1(Ne, invNu, testing, type, seed, 1);
+    LATTICE ll_2 (Ne, invNu, testing, type, seed, 2);
+    LATTICE pp_2(Ne, invNu, testing, type, seed, 2);
+//    LATTICE ll3(Ne, invNu, testing, type, seed, 0);
+//    double energy=0.;
+    
     for(int b=0;b<nds;b++){
-        ll.set_hole(holes[b]);
-        ll2.set_hole(holes2[b]);
-        ll3.set_hole(holes3[b]);
+        complex<double> berry2[3][3]; for (int i=0; i<3; i++) {for (int j=0; j<3; j++) {berry2[i][j]=0.;}}
         
-        double phasemod(complex<double> in);
-        ll.reset();
-        ll.step(nWarmup);
-        complex<double> btemp;
+        ll_0.set_hole(holes[b]); ll_1.set_hole(holes[b]); ll_2.set_hole(holes[b]);
+        pp_0.set_hole(holes[b]); pp_1.set_hole(holes[b]); pp_2.set_hole(holes[b]);
+        
+        ll_0.reset(); ll_1.reset(); ll_2.reset();
+        ll_0.step(nWarmup); ll_1.step(nWarmup); ll_2.step(nWarmup);
+        //        complex<double> btemp;
         for(int i=0;i<nMeas;i++){
-            ll.step(nSteps);
-            energy+=ll.coulomb_energy();
-            berry2+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
-//            cout<<"berry2 advance abs= "<<abs(ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs()))<<endl;
-//            btemp=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
-//            cout<<"output:"<<ll2.get_wf(ll.get_locs())<<" "<<ll.get_wf(ll.get_locs())<<" "<<abs(btemp)<<" "<<arg(btemp)<<endl;
-            berry3+=ll3.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+            ll_0.step(nSteps); ll_1.step(nSteps); ll_2.step(nSteps);
+            
+            //berry2[m][n] := conj(ll_m) . pp_n = |ll_m|^2 . pp_n/ll_m;
+            //generalization of: berry2+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+            berry2[0][0]+=pp_0.get_wf(ll_0.get_locs())/ll_0.get_wf(ll_0.get_locs());
+            berry2[0][1]+=pp_1.get_wf(ll_0.get_locs())/ll_0.get_wf(ll_0.get_locs());
+            berry2[0][2]+=pp_2.get_wf(ll_0.get_locs())/ll_0.get_wf(ll_0.get_locs());
+            berry2[1][0]+=pp_0.get_wf(ll_1.get_locs())/ll_1.get_wf(ll_1.get_locs());
+            berry2[1][1]+=pp_1.get_wf(ll_1.get_locs())/ll_1.get_wf(ll_1.get_locs());
+            berry2[1][2]+=pp_2.get_wf(ll_1.get_locs())/ll_1.get_wf(ll_1.get_locs());
+            berry2[2][0]+=pp_0.get_wf(ll_2.get_locs())/ll_2.get_wf(ll_2.get_locs());
+            berry2[2][1]+=pp_1.get_wf(ll_2.get_locs())/ll_2.get_wf(ll_2.get_locs());
+            berry2[2][2]+=pp_2.get_wf(ll_2.get_locs())/ll_2.get_wf(ll_2.get_locs());
+            
+            //            energy+=ll.coulomb_energy();
+            //            berry2+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+            //            cout<<"berry2 advance abs= "<<abs(ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs()))<<endl;
+            //            btemp=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+            //            cout<<"output:"<<ll2.get_wf(ll.get_locs())<<" "<<ll.get_wf(ll.get_locs())<<" "<<abs(btemp)<<" "<<arg(btemp)<<endl;
+            //            berry3+=ll3.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
         }
         
-//        cout<<"ll.get_wf="<<ll.get_wf(ll.get_locs())<<endl;
-//        cout<<"ll2.get_wf="<<ll2.get_wf(ll.get_locs())<<endl;
-//        cout<<"ll3.get_wf="<<ll3.get_wf(ll.get_locs())<<endl;
-//        cout<<"ll2.Ne="<<ll2.Ne<<endl;
-//        cout<<"print out holes2"<<endl;
-//        cout<<ll2.hole[0]<<" "<<ll2.hole[1]<<endl;
-//        cout<<"finish printing"<<endl;
-//        cout<<"print ll2. holes_set = "<<ll2.holes_set<<endl;
+        Eigen::MatrixXcd A(3,3);
         
-        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes2[b][0]<<" "<<holes2[b][1]<<"   "<<abs(berry2)/(1.*nMeas)<<"   "<<phasemod(berry2)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
-        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes3[b][0]<<" "<<holes3[b][1]<<"   "<<abs(berry3)/(1.*nMeas)<<"   "<<phasemod(berry3)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
-        //        tot_berry_phase2+=phasemod(berry2);
-        //        tot_berry_phase3+=phasemod(berry3);
+        for (int i=0; i<3; i++) {
+            for (int j=0; j<3; j++) {
+                A(i,j)=berry2[i][j]/(1.*nMeas);
+            }
+        }
+        
+        //        cout<<"ll.get_wf="<<ll.get_wf(ll.get_locs())<<endl;
+        //        cout<<"ll2.get_wf="<<ll2.get_wf(ll.get_locs())<<endl;
+        //        cout<<"ll3.get_wf="<<ll3.get_wf(ll.get_locs())<<endl;
+        //        cout<<"ll2.Ne="<<ll2.Ne<<endl;
+        //        cout<<"print out holes2"<<endl;
+        //        cout<<ll2.hole[0]<<" "<<ll2.hole[1]<<endl;
+        //        cout<<"finish printing"<<endl;
+        //        cout<<"print ll2. holes_set = "<<ll2.holes_set<<endl;
+        
+        //        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes2[b][0]<<" "<<holes2[b][1]<<"   "<<abs(berry2)/(1.*nMeas)<<"   "<<phasemod(berry2)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
+        //        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes3[b][0]<<" "<<holes3[b][1]<<"   "<<abs(berry3)/(1.*nMeas)<<"   "<<phasemod(berry3)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
+        
+        double phasemod(complex<double> in);
+        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes2[b][0]<<" "<<holes2[b][1]<<"   "<<sqrt(norm(A.determinant()))<<endl;
     }
+    
 }
 
 void single_run(){
