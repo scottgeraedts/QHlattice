@@ -67,12 +67,13 @@ void laughlinberryphase(){
     infile>>type;
     //initialize MC object
     
-    int STEPS=50;
+    
+    int Grid=20;
     vector<vector<double> > holes;
-    for (int i=0; i<STEPS; i++) {vector<double> a(2); a[0]=0.5/(1.*STEPS)*i;  a[1]=0.;     holes.push_back(a);}
-    for (int i=0; i<STEPS; i++) {vector<double> a(2); a[0]=0.5; a[1]=0.5/(1.*STEPS)*i;     holes.push_back(a);}
-    for (int i=0; i<STEPS; i++) {vector<double> a(2); a[0]=0.5-0.5/(1.*STEPS)*i; a[1]=0.5; holes.push_back(a);}
-    for (int i=0; i<STEPS; i++) {vector<double> a(2); a[0]=0.; a[1]=0.5-0.5/(1.*STEPS)*i;  holes.push_back(a);}
+    for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.5/(1.*Grid)*i;  a[1]=0.;     holes.push_back(a);}
+    for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.5; a[1]=0.5/(1.*Grid)*i;     holes.push_back(a);}
+    for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.5-0.5/(1.*Grid)*i; a[1]=0.5; holes.push_back(a);}
+    for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.; a[1]=0.5-0.5/(1.*Grid)*i;  holes.push_back(a);}
     cout<<"holes.size()="<<holes.size()<<endl;
     for (int i=0; i<holes.size(); i++) {cout<<holes[i][0]<<" "<<holes[i][1]<<endl;}
     int nds=holes.size();
