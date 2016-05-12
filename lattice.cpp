@@ -2,6 +2,9 @@
 
 int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 
+LATTICE::LATTICE(){
+	Ne=0;
+}
 LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs):Ne(Ne_t),invNu(invNu_t),type(type_t){
 	//various parameters from input file
 	testing=testing_t;

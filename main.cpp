@@ -11,8 +11,8 @@ int main(){
 //	void single_run();
 //	single_run();
 
-    void laughlinberryphase();
-    laughlinberryphase();
+    void two_holes();
+    two_holes();
     
 //    
 //    int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
@@ -163,6 +163,60 @@ void laughlinberryphase(){
         //        tot_berry_phase2+=phasemod(berry2);
         //        tot_berry_phase3+=phasemod(berry3);
     }
+}
+void two_holes(){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    string type;
+    ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    vector<vector<double> > holes;
+    double x=0., y=0.;
+    while (x<0.2) {
+        vector<double> a(2);
+        a[0]=x; a[1]=0.;
+        holes.push_back(a);
+        x+=0.02;
+    }
+    int nds=holes.size();
+    
+    
+    ofstream bout("berry_laughlin");
+    vector<LATTICE> ll(invNu),ll2(invNu);
+    vector<Eigen::MatrixXcd> overlaps(invNu,Eigen::MatrixXcd::Zero(invNu,invNu));
+//    for(int b=0;b<nds;b++) overlaps[b] =Eigen::MatrixXcd::Zero(invNu,invNu);
+	for(int gs=0;gs<invNu;gs++){
+		ll[gs]=LATTICE(Ne,invNu,testing,type,seed,gs);
+		ll[gs].set_hole(holes[0]);
+		ll2[gs]=LATTICE(Ne,invNu,testing,type,seed,gs);
+    }
+    
+    double energy=0.;
+	for(int gs1=0;gs1<invNu;gs1++){    
+	    ll[gs1].reset();
+	    ll[gs1].step(nWarmup);
+	    complex<double> btemp;
+	    for(int i=0;i<nMeas;i++){
+	        ll[gs1].step(nSteps);
+	        energy+=ll[gs1].coulomb_energy();
+	        for(int gs2=0;gs2<invNu;gs2++){
+	        	for(int b=0;b<nds;b++){
+				    ll[gs2].set_hole(holes[b]);
+		        	overlaps[b](gs1,gs2)+=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
+		        }
+		    }
+	    }
+	}
+	for(int b=0;b<nds;b++){
+		cout<<holes[b][0]<<endl;
+		cout<<overlaps[b]/(1.*nMeas)<<endl;
+	}
 }
 
 void single_run(){
