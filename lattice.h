@@ -48,6 +48,7 @@ public:
 	void change_dbar_parameter(double dbarx, double dbary);
 	void set_ds(vector< vector<int> > ds);//sets a custom set of composite fermion dipole moments
 	void set_hole(vector<double> temphole);
+	vector<double> get_hole();
 	vector <vector<int> > get_locs();
 	void check_sanity();
 
