@@ -11,8 +11,8 @@ int main(){
 //	void single_run();
 //	single_run();
 
-    void laughlinberryphase(int);
-    laughlinberryphase(1);
+    void laughlinberryphase();
+    laughlinberryphase();
     
 //    
 //    int NPhi,invNu,nWarmup,nMeas,nSteps,nBins,seed;
@@ -55,7 +55,7 @@ int main(){
    */  
 }
 
-void laughlinberryphase(int nds){
+void laughlinberryphase(){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     string type;
@@ -66,14 +66,49 @@ void laughlinberryphase(int nds){
     infile>>testing;
     infile>>type;
     //initialize MC object
-
-    int gs=0;
-    vector<vector<double> > holes(nds, vector<double>(2,0));
     
-    for (int i=0; i<nds; i++) {
-        holes[i][0]=0.1*i+0.1;
-        holes[i][1]=0.1*i+0.1;
+    vector<vector<double> > holes;
+    double x=0., y=0.;
+    while (x<0.5) {
+        vector<double> a(2);
+        a[0]=x; a[1]=0.;
+        holes.push_back(a);
+        x+=0.05;
     }
+    y=0.05;
+    while (y<0.5) {
+        vector<double> a(2);
+        a[0]=0.5; a[1]=y;
+        holes.push_back(a);
+        y+=0.05;
+    }
+    x=0.45;
+    while (x>0.) {
+        vector<double> a(2);
+        a[0]=x; a[1]=0.5;
+        holes.push_back(a);
+        x-=0.05;
+    }
+    y=0.45;
+    while (y>0.) {
+        vector<double> a(2);
+        a[0]=0.; a[1]=y;
+        holes.push_back(a);
+        y-=0.05;
+    }
+    holes.pop_back();
+//    cout<<"holes.size()="<<holes.size()<<endl;
+//    for (int i=0; i<holes.size(); i++) {cout<<holes[i][0]<<" "<<holes[i][1]<<endl;}
+    int nds=holes.size();
+    
+    
+    int gs=0;
+//    vector<vector<double> > holes(nds, vector<double>(2,0));
+    
+//    for (int i=0; i<nds; i++) {
+//        holes[i][0]=0.1*i+0.1;
+//        holes[i][1]=0.1*i+0.1;
+//    }
     
     /*
      inialization holes here.
@@ -108,7 +143,8 @@ void laughlinberryphase(int nds){
             ll.step(nSteps);
             energy+=ll.coulomb_energy();
             berry2+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
-            btemp=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+//            cout<<"berry2 advance abs= "<<abs(ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs()))<<endl;
+//            btemp=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
 //            cout<<"output:"<<ll2.get_wf(ll.get_locs())<<" "<<ll.get_wf(ll.get_locs())<<" "<<abs(btemp)<<" "<<arg(btemp)<<endl;
             berry3+=ll3.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
         }
@@ -123,7 +159,7 @@ void laughlinberryphase(int nds){
 //        cout<<"print ll2. holes_set = "<<ll2.holes_set<<endl;
         
         bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes2[b][0]<<" "<<holes2[b][1]<<"   "<<abs(berry2)/(1.*nMeas)<<"   "<<phasemod(berry2)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
-        //        bout<<dcenter[b][0]<<" "<<dcenter[b][1]<<" "<<d3[b][0]<<" "<<d3[b][1]<<"   "<<abs(berry3)/(1.*nMeas)<<"   "<<phasemod(berry3)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
+        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes3[b][0]<<" "<<holes3[b][1]<<"   "<<abs(berry3)/(1.*nMeas)<<"   "<<phasemod(berry3)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
         //        tot_berry_phase2+=phasemod(berry2);
         //        tot_berry_phase3+=phasemod(berry3);
     }
