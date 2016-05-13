@@ -3,6 +3,7 @@
 
 #include "utils.h"
 #include <Eigen/LU>
+#include <Eigen/Eigenvalues>
 #include "MersenneTwister.h"
 #include <numeric>
 #include <deque>

@@ -1,6 +1,5 @@
 #include "lattice.h"
 #include "berry_phase.h"
-#include <Eigen/Eigenvalues>
 
 int main(){
 //    berry_phase bp(20);
@@ -64,7 +63,9 @@ void laughlinberryphase(){
     }
     
     for(int b=0;b<nds;b++){
-        Eigen::MatrixXcd berrymatrix = Eigen::MatrixXcd::Zero(3,3);
+//        Eigen::MatrixXcd berrymatrix = Eigen::MatrixXcd::Zero(3,3);
+        Eigen::MatrixXcd berrymatrix(3,3);
+        for (int i=0; i<3; i++) {for (int j=0; j<3; j++) berrymatrix(i,j)=0.;}
 //        cout<<berrymatrix<<endl;
         
         for (int i=0; i<3; i++) {
@@ -113,7 +114,15 @@ void two_holes(){
     
     ofstream bout("twoholelaughlin");
     vector<LATTICE> ll(invNu),ll2(invNu); ll.clear(); ll2.clear();
-    vector<Eigen::MatrixXcd> overlaps(nds,Eigen::MatrixXcd::Zero(invNu,invNu));
+//    vector<Eigen::MatrixXcd> overlaps(nds,Eigen::MatrixXcd::Zero(invNu,invNu));
+    vector<Eigen::MatrixXcd> overlaps;
+    for (int i=0; i<nds; i++) {
+        Eigen::MatrixXcd a(invNu, invNu);
+        for (int m=0; m<invNu; m++) {for (int n=0; n<invNu; n++) a(m,n)=0.;}
+        overlaps.push_back(a);
+    }
+//    cout<<"overlaps.size()="<<overlaps.size()<<endl;
+    
 	for(int gs=0;gs<invNu;gs++){
 		ll[gs]=LATTICE(Ne,invNu,testing,type,seed,gs);
 		ll[gs].set_hole(holes[0]);
@@ -143,7 +152,7 @@ void two_holes(){
     for (int b=0; b<nds; b++) {
         overlaps[b]/=(1.*nMeas);
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b]);
-        bout<<holes[b][0]<<" "<<holes[b][1]<<es.eigenvalues()[0]<<" "<<es.eigenvalues()[1]<<" "<<es.eigenvalues()[2]<<" "<< endl;
+        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<es.eigenvalues()[0]<<" "<<es.eigenvalues()[1]<<" "<<es.eigenvalues()[2]<<" "<< endl;
     }
     
 //	cout<<energy/(1.*nMeas*Ne)<<endl;
