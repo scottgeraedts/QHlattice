@@ -59,7 +59,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 	//********calls to duncan's functions
 	set_l_(&NPhi, &L1, &L2);
 	setup_z_function_table_();
-	sl2z=new int[4];
+	int *sl2z=new int[4];
 	sl2z[0]=1; sl2z[1]=0; sl2z[2]=0; sl2z[3]=1;
 	if(type!="laughlin-hole") setup_laughlin_state_(&Ne,&invNu,sl2z,&zero);
 //	cout<<"starting weight "<<running_weight<<endl;
@@ -72,6 +72,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 	sq=vector<vector<complex<double> > > (NPhi, vector<complex<double> >(NPhi,0));
 	sq2=vector<vector<double> > (NPhi, vector<double>(NPhi,0));
 	sq3=vector <vector< vector< vector <complex<double> > > > >(NPhi, vector <vector <vector< complex<double> > > >(NPhi, vector <vector <complex<double> > >(NPhi, vector<complex<double> >(NPhi,0))));
+	delete [] sl2z;
 }
 void LATTICE::step(int Nsteps){
 	for(int i=0;i<Nsteps*Ne;i++){
@@ -770,4 +771,4 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
     //		cout<<oldMatrix<<endl<<endl<<newMatrix<<endl;
 }
 
-LATTICE::~LATTICE(){ delete []sl2z; }
+LATTICE::~LATTICE(){  }

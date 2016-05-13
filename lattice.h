@@ -95,7 +95,6 @@ private:
 	vector< vector<int> > locs;//an integer defined on an NPhi lattice
 	vector< vector<double> > ws;
 	int one,zero;
-	int * sl2z;
 	vector< complex<double> > omega;
 };
 
