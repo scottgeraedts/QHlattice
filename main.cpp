@@ -1,5 +1,6 @@
 #include "lattice.h"
 #include "berry_phase.h"
+#include <Eigen/Eigenvalues>
 
 int main(){
 //    berry_phase bp(20);
@@ -14,6 +15,9 @@ int main(){
     void two_holes();
     two_holes();
     
+//    void laughlinberryphase();
+//    laughlinberryphase();
+
 }
 
 void laughlinberryphase(){
@@ -28,99 +32,61 @@ void laughlinberryphase(){
     infile>>type;
     //initialize MC object
     
-    
-    int Grid=20;
+    int Grid=50;
     vector<vector<double> > holes;
     for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.5/(1.*Grid)*i;  a[1]=0.;     holes.push_back(a);}
     for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.5; a[1]=0.5/(1.*Grid)*i;     holes.push_back(a);}
     for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.5-0.5/(1.*Grid)*i; a[1]=0.5; holes.push_back(a);}
     for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.; a[1]=0.5-0.5/(1.*Grid)*i;  holes.push_back(a);}
-    cout<<"holes.size()="<<holes.size()<<endl;
-    for (int i=0; i<holes.size(); i++) {cout<<holes[i][0]<<" "<<holes[i][1]<<endl;}
+//    cout<<"holes.size()="<<holes.size()<<endl;
+//    for (int i=0; i<holes.size(); i++) {cout<<holes[i][0]<<" "<<holes[i][1]<<endl;}
     int nds=holes.size();
     
-    vector<int> hole_origin(2); hole_origin[0]=0.; hole_origin[1]=0.;
-    
-    
-    int gs=0;
-    
     vector<vector<double> > holes2(nds, vector<double>(2,0));
-//    vector<vector<double> > holes3(nds, vector<double>(2,0));
     
     int supermod(int k, int n);
-    for(int i=0;i<nds;i++){
-        holes2[supermod(i-1,nds)]=holes[i];
-//        holes3[supermod(i+1,nds)]=holes[i];
-    }
+    for(int i=0;i<nds;i++) holes2[supermod(i-1,nds)]=holes[i];
     
     //ll_0, ll_1, ll_2 are 3 gs whose hole given by holes[b];
     //pp_0, pp_1, pp_2 are 3 gs whose hole given by holes2[b];
     ofstream bout("berry_laughlin");
-    LATTICE ll_0 (Ne, invNu, testing, type, seed, 0);
-    LATTICE pp_0(Ne, invNu, testing, type, seed, 0);
-    LATTICE ll_1 (Ne, invNu, testing, type, seed, 1);
-    LATTICE pp_1(Ne, invNu, testing, type, seed, 1);
-    LATTICE ll_2 (Ne, invNu, testing, type, seed, 2);
-    LATTICE pp_2(Ne, invNu, testing, type, seed, 2);
-//    LATTICE ll3(Ne, invNu, testing, type, seed, 0);
-//    double energy=0.;
     
-    for(int b=0;b<nds;b++){
-        complex<double> berry2[3][3]; for (int i=0; i<3; i++) {for (int j=0; j<3; j++) {berry2[i][j]=0.;}}
-        
-        ll_0.set_hole(holes[b]); ll_1.set_hole(holes[b]); ll_2.set_hole(holes[b]);
-        pp_0.set_hole(holes[b]); pp_1.set_hole(holes[b]); pp_2.set_hole(holes[b]);
-        
-        ll_0.reset(); ll_1.reset(); ll_2.reset();
-        ll_0.step(nWarmup); ll_1.step(nWarmup); ll_2.step(nWarmup);
-        //        complex<double> btemp;
-        for(int i=0;i<nMeas;i++){
-            ll_0.step(nSteps); ll_1.step(nSteps); ll_2.step(nSteps);
-            
-            //berry2[m][n] := conj(ll_m) . pp_n = |ll_m|^2 . pp_n/ll_m;
-            //generalization of: berry2+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
-            berry2[0][0]+=pp_0.get_wf(ll_0.get_locs())/ll_0.get_wf(ll_0.get_locs());
-            berry2[0][1]+=pp_1.get_wf(ll_0.get_locs())/ll_0.get_wf(ll_0.get_locs());
-            berry2[0][2]+=pp_2.get_wf(ll_0.get_locs())/ll_0.get_wf(ll_0.get_locs());
-            berry2[1][0]+=pp_0.get_wf(ll_1.get_locs())/ll_1.get_wf(ll_1.get_locs());
-            berry2[1][1]+=pp_1.get_wf(ll_1.get_locs())/ll_1.get_wf(ll_1.get_locs());
-            berry2[1][2]+=pp_2.get_wf(ll_1.get_locs())/ll_1.get_wf(ll_1.get_locs());
-            berry2[2][0]+=pp_0.get_wf(ll_2.get_locs())/ll_2.get_wf(ll_2.get_locs());
-            berry2[2][1]+=pp_1.get_wf(ll_2.get_locs())/ll_2.get_wf(ll_2.get_locs());
-            berry2[2][2]+=pp_2.get_wf(ll_2.get_locs())/ll_2.get_wf(ll_2.get_locs());
-            
-            //            energy+=ll.coulomb_energy();
-            //            berry2+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
-            //            cout<<"berry2 advance abs= "<<abs(ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs()))<<endl;
-            //            btemp=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
-            //            cout<<"output:"<<ll2.get_wf(ll.get_locs())<<" "<<ll.get_wf(ll.get_locs())<<" "<<abs(btemp)<<" "<<arg(btemp)<<endl;
-            //            berry3+=ll3.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
-        }
-        
-        Eigen::MatrixXcd A(3,3);
-        
-        for (int i=0; i<3; i++) {
-            for (int j=0; j<3; j++) {
-                A(i,j)=berry2[i][j]/(1.*nMeas);
-            }
-        }
-        
-        //        cout<<"ll.get_wf="<<ll.get_wf(ll.get_locs())<<endl;
-        //        cout<<"ll2.get_wf="<<ll2.get_wf(ll.get_locs())<<endl;
-        //        cout<<"ll3.get_wf="<<ll3.get_wf(ll.get_locs())<<endl;
-        //        cout<<"ll2.Ne="<<ll2.Ne<<endl;
-        //        cout<<"print out holes2"<<endl;
-        //        cout<<ll2.hole[0]<<" "<<ll2.hole[1]<<endl;
-        //        cout<<"finish printing"<<endl;
-        //        cout<<"print ll2. holes_set = "<<ll2.holes_set<<endl;
-        
-        //        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes2[b][0]<<" "<<holes2[b][1]<<"   "<<abs(berry2)/(1.*nMeas)<<"   "<<phasemod(berry2)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
-        //        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes3[b][0]<<" "<<holes3[b][1]<<"   "<<abs(berry3)/(1.*nMeas)<<"   "<<phasemod(berry3)<<"   "<<energy/(1.*nMeas*ll.Ne)<<endl;
-        
-        double phasemod(complex<double> in);
-        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes2[b][0]<<" "<<holes2[b][1]<<"   "<<sqrt(norm(A.determinant()))<<endl;
+    vector<LATTICE> ll(3), pp(3);
+//    for (int i=0; i<3; i++) {
+//        ll[i]=LATTICE(Ne, invNu, testing, type, seed, i);
+//        pp[i]=LATTICE(Ne, invNu, testing, type, seed, i);
+//    }//error: pointer being freed was not allocated.
+    
+    ll.clear(); pp.clear();
+    for (int i=0; i<3; i++) {
+        ll[i]=LATTICE(Ne, invNu, testing, type, seed, i);
+        pp[i]=LATTICE(Ne, invNu, testing, type, seed, i);
     }
     
+    for(int b=0;b<nds;b++){
+        Eigen::MatrixXcd berrymatrix = Eigen::MatrixXcd::Zero(3,3);
+//        cout<<berrymatrix<<endl;
+        
+        for (int i=0; i<3; i++) {
+            ll[i].set_hole(holes[b]);
+            pp[i].set_hole(holes2[b]);
+            ll[i].reset(); ll[i].step(nWarmup);
+        }
+        
+        for(int k=0;k<nMeas;k++){
+            for (int i=0; i<3; i++) ll[i].step(nSteps);
+            //berrymatrix(m,n) := conj(ll_m) . pp_n = |ll_m|^2 . pp_n/ll_m;
+            //generalization of: berry2+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+            for (int i=0; i<3; i++) {
+                for (int j=0; j<3; j++) berrymatrix(i,j)+=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
+            }
+        }
+        berrymatrix/=(1.*nMeas);
+        double phasemod(complex<double> in);
+        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes2[b][0]<<" "<<holes2[b][1]<<"   "<<sqrt(norm(berrymatrix.determinant()))<<endl;
+    }
+    
+//    for (int i=0; i<3; i++) {delete &ll[i], &pp[i];}//uncomment, otherwise: pointer being freed was not allocated *** set a breakpoint in malloc_error_break to debug
 }
 void two_holes(){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
@@ -140,15 +106,14 @@ void two_holes(){
     while (x<0.2) {
         a[0]=x; a[1]=0.;
         holes.push_back(a);
-        x+=0.02;
+        x+=0.001;
     }
     int nds=holes.size();
     
     
-    ofstream bout("berry_laughlin");
-    vector<LATTICE> ll(invNu),ll2(invNu);
+    ofstream bout("twoholelaughlin");
+    vector<LATTICE> ll(invNu),ll2(invNu); ll.clear(); ll2.clear();
     vector<Eigen::MatrixXcd> overlaps(nds,Eigen::MatrixXcd::Zero(invNu,invNu));
-//    for(int b=0;b<nds;b++) overlaps[b] =Eigen::MatrixXcd::Zero(invNu,invNu);
 	for(int gs=0;gs<invNu;gs++){
 		ll[gs]=LATTICE(Ne,invNu,testing,type,seed,gs);
 		ll[gs].set_hole(holes[0]);
@@ -174,11 +139,18 @@ void two_holes(){
 		    }
 	    }
 	}
-	cout<<energy/(1.*nMeas*Ne)<<endl;
-	for(int b=0;b<nds;b++){
-		cout<<holes[b][0]<<endl;
-		cout<<overlaps[b]/(1.*nMeas)<<endl;
-	}
+    
+    for (int b=0; b<nds; b++) {
+        overlaps[b]/=(1.*nMeas);
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b]);
+        bout<<holes[b][0]<<" "<<holes[b][1]<<es.eigenvalues()[0]<<" "<<es.eigenvalues()[1]<<" "<<es.eigenvalues()[2]<<" "<< endl;
+    }
+    
+//	cout<<energy/(1.*nMeas*Ne)<<endl;
+//	for(int b=0;b<nds;b++){
+//		cout<<holes[b][0]<<endl;
+//		cout<<overlaps[b]/(1.*nMeas)<<endl;
+//	}
 }
 
 void single_run(){
@@ -288,6 +260,7 @@ void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas,
     }
     ave_E=sumE/(1.*nBins);
 }
+
 double phasemod(complex<double> in){
     double out=arg(in);
     //    if(out<0) return out+2*M_PI;
