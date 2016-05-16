@@ -96,7 +96,7 @@ void two_holes(){
     while (x<0.2) {
         a[0]=x; a[1]=0.;
         holes.push_back(a);
-        x+=0.001;
+        x+=0.02;
     }
     int nds=holes.size();
     
@@ -133,8 +133,9 @@ void two_holes(){
     
     for (int b=0; b<nds; b++) {
         overlaps[b]/=(1.*nMeas);
+        cout<<overlaps[b]<<endl;
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b]);
-        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<real(es.eigenvalues()[0])<<" "<<imag(es.eigenvalues()[0])<<" "<<real(es.eigenvalues()[1])<<" "<<imag(es.eigenvalues()[1])<<" "<<real(es.eigenvalues()[2])<<" "<<imag(es.eigenvalues()[2])<<endl;
+        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<abs(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[1])<<" "<<abs(es.eigenvalues()[2])<<" "<<arg(es.eigenvalues()[2])<<endl;
     }
     
 //	cout<<energy/(1.*nMeas*Ne)<<endl;
