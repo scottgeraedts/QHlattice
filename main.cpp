@@ -11,8 +11,10 @@ int main(){
 //	void single_run();
 //	single_run();
 
-    void two_holes();
-    two_holes();
+    void two_holes(string str);
+    string str;
+    str = "test_hermitian";
+    two_holes(str);
     
 //    void laughlinberryphase();
 //    laughlinberryphase();
@@ -29,14 +31,16 @@ int main(){
 void testeigen(){
     Eigen::Matrix2cd MM;
     complex<double> ii = complex<double> (0,1);
-    MM<<1,2.+ii,2.-ii,5;
+    MM<<1,2.+ii,2.-ii,4;
     cout<<"MM=\n"<<MM<<endl;
     Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(MM);
     cout<<"\n eigenvectors = \n"<<es.eigenvectors()<<endl;//eigenvectors are columns.
-    cout<<"MM.adjoint = \n"<<MM.adjoint()<<endl;
-    cout<<"MM*MM.adjoint = \n"<<MM*MM.adjoint()<<endl;
+    cout<<"eigenvalues = \n"<<es.eigenvalues()<<endl;
+    cout<<endl;
     cout<<"eigenvectors . eigenvectors.adjoint = \n"<<es.eigenvectors()*es.eigenvectors().adjoint()<<endl;
     cout<<"eigenvectors.adjoint . eigenvectors = \n"<<es.eigenvectors().adjoint()*es.eigenvectors()<<endl;
+    cout<<endl;
+    cout<<"eigenvectors.adjoit() * MM * eigenvectors = \n"<<es.eigenvectors().adjoint()*MM*es.eigenvectors()<<endl;
 }
 void test_largesize(){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
@@ -57,7 +61,7 @@ void test_largesize(){
     vector<LATTICE> ll(invNu),ll2(invNu);
     Eigen::MatrixXcd overlaps = Eigen::MatrixXcd::Zero(invNu, invNu);
     
-    for (int ne=10; ne<50; ne++) {
+    for (int ne=15; ne<23; ne++) {
         for(int gs=0;gs<invNu;gs++){
             ll[gs]=LATTICE(ne,invNu,testing,type,seed,gs);
             ll[gs].set_hole(hole0);
@@ -81,6 +85,7 @@ void test_largesize(){
         }
         
         overlaps/=(1.*nMeas);
+        cout<<"overlapmatrix = \n"<<overlaps<<endl;
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps);
         bout<<ne<<" "<<abs(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[1])<<" "<<abs(es.eigenvalues()[2])<<" "<<arg(es.eigenvalues()[2])<<endl;
     }
@@ -146,7 +151,7 @@ void laughlinberryphase(){
     }
     
 }
-void two_holes(){
+void two_holes(string str){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     string type;
@@ -195,11 +200,20 @@ void two_holes(){
                 for(int b=0;b<nds;b++){
                     ll2[gs2].set_hole(holes[b]);
                     ll2[gs2].reset();
-                    berryll=ll[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
-                    //                    berryll2=ll2[gs2].get_wf(ll[gs1].get_locs())/ll2[gs1].get_wf(ll[gs1].get_locs());
                     berry=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
-                    overlapsll[b](gs1,gs2)+=berryll;
                     overlaps[b](gs1,gs2)+=berry;
+                    
+                    if (str=="test_hermitian") {
+                        berryll=ll[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
+                        overlapsll[b](gs1,gs2)+=berryll;
+                    }
+                    else if(str==""){
+                        if (gs2>=gs1) {
+                            berryll=ll[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
+                            overlapsll[b](gs1,gs2)+=berryll;
+                        }
+                    }
+                    
                 }
             }
         }
@@ -212,9 +226,30 @@ void two_holes(){
             ll2[gs1].step(nWarmup);
             for (int i=0; i<nMeas; i++) {
                 ll2[gs1].step(nSteps);
+                
                 for (int gs2=0; gs2<invNu; gs2++) {
-                    berryll2=ll2[gs2].get_wf(ll2[gs1].get_locs())/ll2[gs1].get_wf(ll2[gs1].get_locs());
-                    overlapsll2[b](gs1,gs2)+=berryll2;
+                    if (str=="test_hermitian") {
+                        berryll2=ll2[gs2].get_wf(ll2[gs1].get_locs())/ll2[gs1].get_wf(ll2[gs1].get_locs());
+                        overlapsll2[b](gs1,gs2)+=berryll2;
+                    }
+                    else if(str==""){
+                        if (gs2>=gs1) {
+                            berryll2=ll2[gs2].get_wf(ll2[gs1].get_locs())/ll2[gs1].get_wf(ll2[gs1].get_locs());
+                            overlapsll2[b](gs1,gs2)+=berryll2;
+                        }
+                    }
+                }
+                
+            }
+        }
+    }
+    
+    if (str!="test_hermitian") {
+        for (int gs1=0; gs1<invNu; gs1++) {
+            for (int gs2=gs1-1; gs2>=0; gs2--) {
+                for (int b=0; b<nds; b++) {
+                    overlapsll[b](gs1,gs2) = conj(overlapsll[b](gs2,gs1));
+                    overlapsll2[b](gs1,gs2) = conj(overlapsll2[b](gs2,gs1));
                 }
             }
         }
@@ -226,6 +261,15 @@ void two_holes(){
 //        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b]);
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> esll(overlapsll[b]);
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> esll2(overlapsll2[b]);
+        
+        Eigen::MatrixXcd esll_diag = Eigen::MatrixXcd::Zero(invNu, invNu);
+        Eigen::MatrixXcd esll2_diag = Eigen::MatrixXcd::Zero(invNu, invNu);
+        
+//        cout<<endl;
+        cout<<"overlapsll[b] = \n"<<overlapsll[b]<<endl;
+//        cout<<"esll.eigenvector.adjoint() * esll * esll.eigenvector = \n"<<esll.eigenvectors().adjoint() * overlapsll[b] * esll.eigenvectors()<<endl;
+//        cout<<"esll2.eigenvector.adjoint() * esll2 * esll2.eigenvector = \n"<<esll2.eigenvectors().adjoint() * overlapsll2[b] * esll2.eigenvectors()<<endl;
+//        cout<<endl;
         
         Eigen::MatrixXcd diaged_berry = Eigen::MatrixXcd::Zero(invNu, invNu);
         diaged_berry = esll.eigenvectors().adjoint() * overlaps[b] * esll2.eigenvectors();
