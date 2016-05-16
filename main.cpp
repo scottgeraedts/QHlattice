@@ -11,11 +11,11 @@ int main(){
 //	void single_run();
 //	single_run();
 
-    void two_holes();
-    two_holes();
+//    void two_holes();
+//    two_holes();
     
-//    void laughlinberryphase();
-//    laughlinberryphase();
+    void laughlinberryphase();
+    laughlinberryphase();
 
 }
 
@@ -31,7 +31,7 @@ void laughlinberryphase(){
     infile>>type;
     //initialize MC object
     
-    int Grid=50;
+    int Grid=20;
     vector<vector<double> > holes;
     for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.5/(1.*Grid)*i;  a[1]=0.;     holes.push_back(a);}
     for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.5; a[1]=0.5/(1.*Grid)*i;     holes.push_back(a);}
@@ -51,29 +51,18 @@ void laughlinberryphase(){
     ofstream bout("berry_laughlin");
     
     vector<LATTICE> ll(3), pp(3);
-//    for (int i=0; i<3; i++) {
-//        ll[i]=LATTICE(Ne, invNu, testing, type, seed, i);
-//        pp[i]=LATTICE(Ne, invNu, testing, type, seed, i);
-//    }//error: pointer being freed was not allocated.
-    
-    ll.clear(); pp.clear();
     for (int i=0; i<3; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, type, seed, i);
         pp[i]=LATTICE(Ne, invNu, testing, type, seed, i);
     }
     
     for(int b=0;b<nds;b++){
-//        Eigen::MatrixXcd berrymatrix = Eigen::MatrixXcd::Zero(3,3);
-        Eigen::MatrixXcd berrymatrix(3,3);
-        for (int i=0; i<3; i++) {for (int j=0; j<3; j++) berrymatrix(i,j)=0.;}
-//        cout<<berrymatrix<<endl;
-        
+        Eigen::MatrixXcd berrymatrix = Eigen::MatrixXcd::Zero(3,3);
         for (int i=0; i<3; i++) {
             ll[i].set_hole(holes[b]);
             pp[i].set_hole(holes2[b]);
             ll[i].reset(); ll[i].step(nWarmup);
         }
-        
         for(int k=0;k<nMeas;k++){
             for (int i=0; i<3; i++) ll[i].step(nSteps);
             //berrymatrix(m,n) := conj(ll_m) . pp_n = |ll_m|^2 . pp_n/ll_m;
@@ -86,7 +75,7 @@ void laughlinberryphase(){
         double phasemod(complex<double> in);
         bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes2[b][0]<<" "<<holes2[b][1]<<"   "<<sqrt(norm(berrymatrix.determinant()))<<endl;
     }
-//    for (int i=0; i<3; i++) {delete &ll[i], &pp[i];}//uncomment, otherwise: pointer being freed was not allocated *** set a breakpoint in malloc_error_break to debug
+    
 }
 
 void two_holes(){
@@ -223,8 +212,6 @@ void single_run(){
     ll.print_structure_factors(nMeas*nBins);
     eout.close();
     outfile.close();
-    
-    
 }
 
 void coul_energy_CFL_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter){
