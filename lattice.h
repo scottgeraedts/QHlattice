@@ -65,6 +65,7 @@ public:
     
     vector<double> hole;
     bool fermions,holes_set;
+    complex<double> L1,L2;
     
 private:
 	void sum_locs(int []);
@@ -79,9 +80,9 @@ private:
     complex<double> jies_weierstrass(double x, double y);
     weierstrass weiers;
 
+//    complex<double> L1,L2;
 	int NPhi,invNu;
 	string type;
-	complex<double> L1,L2;
 	vector <vector <double> > coulomb_table,sq2;
 	vector <vector <complex<double> > > sq;
 	vector <vector <vector <vector< complex<double> > > > > sq3;

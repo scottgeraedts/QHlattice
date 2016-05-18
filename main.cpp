@@ -1,6 +1,28 @@
 #include "lattice.h"
 #include "berry_phase.h"
 
+complex<double> chop(complex<double> input){
+    double rea=real(input), ima=imag(input);
+    if (rea<pow(10,-5)) {
+        rea=0.;
+    }
+    if (ima<pow(10,-5)) {
+        ima=0.;
+    }
+    return rea+complex<double>(0,1)*ima;
+}
+
+Eigen::MatrixXcd chop(Eigen::MatrixXcd mat){
+    int m=mat.rows(), n=mat.cols();
+    Eigen::MatrixXcd ret = Eigen::MatrixXcd(m,n);
+    for (int i=0; i<m; i++) {
+        for (int j=0; j<n; j++) {
+            ret(i,j)=chop(mat(i,j));
+        }
+    }
+    return ret;
+}
+
 int main(){
 //    berry_phase bp(20);
 //    bp.two_full_braiding();
@@ -11,8 +33,16 @@ int main(){
 //	void single_run();
 //	single_run();
 
+<<<<<<< HEAD
     void two_holes();
     two_holes();
+=======
+    void two_holes(string str);
+    string str;
+//    str = "test_hermitian";
+    str = "";
+    two_holes(str);
+>>>>>>> 0b418f9be3c47dda03661f621f6ebaf391add900
     
 //    void laughlinberryphase();
 //    laughlinberryphase();
@@ -22,8 +52,6 @@ int main(){
     
 //    void test_largesize();
 //    test_largesize();
-    
-
 }
 
 void testeigen(){
@@ -176,7 +204,8 @@ void two_holes(){
     //invNu+=3;
     vector<LATTICE> ll(invNu),ll2(invNu);
     vector<Eigen::MatrixXcd> overlaps(nds,Eigen::MatrixXcd::Zero(invNu,invNu));
-    vector<Eigen::MatrixXcd> overlapsll(nds,Eigen::MatrixXcd::Zero(invNu,invNu));
+//    vector<Eigen::MatrixXcd> overlapsll(nds,Eigen::MatrixXcd::Zero(invNu,invNu));
+    Eigen::MatrixXcd overlapsll=Eigen::MatrixXcd::Zero(invNu, invNu);
     vector<Eigen::MatrixXcd> overlapsll2(nds,Eigen::MatrixXcd::Zero(invNu,invNu));
     
 	for(int gs=0;gs<invNu;gs++){
@@ -190,20 +219,21 @@ void two_holes(){
 	for(int gs1=0;gs1<invNu;gs1++){    
 	    ll[gs1].reset();
 	    ll[gs1].step(nWarmup);
-//	    complex<double> btemp;
         for(int i=0;i<nMeas;i++){
             ll[gs1].step(nSteps);
             //	        energy+=ll[gs1].coulomb_energy();
             for(int gs2=0;gs2<invNu;gs2++){
+                if (str=="test_hermitian" || (str=="" && gs2>=gs1)) {
+                    overlapsll(gs1,gs2)+=ll[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
+                }
                 for(int b=0;b<nds;b++){
+                    if (b>1) continue;
+                    
                     ll2[gs2].set_hole(holes[b]);
                     ll2[gs2].reset();
-                    berry=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
+                    complex<double> w0,w2; w0=holes[0][0]*ll[gs1].L1+holes[0][1]*ll[gs1].L2; w2=holes[b][0]*ll[gs1].L1+holes[b][1]*ll[gs1].L2;
+                    berry=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs())*exp(-1./6.*(norm(w2)-norm(w0)));//is that correct?
                     overlaps[b](gs1,gs2)+=berry;
-                    
-                    berryll=ll[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
-                    overlapsll[b](gs1,gs2)+=berryll;
-                    
                 }
             }
         }
@@ -212,6 +242,8 @@ void two_holes(){
     vector<double> energy(invNu,0);
     for (int gs1=0; gs1<invNu; gs1++) {
         for (int b=0; b<nds; b++) {
+            if (b>1) continue;
+            
             ll2[gs1].set_hole(holes[b]);
             ll2[gs1].reset();
             ll2[gs1].step(nWarmup);
@@ -219,66 +251,58 @@ void two_holes(){
                 ll2[gs1].step(nSteps);
                 energy[gs1]+=ll2[gs1].coulomb_energy();
                 for (int gs2=0; gs2<invNu; gs2++) {
-					if(gs2!=gs1){
-		            	ll2[gs2].set_hole(holes[b]);
-		            	ll2[gs2].reset();
-					}
-                    berryll2=ll2[gs2].get_wf(ll2[gs1].get_locs())/ll2[gs1].get_wf(ll2[gs1].get_locs());
-                    overlapsll2[b](gs1,gs2)+=berryll2;
+                    if (str=="test_hermitian" || (str=="" && gs2>=gs1)) {
+                        berryll2=ll2[gs2].get_wf(ll2[gs1].get_locs())/ll2[gs1].get_wf(ll2[gs1].get_locs());
+                        overlapsll2[b](gs1,gs2)+=berryll2;
+                    }
                 }
                 
             }
         }
         cout<<energy[gs1]/(1.*nMeas)<<endl;
     }
-
-	//cancel off some normalization factors    
-	complex<double> temp;
-    for (int gs1=0; gs1<invNu; gs1++) {
-        for (int gs2=0; gs2<gs1; gs2++) {
-            for (int b=0; b<nds; b++) {
-				temp=sqrt(overlaps[b](gs1,gs2)*overlaps[b](gs2,gs1));
-				overlaps[b](gs1,gs2)=temp;
-				overlaps[b](gs2,gs1)=conj(temp);
-				temp=sqrt(overlapsll[b](gs1,gs2)*overlapsll[b](gs2,gs1));
-				overlapsll[b](gs1,gs2)=temp;
-				overlapsll[b](gs2,gs1)=conj(temp);
-				temp=sqrt(overlapsll2[b](gs1,gs2)*overlapsll2[b](gs2,gs1));
-				overlapsll2[b](gs1,gs2)=temp;
-				overlapsll2[b](gs2,gs1)=conj(temp);
+    
+    if (str!="test_hermitian") {
+        for (int gs1=0; gs1<invNu; gs1++) {
+            for (int gs2=gs1-1; gs2>=0; gs2--) {
+                for (int b=0; b<nds; b++) {
+                    if (b>1) continue;
+                    overlapsll(gs1,gs2) = conj(overlapsll(gs2,gs1));
+                    overlapsll2[b](gs1,gs2) = conj(overlapsll2[b](gs2,gs1));
+                }
             }
         }
     }
     
-    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> esll;
-    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> esll2;
-    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es;
-    
-    Eigen::MatrixXcd esll_diag = Eigen::MatrixXcd::Zero(invNu, invNu);
-    Eigen::MatrixXcd esll2_diag = Eigen::MatrixXcd::Zero(invNu, invNu);
-    Eigen::MatrixXcd diaged_berry;
+    overlapsll/=(1.*nMeas);
     for (int b=0; b<nds; b++) {
-        overlaps[b]/=(1.*nMeas); overlapsll[b]/=(1.*nMeas); overlapsll2[b]/=(1.*nMeas);
-        cout<<overlaps[b]<<endl<<endl;
-        cout<<overlapsll[b]<<endl<<endl;
-        cout<<overlapsll2[b]<<endl<<endl;
-        
-        esll.compute(overlapsll[b]);
-        esll2.compute(overlapsll2[b]);
+        if (b>1) continue;
+        overlaps[b]/=(1.*nMeas); overlapsll2[b]/=(1.*nMeas);
+//        cout<<overlaps[b]<<endl;
 //        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b]);
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> esll(overlapsll);
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> esll2(overlapsll2[b]);
         
-//        cout<<endl;
-//        cout<<"esll.eigenvector.adjoint() * esll * esll.eigenvector = \n"<<esll.eigenvectors().adjoint() * overlapsll[b] * esll.eigenvectors()<<endl;
-//        cout<<"esll2.eigenvector.adjoint() * esll2 * esll2.eigenvector = \n"<<esll2.eigenvectors().adjoint() * overlapsll2[b] * esll2.eigenvectors()<<endl;
-//        cout<<endl;
+        Eigen::MatrixXcd esll_diag = Eigen::MatrixXcd::Zero(invNu, invNu);
+        Eigen::MatrixXcd esll2_diag = Eigen::MatrixXcd::Zero(invNu, invNu);
+        esll_diag=chop(esll.eigenvectors().adjoint() * overlapsll * esll.eigenvectors());
+        esll2_diag=chop(esll2.eigenvectors().adjoint() * overlapsll2[b] * esll2.eigenvectors());
         
-        diaged_berry = esll.eigenvectors().adjoint() * esll2.eigenvectors();
-		cout<<diaged_berry<<endl;
-        cout<<"-------------------"<<endl;
-        es.compute(diaged_berry);
+        cout<<"\nb="<<b<<endl;
+        cout<<"\noverlapsll = \n"<<overlapsll<<endl;
+        cout<<"\noverlapsll2["<<b<<"] = \n"<<overlapsll2[b]<<endl;
+        cout<<"esll.eigenvector.adjoint() * esll * esll.eigenvector = \n"<<esll_diag<<endl;
+        cout<<"esll2.eigenvector.adjoint() * esll2 * esll2.eigenvector = \n"<<esll2_diag<<endl;
+        cout<<endl;
+        
+        Eigen::MatrixXcd diaged_berry = Eigen::MatrixXcd::Zero(invNu, invNu);
+        diaged_berry = esll.eigenvectors().adjoint() * overlaps[b] * esll2.eigenvectors();
+        cout<<"\noverlaps[b]="<<overlaps[b]<<endl;
+        cout<<"diaged_berry="<<diaged_berry<<endl;
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(diaged_berry);
         bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<abs(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[1])<<" "<<abs(es.eigenvalues()[2])<<" "<<arg(es.eigenvalues()[2])<<endl;
     }
-
+    
 }
 
 void single_run(){
