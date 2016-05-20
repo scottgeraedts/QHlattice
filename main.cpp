@@ -41,8 +41,13 @@ int main(){
 //	void single_run();
 //	single_run();
 
-    void two_holes_scott();
-    two_holes_scott();
+//    void two_holes_scott();
+//    two_holes_scott();
+    void two_holes(string str);
+    string str;
+//    str = "test_hermitian";
+    str = "";
+    two_holes(str);
     
 //    void laughlinberryphase();
 //    laughlinberryphase();
@@ -55,24 +60,34 @@ int main(){
 }
 
 void testeigen(){
-    Eigen::Matrix2cd MM;
+//    Eigen::Matrix2cd MM;
     complex<double> ii = complex<double> (0,1);
-    MM<<1,2.+ii,2.-ii,4;
-    cout<<"MM=\n"<<MM<<endl;
-    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(MM);
-    cout<<"\n eigenvectors = \n"<<es.eigenvectors()<<endl;//eigenvectors are columns.
-    cout<<"eigenvalues = \n"<<es.eigenvalues()<<endl;
-    cout<<endl;
-    cout<<"eigenvectors . eigenvectors.adjoint = \n"<<es.eigenvectors()*es.eigenvectors().adjoint()<<endl;
-    cout<<"eigenvectors.adjoint . eigenvectors = \n"<<es.eigenvectors().adjoint()*es.eigenvectors()<<endl;
-    cout<<endl;
-    cout<<"eigenvectors.adjoit() * MM * eigenvectors = \n"<<es.eigenvectors().adjoint()*MM*es.eigenvectors()<<endl;
+//    MM<<1,2.+ii,2.-ii,4;
+//    cout<<"MM=\n"<<MM<<endl;
+//    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(MM);
+//    cout<<"\n eigenvectors = \n"<<es.eigenvectors()<<endl;//eigenvectors are columns.
+//    cout<<"eigenvalues = \n"<<es.eigenvalues()<<endl;
+//    cout<<endl;
+//    cout<<"eigenvectors . eigenvectors.adjoint = \n"<<es.eigenvectors()*es.eigenvectors().adjoint()<<endl;
+//    cout<<"eigenvectors.adjoint . eigenvectors = \n"<<es.eigenvectors().adjoint()*es.eigenvectors()<<endl;
+//    cout<<endl;
+//    cout<<"eigenvectors.adjoit() * MM * eigenvectors = \n"<<es.eigenvectors().adjoint()*MM*es.eigenvectors()<<endl;
+//    
+//    Eigen::Matrix2f mat;
+//    mat<<1,4,5,9;
+//    cout<<"\nmat=\n"<<mat;
+//    mat=mat*mat+mat;
+////    cout<<"\nsqrt(mat)=\n"<<mat;
+//    
+    Eigen::Vector2cd V; V(0)=1.; V(1)=ii;
+//    cout<<"(1,1).squared norm = "<<V.squaredNorm()<<endl;
     
-    Eigen::Matrix2f mat;
-    mat<<1,4,5,9;
-    cout<<"\nmat=\n"<<mat;
-    mat=mat*mat+mat;
-//    cout<<"\nsqrt(mat)=\n"<<mat;
+//    Eigen::Matrix2cd M2;
+//    M2.col(0)=V;
+//    cout<<"\nM2=\n"<<M2<<endl;
+    
+    int supermod(int k, int n);
+    cout<<"supermod = "<<supermod(5,4)<<endl;
 }
 void test_largesize(){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
@@ -141,112 +156,80 @@ void laughlinberryphase(){
     for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.5; a[1]=0.5/(1.*Grid)*i;     holes.push_back(a);}
     for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.5-0.5/(1.*Grid)*i; a[1]=0.5; holes.push_back(a);}
     for (int i=0; i<Grid; i++) {vector<double> a(2); a[0]=0.; a[1]=0.5-0.5/(1.*Grid)*i;  holes.push_back(a);}
-//    cout<<"holes.size()="<<holes.size()<<endl;
-//    for (int i=0; i<holes.size(); i++) {cout<<holes[i][0]<<" "<<holes[i][1]<<endl;}
     int nds=holes.size();
     
     vector<vector<double> > holes2(nds, vector<double>(2,0));
     
     int supermod(int k, int n);
-    for(int i=0;i<nds;i++) holes2[supermod(i-1,nds)]=holes[i];
+    for(int i=0;i<nds;i++) holes2[supermod(i-1,nds)]=holes[i];//(holes[b],holes2[b]) = (holes[b],holes[b+1]).
+    ofstream bout("berry_laughlin_may20");
     
-    //ll_0, ll_1, ll_2 are 3 gs whose hole given by holes[b];
-    //pp_0, pp_1, pp_2 are 3 gs whose hole given by holes2[b];
-    ofstream bout("berry_laughlin_may18");
-    
-    vector<LATTICE> ll(3), pp(3);
+    vector<LATTICE> ll, pp;
     for (int i=0; i<3; i++) {
-        ll[i]=LATTICE(Ne, invNu, testing, type, seed, i);
-        pp[i]=LATTICE(Ne, invNu, testing, type, seed, i);
+        LATTICE a(Ne, invNu, testing, type, seed, i);
+        ll.push_back(a); pp.push_back(a);//ll=psi(xb), pp=psi(xb+1);
+    }
+    
+    vector<vector<Eigen::MatrixXcd > > overlaps;//overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<psi(xb)|psi(xb)>.
+    for (int b=0; b<nds; b++) {
+        vector<Eigen::MatrixXcd> aa;
+        Eigen::MatrixXcd a = Eigen::MatrixXcd::Zero(3,3);
+        aa.push_back(a); aa.push_back(a);
+        overlaps.push_back(aa);
     }
     
     for(int b=0;b<nds;b++){
-        //berrymaitrx[0]=berrymaitrx, berrymatrix[1]=berrymatrix_ll, berrymatrix[2]=berrymatrix_pp; each berrymatrix[i] is has 3 (3,3) matrix.
-        vector<vector<Eigen::MatrixXcd> > berrymatrix;
-        for (int j=0; j<3; j++) {
-            vector<Eigen::MatrixXcd> temp;
-            for (int i=0; i<2; i++) {
-                Eigen::MatrixXcd a = Eigen::MatrixXcd::Zero(3,3);
-                temp.push_back(a); temp.push_back(a); temp.push_back(a);
-            }
-            berrymatrix.push_back(temp);
-        }
-        
-//        vector<Eigen::MatrixXcd> berrymatrix, berrymatrix_ll, berrymatrix_pp;
-//        for (int i=0; i<2; i++) {
-//            Eigen::MatrixXcd a = Eigen::MatrixXcd::Zero(3,3);
-//            berrymatrix.push_back(a); berrymatrix_a.push_back(a); berrymatrix_b.push_back(a);
-//        }
-        
-//        Eigen::MatrixXcd berrymatrix_a = Eigen::MatrixXcd::Zero(3,3); Eigen::MatrixXcd berrymatrix_b = Eigen::MatrixXcd::Zero(3,3);
-//        Eigen::MatrixXcd berrymatrix_ll_a = Eigen::MatrixXcd::Zero(3,3); Eigen::MatrixXcd berrymatrix_ll_b = Eigen::MatrixXcd::Zero(3,3);
-//        Eigen::MatrixXcd berrymatrix_pp_a = Eigen::MatrixXcd::Zero(3,3); Eigen::MatrixXcd berrymatrix_pp_b = Eigen::MatrixXcd::Zero(3,3);
         for (int i=0; i<3; i++) {
             ll[i].set_hole(holes[b]);
             pp[i].set_hole(holes2[b]);
             ll[i].reset(); ll[i].step(nWarmup);
-            pp[i].reset(); pp[i].step(nWarmup);
         }
         for(int k=0;k<nMeas;k++){
-            for (int i=0; i<3; i++) {ll[i].step(nSteps); pp[i].step(nSteps);}
+            for (int i=0; i<3; i++) {
+                ll[i].step(nSteps);
+            }
             //berrymatrix(m,n) := conj(ll_m) . pp_n = |ll_m|^2 . pp_n/ll_m;
             //generalization of: berry2+=ll2.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
             for (int i=0; i<3; i++) {
                 for (int j=0; j<3; j++) {
-                    vector<complex<double> > temp(3);
+                    vector<complex<double> > temp(2);
                     temp[0]=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
                     temp[1]=ll[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
-                    temp[2]=pp[j].get_wf(pp[i].get_locs())/pp[i].get_wf(pp[i].get_locs());
-                    for (int l=0; l<3; l++) {
-                        berrymatrix[l][0](i,j)+=temp[l];
-                        berrymatrix[l][1](i,j)+=norm(temp[l]);
+                    for (int l=0; l<2; l++) {
+                        overlaps[b][l](i,j)+=temp[l];
                     }
                 }
             }
-        }
-        for (int i=0; i<3; i++) {
-            for (int j=0; j<2; j++) {
-                berrymatrix[i][j]/=(1.*nMeas);
-            }
+            
         }
         
-        vector<Eigen::MatrixXcd> berrymatrix_ortho;
-        for (int i=0; i<3; i++) {
-            Eigen::MatrixXcd temp = Eigen::MatrixXcd::Zero(3,3);
-            for (int m=0; m<3; m++) {
-                for (int n=0; n<3; n++) {
-                    temp(m,n) = berrymatrix[i][0](m,n)/sqrt(berrymatrix[i][1](m,n));
-                }
-            }
-            berrymatrix_ortho.push_back(temp);
+        for (int l=0; l<2; l++) {
+            overlaps[b][l]/=(1.*nMeas);
         }
-//        Eigen::MatrixXcd berrymatrix = Eigen::MatrixXcd::Zero(3,3);
-//        Eigen::MatrixXcd berrymatrix_ll = Eigen::MatrixXcd::Zero(3,3);
-//        Eigen::MatrixXcd berrymatrix_pp = Eigen::MatrixXcd::Zero(3,3);
-//        for (int i=0; i<3; i++) {
-//            for (int j=0; j<3; j++) {
-//                berrymatrix(i,j) = berrymatrix_a(i,j)/sqrt(berrymatrix_b(i,j));
-//                berrymatrix_ll(i,j) = berrymatrix_ll_a(i,j)/sqrt(berrymatrix_ll_b(i,j));
-//                berrymatrix_pp(i,j) = berrymatrix_pp_a(i,j)/sqrt(berrymatrix_pp_b(i,j));
-//            }
-//        }
-//        double phasemod(complex<double> in);
-//        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es_ll(berrymatrix_ll);
-//        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es_pp(berrymatrix_pp);
-        vector<Eigen::ComplexEigenSolver<Eigen::MatrixXcd> > es;
-        for (int i=0; i<3; i++) {
-            Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es_temp(berrymatrix_ortho[i]);
-            es.push_back(es_temp);
-        }
-        
-        Eigen::MatrixXcd berrymatrix_final = Eigen::MatrixXcd::Zero(3,3);
-        berrymatrix_final = es[1].eigenvectors().adjoint() * berrymatrix_ortho[0] * es[2].eigenvectors();//es_ll.eigenvectors().adjoint() * berrymatrix * es_pp.eigenvectors();
-        
-        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es_final(berrymatrix_final);
-        
-        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<holes2[b][0]<<" "<<holes2[b][1]<<"   "<<abs(es_final.eigenvalues()[0])<<" "<<arg(es_final.eigenvalues()[0])<<" "<<abs(es_final.eigenvalues()[1])<<" "<<arg(es_final.eigenvalues()[1])<<" "<<abs(es_final.eigenvalues()[2])<<" "<<arg(es_final.eigenvalues()[2])<<endl;
     }
     
+    vector<Eigen::Matrix3cd> alphas;
+    for (int b=0; b<nds; b++) {
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b][1]);
+        Eigen::Matrix3cd alpha;
+        for (int i=0; i<3; i++) {
+            Eigen::VectorXcd V = es.eigenvectors().col(i);
+            complex<double> temp = es.eigenvalues()[i]*V.squaredNorm();
+            V/=sqrt(temp);
+            alpha.col(i)=V;
+        }
+        alphas.push_back(alpha);
+    }
+    
+    Eigen::Matrix3cd berrymatrix_integral = Eigen::Matrix3cd::Identity(3,3);
+    for (int b=0; b<nds; b++) {
+        int supermod(int k, int n);
+        berrymatrix_integral *= alphas[b].adjoint() * overlaps[b][0] * alphas[supermod(b+1,nds)];
+    }
+    cout<<"\nberrymatrix_integral = \n"<<berrymatrix_integral<<endl;
+    
+    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es_integral(berrymatrix_integral);
+    bout<<abs(es_integral.eigenvalues()[0])<<" "<<arg(es_integral.eigenvalues()[0])<<" "<<abs(es_integral.eigenvalues()[1])<<" "<<arg(es_integral.eigenvalues()[1])<<" "<<abs(es_integral.eigenvalues()[2])<<" "<<arg(es_integral.eigenvalues()[2])<<endl;
 }
 void two_holes(string str){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
@@ -266,18 +249,20 @@ void two_holes(string str){
     while (x<0.05) {
         a[0]=x; a[1]=0.;
         holes.push_back(a);
-        x+=0.02;
+        x+=0.002;
     }
     int nds=holes.size();
     
     
-    ofstream bout("twoholelaughlin");
-    //invNu+=3;
-    vector<LATTICE> ll(invNu),ll2(invNu);
-    vector<Eigen::MatrixXcd> overlaps(nds,Eigen::MatrixXcd::Zero(invNu,invNu));
-//    vector<Eigen::MatrixXcd> overlapsll(nds,Eigen::MatrixXcd::Zero(invNu,invNu));
-    Eigen::MatrixXcd overlapsll=Eigen::MatrixXcd::Zero(invNu, invNu);
-    vector<Eigen::MatrixXcd> overlapsll2(nds,Eigen::MatrixXcd::Zero(invNu,invNu));
+    ofstream bout("twoholelaughlin_may20");
+    vector<LATTICE> ll(invNu),ll2(invNu);//ll is psi(x), ll2 is psi(x).
+    vector<vector<Eigen::MatrixXcd> > overlaps;//overlaps[b][0]=<psi(0)|psi(xb)>, overlaps[b][1]=<psi(xb)|psi(xb)>.
+    for (int b=0; b<nds; b++) {
+        vector<Eigen::MatrixXcd> aa;
+        Eigen::MatrixXcd a = Eigen::MatrixXcd::Zero(3,3);
+        aa.push_back(a); aa.push_back(a);
+        overlaps.push_back(aa);
+    }
     
 	for(int gs=0;gs<invNu;gs++){
 		ll[gs]=LATTICE(Ne,invNu,testing,type,seed,gs);
@@ -285,26 +270,18 @@ void two_holes(string str){
 		ll2[gs]=LATTICE(Ne,invNu,testing,type,seed,gs);
     }
     
-    complex<double> berry;
-    complex<double> berryll, berryll2;
-	for(int gs1=0;gs1<invNu;gs1++){    
+	for(int gs1=0;gs1<invNu;gs1++){
 	    ll[gs1].reset();
 	    ll[gs1].step(nWarmup);
         for(int i=0;i<nMeas;i++){
             ll[gs1].step(nSteps);
             //	        energy+=ll[gs1].coulomb_energy();
             for(int gs2=0;gs2<invNu;gs2++){
-                if (str=="test_hermitian" || (str=="" && gs2>=gs1)) {
-                    overlapsll(gs1,gs2)+=ll[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
-                }
                 for(int b=0;b<nds;b++){
-                    if (b>1) continue;
-                    
+//                    if (b>1) continue;//for test.
                     ll2[gs2].set_hole(holes[b]);
                     ll2[gs2].reset();
-                    complex<double> w0,w2; w0=holes[0][0]*ll[gs1].L1+holes[0][1]*ll[gs1].L2; w2=holes[b][0]*ll[gs1].L1+holes[b][1]*ll[gs1].L2;
-                    berry=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs())*exp(-1./6.*(norm(w2)-norm(w0)));//is that correct?
-                    overlaps[b](gs1,gs2)+=berry;
+                    overlaps[b][0](gs1,gs2)+=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
                 }
             }
         }
@@ -313,21 +290,17 @@ void two_holes(string str){
     vector<double> energy(invNu,0);
     for (int gs1=0; gs1<invNu; gs1++) {
         for (int b=0; b<nds; b++) {
-            if (b>1) continue;
-            
+//            if (b>1) continue;//for test.
             ll2[gs1].set_hole(holes[b]);
             ll2[gs1].reset();
             ll2[gs1].step(nWarmup);
             for (int i=0; i<nMeas; i++) {
                 ll2[gs1].step(nSteps);
-                energy[gs1]+=ll2[gs1].coulomb_energy();
                 for (int gs2=0; gs2<invNu; gs2++) {
                     if (str=="test_hermitian" || (str=="" && gs2>=gs1)) {
-                        berryll2=ll2[gs2].get_wf(ll2[gs1].get_locs())/ll2[gs1].get_wf(ll2[gs1].get_locs());
-                        overlapsll2[b](gs1,gs2)+=berryll2;
+                        overlaps[b][1](gs1,gs2)+=ll2[gs2].get_wf(ll2[gs1].get_locs())/ll2[gs1].get_wf(ll2[gs1].get_locs());
                     }
                 }
-                
             }
         }
         cout<<energy[gs1]/(1.*nMeas)<<endl;
@@ -337,40 +310,31 @@ void two_holes(string str){
         for (int gs1=0; gs1<invNu; gs1++) {
             for (int gs2=gs1-1; gs2>=0; gs2--) {
                 for (int b=0; b<nds; b++) {
-                    if (b>1) continue;
-                    overlapsll(gs1,gs2) = conj(overlapsll(gs2,gs1));
-                    overlapsll2[b](gs1,gs2) = conj(overlapsll2[b](gs2,gs1));
+                    overlaps[b][1](gs1,gs2) = conj(overlaps[b][1](gs2,gs1));
                 }
             }
         }
     }
     
-    overlapsll/=(1.*nMeas);
+    vector<Eigen::Matrix3cd> alphas;
     for (int b=0; b<nds; b++) {
-        if (b>1) continue;
-        overlaps[b]/=(1.*nMeas); overlapsll2[b]/=(1.*nMeas);
-//        cout<<overlaps[b]<<endl;
-//        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b]);
-        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> esll(overlapsll);
-        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> esll2(overlapsll2[b]);
+        for (int l=0; l<2; l++) overlaps[b][l]/=(1.*nMeas);
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> esll(overlaps[b][1]);
+        Eigen::Matrix3cd alpha;
+        for (int i=0; i<invNu; i++) {
+            Eigen::VectorXcd V = esll.eigenvectors().col(i);
+            complex<double> temp = esll.eigenvalues()[i]*V.squaredNorm();
+            V/=sqrt(temp);
+            alpha.col(i)=V;
+        }
+        alphas.push_back(alpha);
+    }
+    
+    for (int b=0; b<nds; b++) {
+        Eigen::MatrixXcd berry_final = Eigen::MatrixXcd::Zero(invNu, invNu);
+        berry_final = alphas[0].adjoint() * overlaps[b][0] * alphas[b];
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berry_final);
         
-        Eigen::MatrixXcd esll_diag = Eigen::MatrixXcd::Zero(invNu, invNu);
-        Eigen::MatrixXcd esll2_diag = Eigen::MatrixXcd::Zero(invNu, invNu);
-        esll_diag=chop(esll.eigenvectors().adjoint() * overlapsll * esll.eigenvectors());
-        esll2_diag=chop(esll2.eigenvectors().adjoint() * overlapsll2[b] * esll2.eigenvectors());
-        
-        cout<<"\nb="<<b<<endl;
-        cout<<"\noverlapsll = \n"<<overlapsll<<endl;
-        cout<<"\noverlapsll2["<<b<<"] = \n"<<overlapsll2[b]<<endl;
-        cout<<"esll.eigenvector.adjoint() * esll * esll.eigenvector = \n"<<esll_diag<<endl;
-        cout<<"esll2.eigenvector.adjoint() * esll2 * esll2.eigenvector = \n"<<esll2_diag<<endl;
-        cout<<endl;
-        
-        Eigen::MatrixXcd diaged_berry = Eigen::MatrixXcd::Zero(invNu, invNu);
-        diaged_berry = esll.eigenvectors().adjoint() * overlaps[b] * esll2.eigenvectors();
-        cout<<"\noverlaps[b]="<<overlaps[b]<<endl;
-        cout<<"diaged_berry="<<diaged_berry<<endl;
-        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(diaged_berry);
         bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<abs(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[1])<<" "<<abs(es.eigenvalues()[2])<<" "<<arg(es.eigenvalues()[2])<<endl;
     }
     
