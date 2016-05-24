@@ -385,7 +385,6 @@ void two_holes(string str, int nmeasurement, data& test){
                 }
             }
         }
-        cout<<energy[gs1]/(1.*nMeas)<<endl;
     }
 //    cout<<"\noverlaps[10][0]=\n"<<overlaps[10][0]<<endl;
 //    cout<<"\noverlaps[10][1]=\n"<<overlaps[10][1]<<endl;
@@ -522,7 +521,7 @@ void two_holes_scott(){
     overlaps11/=(1.*nMeas);
     overlaps11_2/=(1.*nMeas);
 	overlaps11=overlaps11.cwiseQuotient(overlaps11_2.cwiseSqrt());
-	hermitianize(overlaps11);
+//	hermitianize(overlaps11);
 
     Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es11(overlaps11);
     Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es,es22;
