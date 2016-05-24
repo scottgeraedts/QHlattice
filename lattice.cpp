@@ -31,8 +31,10 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 	//in the y direction these take the values gs*L/invNu, where gs in (0,invNu-1) is an integer which labels the ground state
 	ws=vector< vector<double> > (invNu, vector<double>(2,0) );
 	for( int i=0;i<invNu;i++){
-		ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
-		ws[i][1]=gs/(1.*invNu);
+        ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
+        ws[i][1]=gs/(1.*invNu);
+//        ws[i][1]=( (i+0.5)/(1.*invNu)-0.5);
+//        ws[i][0]=gs/(1.*invNu);
 	}
 
 	double center_frac[2]={0.,0.};

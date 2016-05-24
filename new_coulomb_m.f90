@@ -195,9 +195,9 @@ function v_coulomb(norb,m,n, l1,l2) result(v)
 ! Madelung energy. now convert it to the onsite effective
 ! potential
   if (mod (m, norb) == 0 .and. mod(n,norb) == 0) then
-     write(6,'("contact",f25.16)') v
+!     write(6,'("contact",f25.16)') v
      v = -norb*v
-     write(6,'("contact",f25.16)') v
+!     write(6,'("contact",f25.16)') v
   endif
   return
 end function v_coulomb
