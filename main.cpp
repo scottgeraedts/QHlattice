@@ -59,25 +59,6 @@ int main(){
     vector<data> datas;
     vector<vector<data> > datass(3);
     
-    
-//    ofstream bout("berry_laughlin_single_phase0");
-//    int N=10;//number of loops.
-//    int gs=0;
-//    vector<vector<double> > angs(N, vector<double>(3));
-//    for (int i=0; i<N; i++) {
-//        double leng = 1./(1.*N)*i;
-//        length[0]=0.5; length[1]=leng;
-//        laughlin_bp_single_state(gs, length, steplength, datas);
-//        double ang=0.;
-//        for (int j=0; j<datas.size(); j++) {
-//            ang+=datas[j].ang[gs];
-//        }
-//        angs[i][gs]=ang;
-//    }
-//    for (int i=0; i<N; i++) {
-//        bout<<gs<<" "<<i<<" "<<angs[i][gs]<<endl;
-//    }
-    
     length[0]=0.5; length[1]=0.8;
     void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas);
     laughlinberryphase(length, steplength, datas);
@@ -88,7 +69,7 @@ int main(){
         }
     }
     
-//    //use single body w.f. rather than berry matrix.
+//    //use model w.f. rather than berry matrix.
 //    int gs=0;
 //    length[0]=0.5; length[1]=0.8;
 //    for (int gs=0; gs<3; gs++) {
@@ -100,6 +81,7 @@ int main(){
 //        cout<<" gs = "<<gs<<" total phase = "<<angle<<endl;
 //    }
     
+//    //model w.f.
 //    int gs=0;
 //    length[0]=0.5; length[1]=0.5;
 //    ofstream bout("teststeplength");
@@ -113,17 +95,17 @@ int main(){
 //        }
 //        bout<<steplength<<" "<<maxamp<<" "<<minamp<<" "<<ang<<endl;
 //    }
-    
+//    
 //    ofstream bout("berry_laughlin_single_state");
 //    for (int i=0; i<datas.size(); i++) {
 //        bout<<datas[i].position[0]<<" "<<datas[i].position[1]<<" "<<datas[i].amp[gs]<<" "<<datas[i].ang[gs]<<endl;
 //    }
     
 
-//    void testeigen();
+    void testeigen();
 //    testeigen();
     
-//    void test_largesize();
+    void test_largesize();
 //    test_largesize();
 }
 
@@ -329,7 +311,7 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
         for (int i=0; i<3; i++) for (int j=0; j<3; j++) overlaps[b][2](i,j)=overlaps[b][0](i,j)/sqrt(abs(overlaps[b][1](i,j)));
     }
 
-    //comment this if want orthogonal.
+    //comment this paragraph if want orthogonal.
     vector<Eigen::Matrix3cd> alphas;
     for (int b=0; b<nds; b++) {
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b][3]);
