@@ -22,6 +22,15 @@ Eigen::MatrixXcd chop(Eigen::MatrixXcd mat){
     }
     return ret;
 }
+void hermitianize(Eigen::MatrixXcd &x){
+	x(0,1)=0.5*(x(0,1)+conj(x(1,0)));
+	x(1,0)=conj(x(0,1));
+	x(0,2)=0.5*(x(0,2)+conj(x(2,0)));
+	x(2,0)=conj(x(0,2));
+	x(1,2)=0.5*(x(1,2)+conj(x(2,1)));
+	x(2,1)=conj(x(1,2));
+
+}
 struct data{
     double position[2];
     double amp[3];
@@ -58,12 +67,12 @@ int main(){
     vector<data> datas;
     
     ofstream bout("berry_laughlin_single_phase0");
-    int N=10;
+    int N=1;
     int gs=0;
     vector<vector<double> > angs(N, vector<double>(3));
     for (int i=0; i<N; i++) {
         double leng = 1./(1.*N)*i;
-        length[0]=0.5; length[1]=leng;
+        length[0]=0.05; length[1]=0.05;
         
         laughlin_bp_single_state(gs, length, steplength, datas);
         double ang=0.;
@@ -219,8 +228,8 @@ void laughlin_bp_single_state(int gs, vector<double> length, double steplength, 
             overlaps[b][l]/=(1.*nMeas);
         }
         overlaps[b][2] = overlaps[b][0]/sqrt(overlaps[b][1]);
+ 	    cout<<holes[b][0]<<" "<<holes[b][1]<<" "<<overlaps[b][2]<<endl;
     }
-    
     datas.clear();
     for (int b=0; b<nds; b++) {
         data tmp;
@@ -521,7 +530,7 @@ void two_holes_scott(){
     overlaps11/=(1.*nMeas);
     overlaps11_2/=(1.*nMeas);
 	overlaps11=overlaps11.cwiseQuotient(overlaps11_2.cwiseSqrt());
-//	hermitianize(overlaps11);
+	hermitianize(overlaps11);
 
     Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es11(overlaps11);
     Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es,es22;
