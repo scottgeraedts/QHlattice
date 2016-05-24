@@ -96,7 +96,6 @@ int main(){
 //        }
 //        bout<<steplength<<" "<<maxamp<<" "<<minamp<<" "<<ang<<endl;
 //    }
-//    
 //    ofstream bout("berry_laughlin_single_state");
 //    for (int i=0; i<datas.size(); i++) {
 //        bout<<datas[i].position[0]<<" "<<datas[i].position[1]<<" "<<datas[i].amp[gs]<<" "<<datas[i].ang[gs]<<endl;
