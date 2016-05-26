@@ -107,7 +107,7 @@ int LATTICE::simple_update(){
 		
 	//***************vandermode part
 	int vandermonde_exponent=invNu;
-	if(type=="CFL") invNu-=2;
+	if(type=="CFL") vandermonde_exponent-=2;
 	int xi,yi;
 	
 	if(vandermonde_exponent!=0){
