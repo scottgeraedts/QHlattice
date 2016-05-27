@@ -36,8 +36,14 @@ struct data{
     double position[2];
     double amp[3];
     double ang[3];
+    double energy;
 };
 int main(){
+    void plot_CFL_coule_vsdbar(int grid);
+    plot_CFL_coule_vsdbar(10);
+    
+    
+    
 //    berry_phase bp(20);
 //    bp.two_full_braiding();
 
@@ -63,21 +69,21 @@ int main(){
 //    two_holes("", 0, test);
     
     
-    void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas);//gs = 0, 1, 2, labeling ground state.
-    vector<double> length(2); double steplength = 0.01;
-//    vector<vector<data> > datas; for (int i=0; i<3; i++) {vector<data> tmp; datas.push_back(tmp);}
-    vector<data> datas;
-    vector<vector<data> > datass(3);
-    
-    length[0]=0.5; length[1]=0.8;
-    void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas);
-    laughlinberryphase(length, steplength, datas);
-    ofstream bout("output_modified_orthogonal");
-    for (int i=0; i<datas.size(); i++) {
-        for (int gs=0; gs<3; gs++) {
-            bout<<datas[i].num<<" "<<datas[i].position[0]<<" "<<datas[i].position[1]<<" "<<gs<<" "<<datas[i].amp[gs]<<" "<<datas[i].ang[gs]<<endl;
-        }
-    }
+//    void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas);//gs = 0, 1, 2, labeling ground state.
+//    vector<double> length(2); double steplength = 0.01;
+////    vector<vector<data> > datas; for (int i=0; i<3; i++) {vector<data> tmp; datas.push_back(tmp);}
+//    vector<data> datas;
+//    vector<vector<data> > datass(3);
+//    
+//    length[0]=0.5; length[1]=0.5;
+//    void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas);
+//    laughlinberryphase(length, steplength, datas);
+//    ofstream bout("output_modified_orthogonal");
+//    for (int i=0; i<datas.size(); i++) {
+//        for (int gs=0; gs<3; gs++) {
+//            bout<<datas[i].num<<" "<<datas[i].position[0]<<" "<<datas[i].position[1]<<" "<<gs<<" "<<datas[i].amp[gs]<<" "<<datas[i].ang[gs]<<endl;
+//        }
+//    }
     
 //    //use model w.f. rather than berry matrix.
 //    int gs=0;
@@ -319,9 +325,14 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
         }
         for (int i=0; i<3; i++) for (int j=i+1; j<3; j++) for (int k=2; k<4; k++) overlaps[b][k](i,j) = conj(overlaps[b][k](j,i));
         for (int l=0; l<4; l++) overlaps[b][l]/=(1.*nMeas);
-        for (int i=0; i<3; i++) for (int j=0; j<3; j++) {overlaps[b][0](i,j)/=sqrt(abs(overlaps[b][1](i,j))); overlaps[b][2](i,j)/=sqrt(abs(overlaps[b][1](i,j)));}
+        for (int i=0; i<3; i++) for (int j=0; j<3; j++) {overlaps[b][0](i,j)/=sqrt(abs(overlaps[b][1](i,j))); overlaps[b][2](i,j)/=sqrt(abs(overlaps[b][3](i,j)));}
+    }
+    
+    for (int b=0; b<nds; b++) {
+        cout<<"\nb="<<b<<" A_{ij} = \n"<<overlaps[b][2]<<endl;
     }
 
+    /*
     //comment this paragraph if want orthogonal.
     vector<Eigen::Matrix3cd> alphas;
     for (int b=0; b<nds; b++) {
@@ -368,6 +379,9 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
 //        cout<<" \n i = "<<i<<" test = \n"<<chop(test)<<endl;//expect to print out identity matrix.
 //        cout<<"\n i = "<<i<<" alpha.adjoint * alpha = \n"<<alphas[i].adjoint()*alphas[i]<<endl;
     }
+     */
+    
+    
 }
 
 void two_holes(string str, int nmeasurement, data& test){
@@ -678,6 +692,34 @@ void single_run(){
     outfile.close();
 }
 
+void plot_CFL_coule_vsdbar(int grid){
+    ofstream bout("CFL_coule_vsdbar");
+    void coul_energy_CFL_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter);
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    string type;
+    ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    int Nphi=Ne*invNu; int gs=0;
+    LATTICE edbar(Ne, invNu, testing, type, seed, gs);
+    
+    for (int i=0; i<grid*Nphi; i++) {
+        for (int j=0; j<grid*Nphi; j++) {
+            double ave_e, dbar_parameter[2];
+            dbar_parameter[0]=1.*i/(1.*Nphi*grid); dbar_parameter[1]=1.*j/(1.*Nphi*grid);
+            coul_energy_CFL_dbar(edbar, ave_e, nWarmup, nMeas, nSteps, nBins, dbar_parameter);
+            bout<<dbar_parameter[0]<<" "<<dbar_parameter[1]<<" "<<ave_e<<endl;
+        }
+    }
+    
+}
+
 void coul_energy_CFL_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter){
     double sumE=0;
     edbar.change_dbar_parameter(dbar_parameter[0],dbar_parameter[1]);
@@ -709,7 +751,7 @@ void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas,
             E2+=e*e;
         }
         sumE+=E/(1.*nMeas*edbar.Ne);
-        cout<<E/(1.*nMeas*edbar.Ne)<<endl;
+//        cout<<E/(1.*nMeas*edbar.Ne)<<endl;
     }
     ave_E=sumE/(1.*nBins);
 }

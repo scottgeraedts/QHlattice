@@ -57,7 +57,6 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 	}
 	holes_set=false;
 	
-	
 	//********calls to duncan's functions
 	set_l_(&NPhi, &L1, &L2);
 	setup_z_function_table_();
@@ -107,7 +106,10 @@ int LATTICE::simple_update(){
 		
 	//***************vandermode part
 	int vandermonde_exponent=invNu;
-	if(type=="CFL") invNu-=2;
+    if(type=="CFL") {
+//        invNu-=2;
+        vandermonde_exponent-=2;
+    }
 	int xi,yi;
 	
 	if(vandermonde_exponent!=0){
