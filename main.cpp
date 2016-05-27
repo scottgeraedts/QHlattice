@@ -35,8 +35,12 @@ struct data{
     double position[2];
     double amp[3];
     double ang[3];
+    double energy;
 };
 int main(){
+    void plot_CFL_coule_vsdbar(int grid);
+//    plot_CFL_coule_vsdbar(10);
+    
 //    berry_phase bp(20);
 //    bp.two_full_braiding();
 
@@ -71,13 +75,15 @@ int main(){
 //    length[0]=0.05; length[1]=0.05;
 //    void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas);
 //    laughlinberryphase(length, steplength, datas);
+    
+    
 //    ofstream bout("output_modified_orthogonal");
 //    for (int i=0; i<datas.size(); i++) {
 //        for (int gs=0; gs<3; gs++) {
 //            bout<<datas[i].num<<" "<<datas[i].position[0]<<" "<<datas[i].position[1]<<" "<<gs<<" "<<datas[i].amp[gs]<<" "<<datas[i].ang[gs]<<endl;
 //        }
 //    }
-//    
+    
 //    //use model w.f. rather than berry matrix.
 //    int gs=0;
 //    length[0]=0.5; length[1]=0.8;
@@ -244,7 +250,7 @@ void laughlin_bp_single_state(int gs, vector<double> length, double steplength, 
             overlaps[b][l]/=(1.*nMeas);
         }
         overlaps[b][2] = overlaps[b][0]/sqrt(overlaps[b][1]);
- 	    cout<<holes[b][0]<<" "<<holes[b][1]<<" "<<overlaps[b][2]<<endl;
+// 	    cout<<holes[b][0]<<" "<<holes[b][1]<<" "<<overlaps[b][2]<<endl;
     }
     datas.clear();
     for (int b=0; b<nds; b++) {
@@ -253,9 +259,17 @@ void laughlin_bp_single_state(int gs, vector<double> length, double steplength, 
         tmp.amp[gs]=abs(overlaps[b][2]); tmp.ang[gs]=arg(overlaps[b][2]);
         datas.push_back(tmp);
     }
+    
+    double phase=0.;
+    for (int b=0; b<nds; b++) {
+        phase+=datas[b].ang[gs];
+    }
+    cout<<"\n\nphase = "<<phase<<endl;
+    cout<<endl;
+    
 }
 
-void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas){
+void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, string str){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     string type;
@@ -312,20 +326,19 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
                     temp[0]=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
                     overlaps[b][0](i,j)+=temp[0];
                     overlaps[b][1](i,j)+=norm(temp[0]);
-//                    if (i>=j) {
-                        temp[1]=ll[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
-                        overlaps[b][2](i,j)+=temp[1];
-                        overlaps[b][3](i,j)+=norm(temp[1]);
-//                   }
+                    temp[1]=ll[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
+                    overlaps[b][2](i,j)+=temp[1];
+                    overlaps[b][3](i,j)+=norm(temp[1]);
                 }
             }
         }
- //       for (int i=0; i<3; i++) for (int j=i+1; j<3; j++) for (int k=2; k<4; k++) overlaps[b][k](i,j) = conj(overlaps[b][k](j,i));
         for (int l=0; l<4; l++) overlaps[b][l]/=(1.*nMeas);
         for (int i=0; i<3; i++) for (int j=0; j<3; j++) {overlaps[b][0](i,j)/=sqrt(abs(overlaps[b][1](i,j))); overlaps[b][2](i,j)/=sqrt(abs(overlaps[b][3](i,j)));}
+
         hermitianize(overlaps[b][2]);
     }
 
+    
     //comment this paragraph if want orthogonal.
     vector<Eigen::Matrix3cd> alphas;
     for (int b=0; b<nds; b++) {
@@ -340,6 +353,40 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
         alphas.push_back(alpha);
     }
     
+    if (str == "takeinverse") for (int b=0; b<nds; b++) overlaps[b][0]=overlaps[b][2].inverse() * overlaps[b][0];
+    
+    
+    Eigen::Matrix3cd berrymatrix_integral = Eigen::Matrix3cd::Identity(3,3);
+    vector<double> phases(3,0.);
+    datas.clear();
+    for (int b=0; b<nds; b++) {
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b][0]);
+        data tmp;
+        berrymatrix_integral*=overlaps[b][0];
+        for (int i=0; i<3; i++) {
+            phases[i]+=arg(es.eigenvalues()[i]);
+            tmp.num = b;
+            tmp.amp[i] = abs(es.eigenvalues()[i]);
+            tmp.ang[i] = arg(es.eigenvalues()[i]);
+        }
+        datas.push_back(tmp);
+    }
+    
+    cout<<"\nstr = "<<str<<endl;
+    cout<<"phase sum = "<<phases[0]<<" "<<phases[1]<<" "<<phases[2]<<" phase average = "<<(phases[0]+phases[1]+phases[2])/3<<endl;
+    
+    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
+    cout<<"berrymatrix_integral\n"<<berrymatrix_integral<<" \narg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
+    cout<<"amp of berrymatrix_integral = "<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[0])<<endl;
+    cout<<"phase of berrymatrix_integral = "<<arg(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[2])<<endl;
+//    for (int b=0; b<10; b++) {
+//        cout<<"b= "<<b<<" inverse\n"<<overlaps[b][2].inverse()<<endl;
+//    }
+    
+    
+    
+    
+    /*
 //    ofstream output("berrymatrixstep");
 //    output<<"Ne = "<<Ne<<" length[0] = "<<length[0]<<" length[1] = "<<length[1]<<endl;
     Eigen::Matrix3cd berrymatrix_integral = Eigen::Matrix3cd::Identity(3,3);
@@ -355,18 +402,18 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
             tmp.amp[gs] = abs(es.eigenvalues()[gs]); tmp.ang[gs] = arg(es.eigenvalues()[gs]);
         }
         cout<<"-----"<<holes[b][0]<<" "<<holes[b][1]<<endl;
-        cout<<overlaps[b][0]<<endl;
-        cout<<overlaps[b][1]<<endl;
-        cout<<overlaps[b][2]<<endl;
-        cout<<overlaps[b][3]<<endl;
-        cout<<berrymatrix_step<<endl;
-        cout<<alphas[b].adjoint()*alphas[b]<<endl;
+        cout<<"overlap[0]\n"<<overlaps[b][0]<<endl;
+        cout<<"overlap[1]\n"<<overlaps[b][1]<<endl;
+        cout<<"overlap[2]\n"<<overlaps[b][2]<<endl;
+        cout<<"overlap[3]\n"<<overlaps[b][3]<<endl;
+        cout<<"berrymatrix_step:\n"<<berrymatrix_step<<endl;
+        cout<<"alpha^+ . alpha\n"<<alphas[b].adjoint()*alphas[b]<<endl;
         datas.push_back(tmp);
         berrymatrix_integral *= berrymatrix_step * overlaps[b][0];
 //        berrymatrix_integral *=  overlaps[b][0];
 //        output<<"b = "<<b<<"berrymatrix_step = \n"<<berrymatrix_step<<endl;
     }
-    cout<<berrymatrix_integral<<endl;
+    cout<<"berrymatrix_integral:\n"<<berrymatrix_integral<<endl;
     cout<<"\ntrace of total berry matrix = "<<berrymatrix_integral.trace()<<" ang(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
 //    cout<<"\nberrymatrix_integral = \n"<<berrymatrix_integral<<endl;
     
@@ -376,12 +423,14 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
     double totalberryphase=0.; for (int i=0; i<3; i++) totalberryphase+=arg(es_integral.eigenvalues()[i])/3.;
     cout<<"total berry phase = "<<totalberryphase<<endl;
     
-    Eigen::MatrixXcd test;
-    for (int i=0; i<10; i++) {
+//    Eigen::MatrixXcd test;
+//    for (int i=0; i<10; i++) {
 //        test = alphas[i].adjoint() * overlaps[i][0] * alphas[i];
 //        cout<<" \n i = "<<i<<" test = \n"<<chop(test)<<endl;//expect to print out identity matrix.
 //        cout<<"\n i = "<<i<<" alpha.adjoint * alpha = \n"<<alphas[i].adjoint()*alphas[i]<<endl;
-    }
+//    }
+    */
+    
 }
 
 void two_holes(string str, int nmeasurement, data& test){
@@ -715,6 +764,34 @@ void single_run(){
     outfile.close();
 }
 
+void plot_CFL_coule_vsdbar(int grid){
+    ofstream bout("CFL_coule_vsdbar");
+    void coul_energy_CFL_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter);
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    string type;
+    ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    int Nphi=Ne*invNu; int gs=0;
+    LATTICE edbar(Ne, invNu, testing, type, seed, gs);
+    
+    for (int i=0; i<grid*Nphi; i++) {
+        for (int j=0; j<grid*Nphi; j++) {
+            double ave_e, dbar_parameter[2];
+            dbar_parameter[0]=1.*i/(1.*Nphi*grid); dbar_parameter[1]=1.*j/(1.*Nphi*grid);
+            coul_energy_CFL_dbar(edbar, ave_e, nWarmup, nMeas, nSteps, nBins, dbar_parameter);
+            bout<<dbar_parameter[0]<<" "<<dbar_parameter[1]<<" "<<ave_e<<endl;
+        }
+    }
+    
+}
+
 void coul_energy_CFL_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter){
     double sumE=0;
     edbar.change_dbar_parameter(dbar_parameter[0],dbar_parameter[1]);
@@ -746,7 +823,7 @@ void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas,
             E2+=e*e;
         }
         sumE+=E/(1.*nMeas*edbar.Ne);
-        cout<<E/(1.*nMeas*edbar.Ne)<<endl;
+//        cout<<E/(1.*nMeas*edbar.Ne)<<endl;
     }
     ave_E=sumE/(1.*nBins);
 }
