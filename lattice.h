@@ -47,6 +47,7 @@ public:
 	void print_structure_factors(int nMeas);
 	void reset();
 	void change_dbar_parameter(double dbarx, double dbary);
+	vector<double> get_dbar_parameter();
 	void set_ds(vector< vector<int> > ds);//sets a custom set of composite fermion dipole moments
 	void set_hole(vector<double> temphole);
 	vector<double> get_hole();
@@ -58,7 +59,7 @@ public:
 	int Ne;
 	double running_weight;//running_weight is a global variable. need reset in every run.
     int tries,accepts;
-    double dbar_parameter[2];
+    vector<double> dbar_parameter;
     
     void make_CFL_COM(complex<double>& value);
     void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value);

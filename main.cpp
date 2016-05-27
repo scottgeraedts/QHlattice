@@ -23,13 +23,12 @@ Eigen::MatrixXcd chop(Eigen::MatrixXcd mat){
     return ret;
 }
 void hermitianize(Eigen::MatrixXcd &x){
-	x(0,1)=0.5*(x(0,1)+conj(x(1,0)));
-	x(1,0)=conj(x(0,1));
-	x(0,2)=0.5*(x(0,2)+conj(x(2,0)));
-	x(2,0)=conj(x(0,2));
-	x(1,2)=0.5*(x(1,2)+conj(x(2,1)));
-	x(2,1)=conj(x(1,2));
-
+	for(int i=0;i<x.rows();i++){
+		for(int j=i+1;j<x.rows();j++){
+			x(i,j)=0.5*(x(i,j)+conj(x(j,i)));
+			x(j,i)=conj(x(i,j));
+		}
+	}
 }
 struct data{
     int num;
@@ -513,6 +512,7 @@ void CFL_berry_phases(){
 	
 	LATTICE templl(tempNe,invNu,testing,"CFL",seed,0);//get a set of 
 	vector<vector <int> > old_ds=templl.get_ds(), new_ds_ll,new_ds_pp, extra_ds;
+	vector<double> old_dbar=templl.get_dbar_parameter();
 	if(tempNe==21){
 		extra_ds.push_back(vector<int>{3,0});	
 		extra_ds.push_back(vector<int>{3,1});	
@@ -530,8 +530,28 @@ void CFL_berry_phases(){
 		extra_ds.push_back(vector<int>{1,-3});	
 		extra_ds.push_back(vector<int>{2,-2});	
 		extra_ds.push_back(vector<int>{3,-1});	
-	}
-	else{
+	}else if(tempNe==32){
+		extra_ds.push_back(vector<int>{4,0});	
+		extra_ds.push_back(vector<int>{4,1});	
+		extra_ds.push_back(vector<int>{4,2});	
+		extra_ds.push_back(vector<int>{3,3});	
+		extra_ds.push_back(vector<int>{2,4});	
+		extra_ds.push_back(vector<int>{1,4});	
+		extra_ds.push_back(vector<int>{0,4});	
+		extra_ds.push_back(vector<int>{-1,4});	
+		extra_ds.push_back(vector<int>{-2,3});	
+		extra_ds.push_back(vector<int>{-3,2});	
+		extra_ds.push_back(vector<int>{-3,1});	
+		extra_ds.push_back(vector<int>{-3,0});	
+		extra_ds.push_back(vector<int>{-3,-1});	
+		extra_ds.push_back(vector<int>{-2,-2});	
+		extra_ds.push_back(vector<int>{-1,-3});	
+		extra_ds.push_back(vector<int>{0,-3});	
+		extra_ds.push_back(vector<int>{1,-3});	
+		extra_ds.push_back(vector<int>{2,-3});	
+		extra_ds.push_back(vector<int>{3,-2});	
+		extra_ds.push_back(vector<int>{4,-1});	
+	}else{
 		cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
 		exit(0);
 	}

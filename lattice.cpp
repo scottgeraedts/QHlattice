@@ -416,7 +416,6 @@ void LATTICE::sum_locs(int out[]){
 
 vector< vector<int> > LATTICE::get_locs(){ return locs; }
 
-vector< vector<int> > LATTICE::get_ds(){ return ds; }
 
 ///***********MEASUREMENT FUNCTIONS *******///////////////
 //right now I'm using Duncan's function for this
@@ -651,6 +650,7 @@ void LATTICE::change_dbar_parameter(double dbarx, double dbary){
 		cout<<"changing dbar, but not a CFL"<<endl;
 		//exit(0);
 	}
+	dbar_parameter=vector<double>(2);
 	dbar_parameter[0]=dbarx;
 	dbar_parameter[1]=dbary;
 	//cout<<"dbar "<<dbar_parameter[0]<<" "<<dbar_parameter[1]<<endl;
@@ -680,6 +680,9 @@ void LATTICE::set_ds(vector< vector<int> > tds){
 	change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));	
 	reset();
 }
+vector< vector<int> > LATTICE::get_ds(){ return ds; }
+vector<double> LATTICE::get_dbar_parameter(){return dbar_parameter;}
+
 void LATTICE::set_hole(vector<double> temphole){
 	hole=temphole;
 	holes_set=true;
