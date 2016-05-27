@@ -81,7 +81,8 @@ private:
     weierstrass weiers;
 
 //    complex<double> L1,L2;
-	int NPhi,invNu;
+	int NPhi;
+	int invNu;
 	string type;
 	vector <vector <double> > coulomb_table,sq2;
 	vector <vector <complex<double> > > sq;

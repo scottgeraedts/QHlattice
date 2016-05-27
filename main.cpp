@@ -55,8 +55,8 @@ int main(){
 
 //    void two_holes_scott();
 //    two_holes_scott();
-    string str;
-    void two_holes(string str, int nmeasurement, data&);//str="test" or "".
+//    string str;
+//    void two_holes(string str, int nmeasurement, data&);//str="test" or "".
     
 //    ofstream bout("test_may20");
 //    for (int i=500; i<10000; i=i+50) {
@@ -69,15 +69,16 @@ int main(){
 //    two_holes("", 0, test);
     
     
-//    void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas);//gs = 0, 1, 2, labeling ground state.
-//    vector<double> length(2); double steplength = 0.01;
-////    vector<vector<data> > datas; for (int i=0; i<3; i++) {vector<data> tmp; datas.push_back(tmp);}
-//    vector<data> datas;
+    void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas);//gs = 0, 1, 2, labeling ground state.
+    vector<double> length(2); double steplength = 0.01;
+//    vector<vector<data> > datas; for (int i=0; i<3; i++) {vector<data> tmp; datas.push_back(tmp);}
+    vector<data> datas;
 //    vector<vector<data> > datass(3);
 //    
-//    length[0]=0.5; length[1]=0.5;
-//    void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas);
-//    laughlinberryphase(length, steplength, datas);
+    length[0]=0.05; length[1]=0.05;
+    void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas);
+    laughlinberryphase(length, steplength, datas);
+    
 //    ofstream bout("output_modified_orthogonal");
 //    for (int i=0; i<datas.size(); i++) {
 //        for (int gs=0; gs<3; gs++) {
@@ -282,10 +283,10 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
     int supermod(int k, int n);
     for(int i=0;i<nds;i++) holes2[supermod(i-1,nds)]=holes[i];//(holes[b],holes2[b]) = (holes[b],holes[b+1]).
     
-    vector<LATTICE> ll, pp;
+    vector<LATTICE> ll(3), pp(3);
     for (int i=0; i<3; i++) {
-        LATTICE a(Ne, invNu, testing, type, seed, i);
-        ll.push_back(a); pp.push_back(a);//ll=psi(xb), pp=psi(xb+1);
+        ll[i]=LATTICE(Ne, invNu, testing, type, seed, i);
+        pp[i]=LATTICE(Ne, invNu, testing, type, seed, i);
     }
     
     vector<vector<Eigen::MatrixXcd > > overlaps;
@@ -304,6 +305,7 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
             ll[i].set_hole(holes[b]);
             pp[i].set_hole(holes2[b]);
             ll[i].reset(); ll[i].step(nWarmup);
+            pp[i].reset();
         }
         for (int k=0; k<nMeas; k++) {
             for (int i=0; i<3; i++) {
@@ -315,24 +317,22 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
                     temp[0]=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
                     overlaps[b][0](i,j)+=temp[0];
                     overlaps[b][1](i,j)+=norm(temp[0]);
-                    if (i>=j) {
+//                    if (i>=j) {
                         temp[1]=ll[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
                         overlaps[b][2](i,j)+=temp[1];
                         overlaps[b][3](i,j)+=norm(temp[1]);
-                    }
+//                   }
                 }
             }
         }
-        for (int i=0; i<3; i++) for (int j=i+1; j<3; j++) for (int k=2; k<4; k++) overlaps[b][k](i,j) = conj(overlaps[b][k](j,i));
+ //       for (int i=0; i<3; i++) for (int j=i+1; j<3; j++) for (int k=2; k<4; k++) overlaps[b][k](i,j) = conj(overlaps[b][k](j,i));
         for (int l=0; l<4; l++) overlaps[b][l]/=(1.*nMeas);
         for (int i=0; i<3; i++) for (int j=0; j<3; j++) {overlaps[b][0](i,j)/=sqrt(abs(overlaps[b][1](i,j))); overlaps[b][2](i,j)/=sqrt(abs(overlaps[b][3](i,j)));}
-    }
-    
-    for (int b=0; b<nds; b++) {
-        cout<<"\nb="<<b<<" A_{ij} = \n"<<overlaps[b][2]<<endl;
+
+        hermitianize(overlaps[b][2]);
     }
 
-    /*
+    
     //comment this paragraph if want orthogonal.
     vector<Eigen::Matrix3cd> alphas;
     for (int b=0; b<nds; b++) {
@@ -351,9 +351,9 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
 //    output<<"Ne = "<<Ne<<" length[0] = "<<length[0]<<" length[1] = "<<length[1]<<endl;
     Eigen::Matrix3cd berrymatrix_integral = Eigen::Matrix3cd::Identity(3,3);
     datas.clear();
+    Eigen::MatrixXcd berrymatrix_step;
     for (int b=0; b<nds; b++) {
-        int supermod(int k, int n);
-        Eigen::MatrixXcd berrymatrix_step = alphas[b].adjoint() * overlaps[b][0] * alphas[supermod(b+1,nds)];//for orthogonal.
+        berrymatrix_step =  alphas[b]*alphas[b].adjoint();//for orthogonal.
 //        Eigen::MatrixXcd berrymatrix_step = overlaps[b][2];//for non-orthogonal.
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_step);
         
@@ -361,17 +361,27 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
         for (int gs=0; gs<3; gs++) {
             tmp.amp[gs] = abs(es.eigenvalues()[gs]); tmp.ang[gs] = arg(es.eigenvalues()[gs]);
         }
+        cout<<"-----"<<holes[b][0]<<" "<<holes[b][1]<<endl;
+        cout<<overlaps[b][0]<<endl;
+        cout<<overlaps[b][1]<<endl;
+        cout<<overlaps[b][2]<<endl;
+        cout<<overlaps[b][3]<<endl;
+        cout<<berrymatrix_step<<endl;
+        cout<<alphas[b].adjoint()*alphas[b]<<endl;
         datas.push_back(tmp);
-        berrymatrix_integral *= berrymatrix_step;
+        berrymatrix_integral *= berrymatrix_step * overlaps[b][0];
+//        berrymatrix_integral *=  overlaps[b][0];
 //        output<<"b = "<<b<<"berrymatrix_step = \n"<<berrymatrix_step<<endl;
     }
+    cout<<berrymatrix_integral<<endl;
     cout<<"\ntrace of total berry matrix = "<<berrymatrix_integral.trace()<<" ang(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
 //    cout<<"\nberrymatrix_integral = \n"<<berrymatrix_integral<<endl;
     
     Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es_integral(berrymatrix_integral);
+    for(int i=0;i<3;i++) cout<<arg(es_integral.eigenvalues()(i))<<endl;
 //    cout<<abs(es_integral.eigenvalues()[0])<<" "<<arg(es_integral.eigenvalues()[0])<<" "<<abs(es_integral.eigenvalues()[1])<<" "<<arg(es_integral.eigenvalues()[1])<<" "<<abs(es_integral.eigenvalues()[2])<<" "<<arg(es_integral.eigenvalues()[2])<<endl;
     double totalberryphase=0.; for (int i=0; i<3; i++) totalberryphase+=arg(es_integral.eigenvalues()[i])/3.;
-//    cout<<"total berry phase = "<<totalberryphase<<endl;
+    cout<<"total berry phase = "<<totalberryphase<<endl;
     
     Eigen::MatrixXcd test;
     for (int i=0; i<10; i++) {
@@ -379,7 +389,7 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
 //        cout<<" \n i = "<<i<<" test = \n"<<chop(test)<<endl;//expect to print out identity matrix.
 //        cout<<"\n i = "<<i<<" alpha.adjoint * alpha = \n"<<alphas[i].adjoint()*alphas[i]<<endl;
     }
-     */
+     
     
     
 }
@@ -636,13 +646,11 @@ void single_run(){
     
     int gs=0;
 	LATTICE ll(Ne,invNu, testing, type, seed, gs);
-	vector<double> hole(2); hole[0]=0.1; hole[1]=0.2;
-	ll.set_hole(hole);
 	ofstream outfile("out"),eout("energy");
-    
     ll.print_ds();
     for(int s=0;s<nBins;s++){
         
+		ll.change_dbar_parameter(s*0.1,s*0.1);
         ll.reset();
         ll.step(nWarmup);
         double E=0,E2=0;
