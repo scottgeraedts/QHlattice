@@ -12,7 +12,7 @@
 using namespace std;
 
 //this number is multiplied by every term in the determinants to ensure that they don't overflow
-const double in_determinant_rescaling=0.25;
+const double in_determinant_rescaling=0.2;
 
 extern"C"{
 	void z_function_(double *x, double *y, complex<double> *l1, complex<double> *l2, int * rationalize, int *denom, complex<double> *z);
@@ -76,6 +76,7 @@ private:
 	vector<int> random_move(const vector<int> &oldsite);
 	int p(int); int m(int);
 	void cold_start();
+	void hotter_start();
 	void det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z);
     double det_helper(int z1, int z2, int d, double dbar_parameter);
     complex<double> jies_weierstrass(double x, double y);

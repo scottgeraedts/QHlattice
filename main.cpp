@@ -5,7 +5,6 @@
 
 
 int main(){
-    void plot_CFL_coule_vsdbar(int grid);
 //    plot_CFL_coule_vsdbar(10);
     
 //    berry_phase bp(20);
@@ -15,7 +14,7 @@ int main(){
 //    bp.two_full_braiding();
     
 //	void single_run();
-//	single_run();
+	single_run();
 
 //    void two_holes_scott();
 //    two_holes_scott();
@@ -83,14 +82,12 @@ int main(){
 //    }
     
 
-    void testeigen();
 //    testeigen();
     
-    void test_largesize();
 //    test_largesize();
 
-	void CFL_berry_phases();
-	CFL_berry_phases();
+//	void CFL_berry_phases();
+//	CFL_berry_phases();
 }
 
 
@@ -322,69 +319,169 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
 }
 
 void CFL_berry_phases(){
-	int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+	int tempNe,Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
 	bool testing;
 	string type;
 	ifstream infile("params");
-	infile>>Ne>>invNu;
+	infile>>tempNe>>invNu;
 	infile>>nWarmup>>nMeas>>nSteps>>nBins;
 	infile>>seed;
 	infile>>testing;
 	infile>>type;
 
-	int tempNe;
-	if(type=="twod") tempNe=Ne-2;
-	else if(type=="oned") tempNe=Ne-1;
+	if(type=="twod") Ne=tempNe+2;
+	else if(type=="oned") Ne=tempNe+1;
+	else if(type=="moned") Ne=tempNe-1;
+	else if(type=="mtwod") Ne=tempNe-2;
 	else{
 		cout<<"unrecognized type"<<endl;
 		exit(0);
 	}
+	bool holes=false;
+	if(type[0]=='m') holes=true;
 	
 	LATTICE templl(tempNe,invNu,testing,"CFL",seed,0);//get a set of 
 	vector<vector <int> > old_ds=templl.get_ds(), new_ds_ll,new_ds_pp, extra_ds;
 	vector<double> old_dbar=templl.get_dbar_parameter();
-	if(tempNe==21){
-		extra_ds.push_back(vector<int>{3,0});	
-		extra_ds.push_back(vector<int>{3,1});	
-		extra_ds.push_back(vector<int>{2,2});	
-		extra_ds.push_back(vector<int>{1,3});	
-		extra_ds.push_back(vector<int>{0,3});	
-		extra_ds.push_back(vector<int>{-1,3});	
-		extra_ds.push_back(vector<int>{-2,2});	
-		extra_ds.push_back(vector<int>{-3,1});	
-		extra_ds.push_back(vector<int>{-3,0});	
-		extra_ds.push_back(vector<int>{-3,-1});	
-		extra_ds.push_back(vector<int>{-2,-2});	
-		extra_ds.push_back(vector<int>{-1,-3});	
-		extra_ds.push_back(vector<int>{0,-3});	
-		extra_ds.push_back(vector<int>{1,-3});	
-		extra_ds.push_back(vector<int>{2,-2});	
-		extra_ds.push_back(vector<int>{3,-1});	
-	}else if(tempNe==32){
-		extra_ds.push_back(vector<int>{4,0});	
-		extra_ds.push_back(vector<int>{4,1});	
-		extra_ds.push_back(vector<int>{4,2});	
-		extra_ds.push_back(vector<int>{3,3});	
-		extra_ds.push_back(vector<int>{2,4});	
-		extra_ds.push_back(vector<int>{1,4});	
-		extra_ds.push_back(vector<int>{0,4});	
-		extra_ds.push_back(vector<int>{-1,4});	
-		extra_ds.push_back(vector<int>{-2,3});	
-		extra_ds.push_back(vector<int>{-3,2});	
-		extra_ds.push_back(vector<int>{-3,1});	
-		extra_ds.push_back(vector<int>{-3,0});	
-		extra_ds.push_back(vector<int>{-3,-1});	
-		extra_ds.push_back(vector<int>{-2,-2});	
-		extra_ds.push_back(vector<int>{-1,-3});	
-		extra_ds.push_back(vector<int>{0,-3});	
-		extra_ds.push_back(vector<int>{1,-3});	
-		extra_ds.push_back(vector<int>{2,-3});	
-		extra_ds.push_back(vector<int>{3,-2});	
-		extra_ds.push_back(vector<int>{4,-1});	
+	if(!holes){
+		if(tempNe==21){
+			extra_ds.push_back(vector<int>{3,0});	
+			extra_ds.push_back(vector<int>{3,1});	
+			extra_ds.push_back(vector<int>{2,2});	
+			extra_ds.push_back(vector<int>{1,3});	
+			extra_ds.push_back(vector<int>{0,3});	
+			extra_ds.push_back(vector<int>{-1,3});	
+			extra_ds.push_back(vector<int>{-2,2});	
+			extra_ds.push_back(vector<int>{-3,1});	
+			extra_ds.push_back(vector<int>{-3,0});	
+			extra_ds.push_back(vector<int>{-3,-1});	
+			extra_ds.push_back(vector<int>{-2,-2});	
+			extra_ds.push_back(vector<int>{-1,-3});	
+			extra_ds.push_back(vector<int>{0,-3});	
+			extra_ds.push_back(vector<int>{1,-3});	
+			extra_ds.push_back(vector<int>{2,-2});	
+			extra_ds.push_back(vector<int>{3,-1});	
+		}else if(tempNe==32){
+			extra_ds.push_back(vector<int>{4,0});	
+			extra_ds.push_back(vector<int>{4,1});	
+			extra_ds.push_back(vector<int>{4,2});	
+			extra_ds.push_back(vector<int>{3,3});	
+			extra_ds.push_back(vector<int>{2,4});	
+			extra_ds.push_back(vector<int>{1,4});	
+			extra_ds.push_back(vector<int>{0,4});	
+			extra_ds.push_back(vector<int>{-1,4});	
+			extra_ds.push_back(vector<int>{-2,3});	
+			extra_ds.push_back(vector<int>{-3,2});	
+			extra_ds.push_back(vector<int>{-3,1});	
+			extra_ds.push_back(vector<int>{-3,0});	
+			extra_ds.push_back(vector<int>{-3,-1});	
+			extra_ds.push_back(vector<int>{-2,-2});	
+			extra_ds.push_back(vector<int>{-1,-3});	
+			extra_ds.push_back(vector<int>{0,-3});	
+			extra_ds.push_back(vector<int>{1,-3});	
+			extra_ds.push_back(vector<int>{2,-3});	
+			extra_ds.push_back(vector<int>{3,-2});	
+			extra_ds.push_back(vector<int>{4,-1});	
+		}else if(tempNe==37){
+			extra_ds.push_back(vector<int>{4,-1});	
+			extra_ds.push_back(vector<int>{4,0});	
+			extra_ds.push_back(vector<int>{4,1});	
+			
+			extra_ds.push_back(vector<int>{3,2});	
+			extra_ds.push_back(vector<int>{2,3});	
+
+			extra_ds.push_back(vector<int>{1,4});	
+			extra_ds.push_back(vector<int>{0,4});	
+			extra_ds.push_back(vector<int>{-1,4});	
+
+			extra_ds.push_back(vector<int>{-2,3});	
+			extra_ds.push_back(vector<int>{-3,2});	
+
+			extra_ds.push_back(vector<int>{-4,1});	
+			extra_ds.push_back(vector<int>{-4,0});	
+			extra_ds.push_back(vector<int>{-4,-1});	
+
+			extra_ds.push_back(vector<int>{-3,-2});	
+			extra_ds.push_back(vector<int>{-2,-3});	
+
+			extra_ds.push_back(vector<int>{-1,-4});	
+			extra_ds.push_back(vector<int>{0,-4});	
+			extra_ds.push_back(vector<int>{1,-4});	
+
+			extra_ds.push_back(vector<int>{2,-3});	
+			extra_ds.push_back(vector<int>{3,-2});
+		}else if (tempNe==57){
+			extra_ds.push_back(vector<int>{5,-1});
+			extra_ds.push_back(vector<int>{5,0});
+			extra_ds.push_back(vector<int>{5,1});
+
+			extra_ds.push_back(vector<int>{4,2});
+			extra_ds.push_back(vector<int>{3,3});
+			extra_ds.push_back(vector<int>{2,4});
+			
+			extra_ds.push_back(vector<int>{1,5});
+			extra_ds.push_back(vector<int>{0,5});
+			extra_ds.push_back(vector<int>{-1,5});
+
+			extra_ds.push_back(vector<int>{-2,4});
+			extra_ds.push_back(vector<int>{-3,3});
+			extra_ds.push_back(vector<int>{-4,2});
+			
+			extra_ds.push_back(vector<int>{-5,1});
+			extra_ds.push_back(vector<int>{-5,0});
+			extra_ds.push_back(vector<int>{-5,-1});
+			
+			extra_ds.push_back(vector<int>{-4,-2});
+			extra_ds.push_back(vector<int>{-3,-3});
+			extra_ds.push_back(vector<int>{-2,-4});
+			
+			extra_ds.push_back(vector<int>{-1,-5});
+			extra_ds.push_back(vector<int>{0,-5});
+			extra_ds.push_back(vector<int>{1,-5});
+			
+			extra_ds.push_back(vector<int>{2,-4});
+			extra_ds.push_back(vector<int>{3,-3});
+			extra_ds.push_back(vector<int>{4,-2});									
+		}else{
+			cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
+			exit(0);
+		}
 	}else{
-		cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
-		exit(0);
-	}
+		if(tempNe==21){
+			extra_ds.push_back(vector<int>{2,0});	
+			extra_ds.push_back(vector<int>{2,1});	
+			extra_ds.push_back(vector<int>{1,2});	
+			extra_ds.push_back(vector<int>{0,2});	
+			extra_ds.push_back(vector<int>{-1,2});	
+			extra_ds.push_back(vector<int>{-2,1});	
+			extra_ds.push_back(vector<int>{-2,0});	
+			extra_ds.push_back(vector<int>{-2,-1});	
+			extra_ds.push_back(vector<int>{-1,-2});	
+			extra_ds.push_back(vector<int>{0,-2});	
+			extra_ds.push_back(vector<int>{1,-2});	
+			extra_ds.push_back(vector<int>{2,-1});	
+		}else if(tempNe==32){
+			extra_ds.push_back(vector<int>{3,0});	
+			extra_ds.push_back(vector<int>{3,1});	
+			extra_ds.push_back(vector<int>{3,2});	
+			extra_ds.push_back(vector<int>{2,3});	
+			extra_ds.push_back(vector<int>{1,3});	
+			extra_ds.push_back(vector<int>{0,3});	
+			extra_ds.push_back(vector<int>{-1,3});	
+			extra_ds.push_back(vector<int>{-2,2});	
+			extra_ds.push_back(vector<int>{-2,1});	
+			extra_ds.push_back(vector<int>{-2,0});	
+			extra_ds.push_back(vector<int>{-2,-1});	
+			extra_ds.push_back(vector<int>{-1,-2});	
+			extra_ds.push_back(vector<int>{-0,-2});	
+			extra_ds.push_back(vector<int>{1,-2});	
+			extra_ds.push_back(vector<int>{2,-2});	
+			extra_ds.push_back(vector<int>{3,-1});	
+		}else{
+			cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
+			exit(0);
+		}
+	}	
 	int nds=extra_ds.size();
     vector<LATTICE> ll(invNu), pp(invNu);
     for (int i=0; i<invNu; i++) {
@@ -397,15 +494,23 @@ void CFL_berry_phases(){
     double energy;
     for(int b=0; b<nds; b++) {
     	new_ds_ll=old_ds;
-    	new_ds_ll.push_back(extra_ds[b]);
 		new_ds_pp=old_ds;
-    	new_ds_pp.push_back(extra_ds[supermod(b+1,nds)]);
-    	
-    	if(type=="twod"){
-			new_ds_ll.push_back(extra_ds[supermod(b+nds/2,nds)]);
-			new_ds_pp.push_back(extra_ds[supermod(b+nds/2+1,nds)]);
-		}
-		    		
+		if(!holes){
+			new_ds_ll.push_back(extra_ds[b]);
+			new_ds_pp.push_back(extra_ds[supermod(b+1,nds)]);
+			
+			if(type=="twod"){
+				new_ds_ll.push_back(extra_ds[supermod(b+nds/2,nds)]);
+				new_ds_pp.push_back(extra_ds[supermod(b+nds/2+1,nds)]);
+			}
+		}else{
+			new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[b]),new_ds_ll.end());
+			new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+1,nds)]),new_ds_pp.end());
+			if(type=="mtwod"){
+				new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[supermod(b+nds/2,nds)]),new_ds_ll.end());
+				new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+nds/2+1,nds)]),new_ds_pp.end());
+			}				
+		}	    		
         for (int i=0; i<1; i++) {
             ll[i].set_ds(new_ds_ll);
             pp[i].set_ds(new_ds_pp);
@@ -436,7 +541,7 @@ void CFL_berry_phases(){
         overlaps[b][2]=overlaps[b][2].array()/overlaps[b][3].array().sqrt();
         hermitianize(overlaps[b][2]);
         cout<<"energy: "<<energy/(1.*nMeas*Ne)<<endl;
-        if (b>=4) break;
+        if (b>=1) break;
     }
 
     //compensate for vectors not being orthogonal (maybe not necessary)

@@ -65,11 +65,13 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 	if(type!="laughlin-hole") setup_laughlin_state_(&Ne,&invNu,sl2z,&zero);
 //	cout<<"starting weight "<<running_weight<<endl;
 
-	//*****some counters
+	cout<<"starting coulomb setup"<<endl;
 	setup_coulomb();
+	cout<<"done coulomb setup"<<endl;
 	omega=vector <complex<double> >(2*NPhi);
 	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi)); //note that spacings of these is pi/N, not 2pi/N
 
+	//*****some counters
 	sq=vector<vector<complex<double> > > (NPhi, vector<complex<double> >(NPhi,0));
 	sq2=vector<vector<double> > (NPhi, vector<double>(NPhi,0));
 	sq3=vector <vector< vector< vector <complex<double> > > > >(NPhi, vector <vector <vector< complex<double> > > >(NPhi, vector <vector <complex<double> > >(NPhi, vector<complex<double> >(NPhi,0))));
@@ -314,7 +316,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 					product*=temp;
 				}
 				//this part is only valid on a square torus!
-				M(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
+				M(i,j)=product*pow(in_determinant_rescaling,Ne-1)*polar(1., 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
 			}
 		}
 		detSolver.compute(M);
@@ -584,18 +586,15 @@ void LATTICE::print_structure_factors(int nMeas){
 }
 void LATTICE::reset(){
 	tries=0; accepts=0;
-	cold_start();
+	hotter_start();
 	//**** setting up the initial determinant matrix
 	running_weight=0;
 	int site=0;
 	int initial_state_counter=0;
+	bool repeat=true;
 	
-    while(running_weight==0){
-	//for some sizes the configuration specified by cold_start has zero weight
-	//if that happens fiddle around until you find a better configuration, thats why theres a while loop
-		locs[site][0]=locs[p(site)][0];
-		site++;
-		if(site==Ne) cout<<"couldn't easily find a good configuration!"<<endl;
+    while(repeat){
+   		repeat=false;
 		
 		if(type=="CFL"){
 			complex<double> temp,product;
@@ -619,6 +618,17 @@ void LATTICE::reset(){
 //			cout<<in_determinant_rescaling<<" "<<oldDeterminant<<endl;
 		}
 		running_weight=get_weight(locs);
+		cout<<running_weight<<" "<<get_wf(locs)<<endl;
+		if(get_wf(locs)==complex<double>(0,0)){
+			//for some sizes the configuration specified by cold_start has zero weight
+			//if that happens fiddle around until you find a better configuration, thats why theres a while loop
+			cout<<"warning! needed to fiddle with the initial configuration "<<running_weight<<endl;
+			for(int i=0;i<Ne;i++) cout<<locs[i][0]<<" "<<locs[i][1]<<endl;
+			locs[site][0]=locs[p(site)][0];
+			site++;
+			if(site==Ne) cout<<"couldn't easily find a good configuration!"<<endl;
+			repeat=true;
+		}
 		initial_state_counter++;
 		if(initial_state_counter>1000){
 			cout<<"couldn't find a good starting configuration"<<endl;
@@ -699,10 +709,25 @@ complex<double> LATTICE::jies_weierstrass(double x, double y){
 	complex<double> out=weiers.wsigma(z)*exp(-0.5*pow(z,2)*weiers.Gbar/(1.))*exp(-0.5*z*conj(z)/(1.*NPhi));
 	return out;
 }
+//puts all the electrons in a diagonal line, a pretty low weight starting position but works for most cases
 void LATTICE::cold_start(){
 	for(int i=0;i<Ne;i++){
-		locs[i][0]=i;
-		locs[i][1]=i;
+		locs[i][0]=i*invNu;
+		locs[i][1]=i*invNu;
+	}
+}
+//try to figure out a starting configuration that will have a higher weight
+void LATTICE::hotter_start(){
+	bool repeat=true;
+	for(int i=0;i<Ne;i++){
+		while(repeat){
+			locs[i][0]=ran.randInt(NPhi-1);
+			locs[i][1]=ran.randInt(NPhi-1);
+			repeat=false;
+			for(int j=0;j<i;j++)
+				if(locs[i][0]==locs[j][0] && locs[i][1]==locs[j][1]) repeat=true;
+		}
+		repeat=true;
 	}
 }
 
