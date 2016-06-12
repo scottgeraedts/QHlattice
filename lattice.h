@@ -3,12 +3,16 @@
 
 #include "utils.h"
 #include <Eigen/LU>
+#include <Eigen/Eigenvalues>
 #include "MersenneTwister.h"
 #include <numeric>
 #include <deque>
 #include "weierstrass.h"
 
 using namespace std;
+
+//this number is multiplied by every term in the determinants to ensure that they don't overflow
+const double in_determinant_rescaling=0.2;
 
 extern"C"{
 	void z_function_(double *x, double *y, complex<double> *l1, complex<double> *l2, int * rationalize, int *denom, complex<double> *z);
@@ -25,7 +29,8 @@ extern"C"{
 class LATTICE{
     friend class berry_phase;
 public:
-	LATTICE(int, int, bool, string, int seed); // LATTICE(int Nphi_t, int invNu_t, int seed);
+	LATTICE();
+	LATTICE(int, int, bool, string, int seed, int gs=0); // LATTICE(int Ne_t, int invNu_t, int seed);
     // dbar = (dbar_parameter[0]/NPhi*L1, dbar_parameter[1]/NPhi*L2);
 	~LATTICE();
 
@@ -42,18 +47,26 @@ public:
 	void print_structure_factors(int nMeas);
 	void reset();
 	void change_dbar_parameter(double dbarx, double dbary);
+	vector<double> get_dbar_parameter();
 	void set_ds(vector< vector<int> > ds);//sets a custom set of composite fermion dipole moments
+	void set_hole(vector<double> temphole);
+	vector<double> get_hole();
 	vector <vector<int> > get_locs();
+	void check_sanity();
 
 	vector <vector<int> > get_ds();
 	
 	int Ne;
-	double running_weight;
+	double running_weight;//running_weight is a global variable. need reset in every run.
     int tries,accepts;
-    double dbar_parameter[2];
+    vector<double> dbar_parameter;
     
     void make_CFL_COM(complex<double>& value);
     void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value);
+    
+    vector<double> hole;
+    bool fermions,holes_set;
+    complex<double> L1,L2;
     
 private:
 	void sum_locs(int []);
@@ -63,14 +76,16 @@ private:
 	vector<int> random_move(const vector<int> &oldsite);
 	int p(int); int m(int);
 	void cold_start();
+	void hotter_start();
 	void det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z);
     double det_helper(int z1, int z2, int d, double dbar_parameter);
     complex<double> jies_weierstrass(double x, double y);
     weierstrass weiers;
 
-	int NPhi,invNu;
+//    complex<double> L1,L2;
+	int NPhi;
+	int invNu;
 	string type;
-	complex<double> L1,L2;
 	vector <vector <double> > coulomb_table,sq2;
 	vector <vector <complex<double> > > sq;
 	vector <vector <vector <vector< complex<double> > > > > sq3;
@@ -82,11 +97,9 @@ private:
 	complex<double> oldDeterminant;
 	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;	
 	MTRand ran;
-	bool fermions;
 	vector< vector<int> > locs;//an integer defined on an NPhi lattice
 	vector< vector<double> > ws;
 	int one,zero;
-	int * sl2z;
 	vector< complex<double> > omega;
 };
 
