@@ -477,6 +477,34 @@ void CFL_berry_phases(){
 			extra_ds.push_back(vector<int>{1,-2});	
 			extra_ds.push_back(vector<int>{2,-2});	
 			extra_ds.push_back(vector<int>{3,-1});	
+		}else if(tempNe==57){
+			extra_ds.push_back(vector<int>{4,-1});	
+			extra_ds.push_back(vector<int>{4,0});	
+			extra_ds.push_back(vector<int>{4,1});
+				
+			extra_ds.push_back(vector<int>{3,2});	
+			extra_ds.push_back(vector<int>{2,3});	
+
+			extra_ds.push_back(vector<int>{1,4});	
+			extra_ds.push_back(vector<int>{0,4});	
+			extra_ds.push_back(vector<int>{-1,4});	
+
+			extra_ds.push_back(vector<int>{-2,3});	
+			extra_ds.push_back(vector<int>{-3,2});	
+
+			extra_ds.push_back(vector<int>{-4,1});	
+			extra_ds.push_back(vector<int>{-4,0});	
+			extra_ds.push_back(vector<int>{-4,-1});	
+
+			extra_ds.push_back(vector<int>{-3,-2});	
+			extra_ds.push_back(vector<int>{-2,-3});	
+
+			extra_ds.push_back(vector<int>{-1,-4});	
+			extra_ds.push_back(vector<int>{0,-4});	
+			extra_ds.push_back(vector<int>{1,-4});	
+
+			extra_ds.push_back(vector<int>{2,-3});	
+			extra_ds.push_back(vector<int>{3,-2});	
 		}else{
 			cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
 			exit(0);
