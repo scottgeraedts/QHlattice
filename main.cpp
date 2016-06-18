@@ -511,16 +511,17 @@ void CFL_berry_phases(){
 		}
 	}	
 	int nds=extra_ds.size();
+	int dsteps=4; //nds
     vector<LATTICE> ll(invNu), pp(invNu);
     for (int i=0; i<invNu; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
         pp[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
     }
     
-    vector<vector<Eigen::MatrixXcd > > overlaps( nds, vector<Eigen::MatrixXcd>(4, Eigen::MatrixXcd::Zero(invNu,invNu) ) );
+    vector<vector<Eigen::MatrixXcd > > overlaps( dsteps, vector<Eigen::MatrixXcd>(4, Eigen::MatrixXcd::Zero(invNu,invNu) ) );
 	complex<double> temp;
     double energy;
-    for(int b=0; b<nds; b++) {
+    for(int b=0; b<dsteps; b++) {
     	new_ds_ll=old_ds;
 		new_ds_pp=old_ds;
 		if(!holes){
@@ -573,7 +574,7 @@ void CFL_berry_phases(){
     }
 
     //compensate for vectors not being orthogonal (maybe not necessary)
-    vector<Eigen::MatrixXcd> alphas( nds, Eigen::MatrixXcd(invNu,invNu) );
+    vector<Eigen::MatrixXcd> alphas( dsteps, Eigen::MatrixXcd(invNu,invNu) );
     for (int b=0; b<nds; b++) {
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b][2]);
         for (int i=0; i<invNu; i++) {
@@ -586,7 +587,7 @@ void CFL_berry_phases(){
     
     Eigen::MatrixXcd berrymatrix_integral = Eigen::MatrixXcd::Identity(invNu,invNu);
     Eigen::MatrixXcd berrymatrix_step;
-    for (int b=0; b<nds; b++) {
+    for (int b=0; b<dsteps; b++) {
         berrymatrix_step =  alphas[b]*alphas[b].adjoint();//for orthogonal.
 //        Eigen::MatrixXcd berrymatrix_step = overlaps[b][2];//for non-orthogonal.
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_step);
