@@ -30,11 +30,18 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 	//setting the ws. Note that the sum of these is ALWAYS zero, adding things like composite fermion momenta or holes doesn't change this.
 	//in the y direction these take the values gs*L/invNu, where gs in (0,invNu-1) is an integer which labels the ground state
 	ws=vector< vector<double> > (invNu, vector<double>(2,0) );
+    vector<vector<double> > shift(3, vector<double>(2, 0.));
+    shift[0][0]=0.1; shift[0][1]=0.1;
+    shift[1][0]=-0.15; shift[1][1]=-0.05;
+    shift[2][0]=0.-shift[0][0]-shift[1][0]; shift[2][1]=0.-shift[0][1]-shift[1][1];
+    
 	for( int i=0;i<invNu;i++){
         ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
         ws[i][1]=gs/(1.*invNu);
 //        ws[i][1]=( (i+0.5)/(1.*invNu)-0.5);
 //        ws[i][0]=gs/(1.*invNu);
+//        ws[i][0]+=shift[i][0];
+//        ws[i][1]+=shift[i][1];
 	}
 
 	double center_frac[2]={0.,0.};
@@ -256,7 +263,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 			y=(locs[i][1]/(1.*NPhi)-hole[1]);	
 			z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
 			out+=log(norm(temp));
-		}		
+		}
 	}		
 		
 
@@ -370,7 +377,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 			dy=COM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
 			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
 			out*=temp;
-		}	
+		}
 	}
     else{
 		if(type=="CFL"){
@@ -691,11 +698,11 @@ inline void LATTICE::det_helper(const vector<int> &z1, const vector<int> &z2, co
 }
 inline double LATTICE::det_helper(int z1, int z2, int d, double dbarp){ return z1-z2-d*invNu+dbarp;}
 
-complex<double> LATTICE::jies_weierstrass(double x, double y){
-	complex<double> z(x,y);
-	complex<double> out=weiers.wsigma(z)*exp(-0.5*pow(z,2)*weiers.Gbar/(1.))*exp(-0.5*z*conj(z)/(1.*NPhi));
-	return out;
-}
+//complex<double> LATTICE::jies_weierstrass(double x, double y){
+//	complex<double> z(x,y);
+//	complex<double> out=weiers.wsigma(z)*exp(-0.5*pow(z,2)*weiers.Gbar/(1.))*exp(-0.5*z*conj(z)/(1.*NPhi));
+//	return out;
+//}
 void LATTICE::cold_start(){
 	for(int i=0;i<Ne;i++){
 		locs[i][0]=i;
