@@ -322,13 +322,27 @@ void CFL_berry_phases(){
 	int tempNe,Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
 	bool testing;
 	string type;
-	ifstream infile("params");
-	infile>>tempNe>>invNu;
-	infile>>nWarmup>>nMeas>>nSteps>>nBins;
-	infile>>seed;
-	infile>>testing;
-	infile>>type;
 
+	//get  inputs from the params file
+	ifstream infile("params");
+	//number of electrons, and inverse of filling fraction
+	infile>>tempNe>>invNu; 
+	//monte carlo parameters
+	infile>>nWarmup>>nMeas>>nSteps>>nBins; 
+	//random seed
+	infile>>seed; 
+	//if 1, will calculate the energy every step and print it.
+	//This is helpful for debugging but slows down the code so should be set to 0 if the code is working
+	infile>>testing;
+	//a string which chooses mode to run the code in. right now there are 4 choices:  
+	//  twod: put two electrons outside the circular fermi surface, move them both around
+	//  oned: move one electron outside the fermi surface
+	//  mtwod: removes two electrons from the circular fermi surface, i.e. adds two "holes", moves these holes around
+	//  oned: removes one electron from the fermi surface
+	infile>>type; 
+
+	//tempNe is the number of electrons in the circular part of the Fermi surface
+	//Ne is the total number of electrons including the extra electrons/holes
 	if(type=="twod") Ne=tempNe+2;
 	else if(type=="oned") Ne=tempNe+1;
 	else if(type=="moned") Ne=tempNe-1;
@@ -337,12 +351,20 @@ void CFL_berry_phases(){
 		cout<<"unrecognized type"<<endl;
 		exit(0);
 	}
+	//holes==true if we are removing electrons, false otherwise
 	bool holes=false;
 	if(type[0]=='m') holes=true;
 	
-	LATTICE templl(tempNe,invNu,testing,"CFL",seed,0);//get a set of 
+	//this instance of LATTICE is only to set up the circular fermi surface of tempNe electrons
+	LATTICE templl(tempNe,invNu,testing,"CFL",seed,0); 
 	vector<vector <int> > old_ds=templl.get_ds(), new_ds_ll,new_ds_pp, extra_ds;
+	//old_dbar is the center of the circular fermi surface
 	vector<double> old_dbar=templl.get_dbar_parameter();
+	
+	//this part of the code specifies all the grid points just outside the circle made up of tempNe electrons
+	//we will loop through all these positions and add electrons to them
+	//to go to larger sizes, it will be necessary to add more possible values of tempNe
+	//it may end up being more convenient to write code to automate this step
 	if(!holes){
 		if(tempNe==21){
 			extra_ds.push_back(vector<int>{3,0});	
@@ -446,6 +468,7 @@ void CFL_berry_phases(){
 			cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
 			exit(0);
 		}
+	//this code does the same thing as above, but it lists all the positions just inside the fermi surface, where electrons should be removed if we are doing holes
 	}else{
 		if(tempNe==21){
 			extra_ds.push_back(vector<int>{2,0});	
@@ -511,6 +534,7 @@ void CFL_berry_phases(){
 		}
 	}	
 	int nds=extra_ds.size();
+	//ll is the object we will do monte carlo on, pp is the object with the electrons (or holes) shifted by one space
     vector<LATTICE> ll(invNu), pp(invNu);
     for (int i=0; i<invNu; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
@@ -523,6 +547,7 @@ void CFL_berry_phases(){
     for(int b=0; b<nds; b++) {
     	new_ds_ll=old_ds;
 		new_ds_pp=old_ds;
+		//depending on the mode, this adds one or two electons just outside the Fermi surface
 		if(!holes){
 			new_ds_ll.push_back(extra_ds[b]);
 			new_ds_pp.push_back(extra_ds[supermod(b+1,nds)]);
@@ -531,6 +556,7 @@ void CFL_berry_phases(){
 				new_ds_ll.push_back(extra_ds[supermod(b+nds/2,nds)]);
 				new_ds_pp.push_back(extra_ds[supermod(b+nds/2+1,nds)]);
 			}
+		//this removes one or two electrons from the list of ds, if we are doing holes
 		}else{
 			new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[b]),new_ds_ll.end());
 			new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+1,nds)]),new_ds_pp.end());
@@ -539,7 +565,7 @@ void CFL_berry_phases(){
 				new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+nds/2+1,nds)]),new_ds_pp.end());
 			}				
 		}	    		
-        for (int i=0; i<1; i++) {
+        for (int i=0; i<invNu; i++) {
             ll[i].set_ds(new_ds_ll);
             pp[i].set_ds(new_ds_pp);
             ll[i].step(nWarmup);
@@ -549,12 +575,12 @@ void CFL_berry_phases(){
         pp[0].print_ds();
         energy=0;
         for (int k=0; k<nMeas; k++) {
-            for (int i=0; i<1; i++) {
+            for (int i=0; i<invNu; i++) {
                 ll[i].step(nSteps);
             }
             energy+=ll[0].coulomb_energy();
-            for (int i=0; i<1; i++) {
-                for (int j=0; j<1; j++) {
+            for (int i=0; i<invNu; i++) {
+                for (int j=0; j<invNu; j++) {
                     temp=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
                     overlaps[b][0](i,j)+=temp;
                     overlaps[b][1](i,j)+=norm(temp);
