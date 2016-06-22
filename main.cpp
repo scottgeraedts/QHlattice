@@ -333,6 +333,10 @@ void CFL_berry_phases(){
 	infile>>seed; 
 	//if 1, will calculate the energy every step and print it.
 	//This is helpful for debugging but slows down the code so should be set to 0 if the code is working
+	/*IMPORTANT: every time you try a larger system size than anyone has tried before (the largest I have done is 57)
+	 *you should rerun with testing=1, and make sure all the columns in the output are the same.
+	 This is because increasing the size may cause floating point overflow errors
+	 */
 	infile>>testing;
 	//a string which chooses mode to run the code in. right now there are 4 choices:  
 	//  twod: put two electrons outside the circular fermi surface, move them both around
