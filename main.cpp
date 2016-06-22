@@ -14,7 +14,7 @@ int main(){
 //    bp.two_full_braiding();
     
 //	void single_run();
-	single_run();
+//	single_run();
 
 //    void two_holes_scott();
 //    two_holes_scott();
@@ -86,8 +86,8 @@ int main(){
     
 //    test_largesize();
 
-//	void CFL_berry_phases();
-//	CFL_berry_phases();
+	void CFL_berry_phases();
+	CFL_berry_phases();
 }
 
 
