@@ -36,40 +36,47 @@ public:
     // dbar = (dbar_parameter[0]/NPhi*L1, dbar_parameter[1]/NPhi*L2);
 	~LATTICE();
 
+	int Ne;
+	double running_weight;//running_weight is a global variable. need reset in every run.
+    int tries,accepts;
+    complex<double> L1,L2;
+    
+    vector<double> hole;
+    bool fermions,holes_set;
+
+	//stepping functions
+    vector<double> dbar_parameter;
 	bool testing; // output 'running_weight' and 'get_weight()', useful in debug.
 	void step(int);// step(int Nsteps); Nsetps = total MC steps. tries:steps, accepts:updated steps.
 	double get_weight(const vector< vector<int> > &zs);  
 	complex<double> get_wf(const vector< vector<int> > &zs);
-	void make_fermi_surface(double* center_frac, int N);
+    void make_CFL_COM(complex<double>& value);
+    void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value);
+
+	//utility functions
 	complex<double> modded_lattice_z(int x, int y);
 	void print_ds();//.
-	double coulomb_energy();
-	double threebody();
-	void update_structure_factors();
-	void print_structure_factors(int nMeas);
+
+	//initialization related functions
+	void make_fermi_surface(double* center_frac, int N);
 	void reset();
+	vector <vector<int> > get_ds();
 	void change_dbar_parameter(double dbarx, double dbary);
 	vector<double> get_dbar_parameter();
 	void set_ds(vector< vector<int> > ds);//sets a custom set of composite fermion dipole moments
 	void set_hole(vector<double> temphole);
 	vector<double> get_hole();
-	vector <vector<int> > get_locs();
 	void check_sanity();
 
-	vector <vector<int> > get_ds();
+	//measurement related functions
+	double coulomb_energy();
+	double threebody();
+	void update_structure_factors();
+	void print_structure_factors(int nMeas);
+	vector <vector<int> > get_locs();
+	complex<double> formfactor(int qx, int qy);
+	complex<double> rhoq(int qx ,int qy, const vector< vector<int> > &zs);
 	
-	int Ne;
-	double running_weight;//running_weight is a global variable. need reset in every run.
-    int tries,accepts;
-    vector<double> dbar_parameter;
-    
-    void make_CFL_COM(complex<double>& value);
-    void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value);
-    
-    vector<double> hole;
-    bool fermions,holes_set;
-    complex<double> L1,L2;
-    
 private:
 	void sum_locs(int []);
 	void setup_coulomb();

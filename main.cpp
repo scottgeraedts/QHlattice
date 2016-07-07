@@ -189,18 +189,23 @@ void CFL_berry_phases(){
 	}
     else{
 		if(tempNe==21){
-			extra_ds.push_back(vector<int>{2,0});	
-			extra_ds.push_back(vector<int>{2,1});	
-			extra_ds.push_back(vector<int>{1,2});	
-			extra_ds.push_back(vector<int>{0,2});	
-			extra_ds.push_back(vector<int>{-1,2});	
-			extra_ds.push_back(vector<int>{-2,1});	
-			extra_ds.push_back(vector<int>{-2,0});	
-			extra_ds.push_back(vector<int>{-2,-1});	
-			extra_ds.push_back(vector<int>{-1,-2});	
-			extra_ds.push_back(vector<int>{0,-2});	
-			extra_ds.push_back(vector<int>{1,-2});	
-			extra_ds.push_back(vector<int>{2,-1});	
+			extra_ds.push_back(vector<int>{1,0});	
+			extra_ds.push_back(vector<int>{0,1});	
+			extra_ds.push_back(vector<int>{-1,0});	
+			extra_ds.push_back(vector<int>{0,-1});	
+
+//			extra_ds.push_back(vector<int>{2,0});	
+//			extra_ds.push_back(vector<int>{2,1});	
+//			extra_ds.push_back(vector<int>{1,2});	
+//			extra_ds.push_back(vector<int>{0,2});	
+//			extra_ds.push_back(vector<int>{-1,2});	
+//			extra_ds.push_back(vector<int>{-2,1});	
+//			extra_ds.push_back(vector<int>{-2,0});	
+//			extra_ds.push_back(vector<int>{-2,-1});	
+//			extra_ds.push_back(vector<int>{-1,-2});	
+//			extra_ds.push_back(vector<int>{0,-2});	
+//			extra_ds.push_back(vector<int>{1,-2});	
+//			extra_ds.push_back(vector<int>{2,-1});	
 		}else if(tempNe==32){
 			extra_ds.push_back(vector<int>{3,0});	
 			extra_ds.push_back(vector<int>{3,1});	
@@ -253,7 +258,7 @@ void CFL_berry_phases(){
 	}	
 	int nds=extra_ds.size();
 	//ll is the object we will do monte carlo on, pp is the object with the electrons (or holes) shifted by one space
-	int dsteps=4; //nds
+	int dsteps=3; //nds
     vector<LATTICE> ll(invNu), pp(invNu);
     for (int i=0; i<invNu; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
@@ -263,6 +268,7 @@ void CFL_berry_phases(){
     vector<vector<Eigen::MatrixXcd > > overlaps( dsteps, vector<Eigen::MatrixXcd>(4, Eigen::MatrixXcd::Zero(invNu,invNu) ) );
 	complex<double> temp;
     double energy;
+    int dKx,dKy;
     for(int b=0; b<dsteps; b++) {
     	new_ds_ll=old_ds;
 		new_ds_pp=old_ds;
@@ -271,7 +277,10 @@ void CFL_berry_phases(){
 			new_ds_ll.push_back(extra_ds[b]);
 			new_ds_pp.push_back(extra_ds[supermod(b+1,nds)]);
 			
+			dKx=2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
+			dKy=2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
 			if(type=="twod"){
+				dKx=0; dKy=0;
 				new_ds_ll.push_back(extra_ds[supermod(b+nds/2,nds)]);
 				new_ds_pp.push_back(extra_ds[supermod(b+nds/2+1,nds)]);
 			}
@@ -279,7 +288,10 @@ void CFL_berry_phases(){
 		}else{
 			new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[b]),new_ds_ll.end());
 			new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+1,nds)]),new_ds_pp.end());
+			dKx=-2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
+			dKy=-2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
 			if(type=="mtwod"){
+				dKx=0; dKy=0;
 				new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[supermod(b+nds/2,nds)]),new_ds_ll.end());
 				new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+nds/2+1,nds)]),new_ds_pp.end());
 			}				
@@ -301,7 +313,7 @@ void CFL_berry_phases(){
             for (int i=0; i<invNu; i++) {
                 for (int j=0; j<invNu; j++) {
                     temp=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
-                    overlaps[b][0](i,j)+=temp;
+                    overlaps[b][0](i,j)+=temp*ll[i].rhoq(dKx,dKy,ll[i].get_locs());
                     overlaps[b][1](i,j)+=norm(temp);
                     temp=ll[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
                     overlaps[b][2](i,j)+=temp;
@@ -314,12 +326,11 @@ void CFL_berry_phases(){
         overlaps[b][2]=overlaps[b][2].array()/overlaps[b][3].array().sqrt();
         hermitianize(overlaps[b][2]);
         cout<<"energy: "<<energy/(1.*nMeas*Ne)<<endl;
-        if (b>=1) break;
     }
 
     //compensate for vectors not being orthogonal (maybe not necessary)
     vector<Eigen::MatrixXcd> alphas( dsteps, Eigen::MatrixXcd(invNu,invNu) );
-    for (int b=0; b<nds; b++) {
+    for (int b=0; b<dsteps; b++) {
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b][2]);
         for (int i=0; i<invNu; i++) {
             Eigen::VectorXcd V = es.eigenvectors().col(i);
