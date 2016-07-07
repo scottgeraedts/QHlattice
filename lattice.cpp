@@ -62,7 +62,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 	setup_z_function_table_();
 	int *sl2z=new int[4];
 	sl2z[0]=1; sl2z[1]=0; sl2z[2]=0; sl2z[3]=1;
-	if(type!="laughlin-hole") setup_laughlin_state_(&Ne,&invNu,sl2z,&zero);
+	if(type!="laughlin-hole") setup_laughlin_state_(&Ne,&invNu,sl2z,&gs);
 //	cout<<"starting weight "<<running_weight<<endl;
 
 	cout<<"starting coulomb setup"<<endl;
@@ -161,11 +161,21 @@ int LATTICE::simple_update(){
 			prob+=log(norm(temp));
 		}
 	}else{
-
-		get_laughlin_cm_(oldCOM,&temp);
-		prob-=log(norm(temp));	
-		get_laughlin_cm_(newCOM,&temp);
-		prob+=log(norm(temp));	
+		double dx,dy;
+		for( int i=0;i<invNu;i++){
+			dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
+			dy=oldCOM[1]/(1.*NPhi)-ws[i][1];
+			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+			prob-=log(norm(temp));
+			dx=newCOM[0]/(1.*NPhi)-ws[i][0];
+			dy=newCOM[1]/(1.*NPhi)-ws[i][1];
+			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+			prob+=log(norm(temp));
+		}
+//		get_laughlin_cm_(oldCOM,&temp);
+//		prob-=log(norm(temp));	
+//		get_laughlin_cm_(newCOM,&temp);
+//		prob+=log(norm(temp));	
 	}
 	///***********determinant part
 	complex<double> newDeterminant;
@@ -365,8 +375,8 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 		COM[0]+=zs[i][0];
 		COM[1]+=zs[i][1];
 	}
+	double dx,dy;
 	if(type=="laughlin-hole"){
-		double dx,dy;
 		for( int i=0;i<invNu;i++){
 			dx=COM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
 			dy=COM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
@@ -379,8 +389,12 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 			COM[0]-=dsum[0]/invNu;
 			COM[1]-=dsum[1]/invNu;
 		}
-		get_laughlin_cm_(COM,&temp);
-		out*=temp;
+		for( int i=0;i<invNu;i++){
+			dx=COM[0]/(1.*NPhi)-ws[i][0];
+			dy=COM[1]/(1.*NPhi)-ws[i][1];
+			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+			out*=temp;
+		}
 	}
 
 	if(type=="CFL"){
@@ -583,6 +597,27 @@ void LATTICE::print_structure_factors(int nMeas){
 	sqout3.close();
 	sqout.close();
 	sqout2.close();
+}
+
+complex<double> LATTICE::formfactor(int qx, int qy){
+	complex<double> out=0;
+	complex<double> temp;
+	double kappa=2*M_PI/real(L1);
+	for(int px=-4;px<5;px++){
+		temp=exp(-0.25*pow(kappa*(px*NPhi-qx),2));
+		for(int py=-4;py<5;py++){
+			out+=temp*exp(-0.25*pow(kappa*(py*NPhi-qy),2));
+		}
+	}
+	return out;
+}
+
+complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
+	complex<double> out=0;
+	for(int i=0;i<Ne;i++){
+		out+=omega[supermod(2*(qx*locs[i][0]+qy*locs[i][1]),2*NPhi)];
+	}	
+	return out/formfactor(qx,qy);
 }
 void LATTICE::reset(){
 	tries=0; accepts=0;
