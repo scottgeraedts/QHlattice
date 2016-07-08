@@ -45,6 +45,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 	}
 
 	double center_frac[2]={0.,0.};
+    dbar_parameter=vector<double>(2);
 	if(type=="CFL"){
 		if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
@@ -63,7 +64,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 //		cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
 	}
 	holes_set=false;
-	
+
 	//********calls to duncan's functions
 	set_l_(&NPhi, &L1, &L2);
 	setup_z_function_table_();
@@ -812,6 +813,10 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
     new_det=detSolver.determinant();
     //		cout<<electron<<endl;
     //		cout<<oldMatrix<<endl<<endl<<newMatrix<<endl;
+}
+
+vector<double> LATTICE::get_dbar_parameter(){
+    return dbar_parameter;
 }
 
 LATTICE::~LATTICE(){  }

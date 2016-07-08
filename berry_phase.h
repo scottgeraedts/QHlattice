@@ -715,6 +715,7 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
     infile>>type;
     //initialize MC object
     
+    //if change_nMeas==0/ change_Ne==0, nMeas/ Ne is set according to 'params'.
     if (change_nMeas==0) nMeas=nMeas_t;
     else nMeas=change_nMeas;
     if (change_Ne==0) Ne=Ne_t;
@@ -732,22 +733,14 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
     int supermod(int k, int n);
     for(int i=0;i<nds;i++) holes2[supermod(i-1,nds)]=holes[i];//(holes[b],holes2[b]) = (holes[b],holes[b+1]).
     
-    //    vector<LATTICE> ll(3), pp(3);
-    //    for (int i=0; i<3; i++) {ll[i]=LATTICE(Ne, invNu, testing, type, seed, i); pp[i]=LATTICE(Ne, invNu, testing, type, seed, i);}
-    
-    vector<vector<Eigen::MatrixXcd > > overlaps;
     //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
-    for (int b=0; b<nds; b++) {
-        vector<Eigen::MatrixXcd> aa;
-        Eigen::MatrixXcd a = Eigen::MatrixXcd::Zero(3,3);
-        for (int i=0; i<4; i++) aa.push_back(a);
-        overlaps.push_back(aa);
-    }
+    vector<vector<Eigen::MatrixXcd > > overlaps(nds, vector<Eigen::MatrixXcd>(4, Eigen::MatrixXcd::Zero(3, 3)));
     
     omp_set_num_threads(num_core);
     vector<vector<LATTICE> > ll(num_core, vector<LATTICE>(3)), pp(num_core, vector<LATTICE>(3));//do this to avoid wrong memory access since openmp share memory.
     for (int k=0; k<num_core; k++) for (int i=0; i<3; i++) {ll[k][i]=LATTICE(Ne, invNu, testing, type, seed, i); pp[k][i]=LATTICE(Ne, invNu, testing, type, seed, i);}
     
+    //parallel programming begin.
 #pragma omp parallel for
     for(int b=0; b<nds; b++) {
         int coren = omp_get_thread_num();
@@ -773,34 +766,36 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
             }
         }
         for (int l=0; l<4; l++) overlaps[b][l]/=(1.*nMeas);
-        for (int i=0; i<3; i++) for (int j=0; j<3; j++) {overlaps[b][0](i,j)/=sqrt(abs(overlaps[b][1](i,j))); overlaps[b][2](i,j)/=sqrt(abs(overlaps[b][3](i,j)));}
+        overlaps[b][0]=overlaps[b][0].array()/overlaps[b][1].array().sqrt();
+        overlaps[b][2]=overlaps[b][2].array()/overlaps[b][3].array().sqrt();
         
         hermitianize(overlaps[b][2]);
     }
     //parallel programming end.
     
+    
     vector<Eigen::MatrixXcd> berrymatrix_step(nds);
     for (int b=0; b<nds; b++) berrymatrix_step[b] = overlaps[b][2].inverse() * overlaps[b][0];
     
-    Eigen::Matrix3cd berrymatrix_integral = Eigen::Matrix3cd::Identity(3,3);
-    vector<double> phases(3,0.);
+    Eigen::MatrixXcd berrymatrix_integral = Eigen::MatrixXcd::Identity(invNu, invNu);
+    vector<double> phases(invNu, 0.);
     datas.clear();
     for (int b=0; b<nds; b++) {
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_step[b]);
         data tmp;
         berrymatrix_integral *= berrymatrix_step[b];
-        for (int i=0; i<3; i++) {
+        for (int i=0; i<invNu; i++) {
             phases[i]+=arg(es.eigenvalues()[i]);
             tmp.num = b; tmp.amp[i] = abs(es.eigenvalues()[i]); tmp.ang[i] = arg(es.eigenvalues()[i]);
         }
         
-        // dfromnorm.
+        // dfromnorm. calculates deviation from normality.
         double normeigenvalue=0., normmatrix=0.;
-        for (int i=0; i<3; i++) {
+        for (int i=0; i<invNu; i++) {
             normeigenvalue+=sqrt(norm(es.eigenvalues()[i]));
         }
-        for (int i=0; i<3; i++) {
-            for (int j=0; j<3; j++) {
+        for (int i=0; i<invNu; i++) {
+            for (int j=0; j<invNu; j++) {
                 normmatrix+=sqrt(norm(berrymatrix_step[b](i,j)));
             }
         }
@@ -809,79 +804,73 @@ void laughlinberryphase(vector<double> length, double steplength, vector<data> &
         datas.push_back(tmp);
     }
     
+    double avephase;
     Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
     datas[0].ang_trace = arg(berrymatrix_integral.trace());
     datas[0].det = arg(berrymatrix_integral.determinant());
-    cout<<"\n\n Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<omp_get_num_threads()<<endl;
-    cout<<"phase sum = "<<phases[0]<<" "<<phases[1]<<" "<<phases[2]<<"\nphase average = "<<(phases[0]+phases[1]+phases[2])/3<<endl;
+    cout<<"\n\n Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
+    cout<<"phase sum = "; for (int i=0; i<invNu; i++) {cout<<phases[i]<<" "; avephase+=phases[i]/(1.*invNu);} cout<<"\nphase average = "<<avephase<<endl;
     cout<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
-    cout<<"amp(berrymatrix_integral.eigenvalue) = "<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[0])<<endl;
-    cout<<"arg(berrymatrix_integral.eigenvalue) = "<<arg(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[2])<<endl;
-    cout<<"sum arg(berrymatrix_integral.eigenvalue) = "<< ( arg(es.eigenvalues()[0])+arg(es.eigenvalues()[1])+arg(es.eigenvalues()[2]) )/3 <<endl;
+    cout<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<abs(es.eigenvalues()[i])<<" "; cout<<endl;
+    cout<<"arg(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<arg(es.eigenvalues()[i])<<" ";cout<<endl;
+    avephase=0.; for (int i=0; i<invNu; i++) avephase+=arg(es.eigenvalues()[i])/(1.*invNu); cout<<"sum arg(berrymatrix_integral.eigenvalue) = "<<avephase<<endl;
     cout<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
     cout<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
     cout<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl;
+    
 }
 
-//void test_error(int ne, double loop, double steplength, int nMea, int ncore, string filename, string test){
-//    void laughlinberryphase_parallel(vector<double> length, double steplength, vector<data> &datas, int, int, int);
-//    void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, int, int);
-//    vector<double> length(2); vector<data> datas;
-//    length[0]=loop; length[1]=loop;
-//    ofstream bout("test_error_stl_ll_10");
-//    if (test=="steplength") {
-//        for (double steplength=0.001; steplength<loop; steplength+=0.002) {
-//            if (ncore>1) laughlinberryphase_parallel(length, steplength, datas, nMea, ne, ncore);
-//            else laughlinberryphase(length, steplength, datas, nMea, ne);
-//            vector<double> phase(3);
-//            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
-//            bout<<steplength<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
-//        }
-//    }
-//    if (test=="ne") {
-//        for (int ne=2; ne<22; ne=ne+2) {
-//            if (ncore>1) laughlinberryphase_parallel(length, steplength, datas, nMea, ne, ncore);
-//            else laughlinberryphase(length, steplength, datas, nMea, ne);
-//            vector<double> phase(3);
-//            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
-//            bout<<ne<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
-//        }
-//    }
-//    if (test=="nMea") {
-//        for (int nMeas=10; nMeas<20; nMeas+=2){
-//            if (ncore>1) laughlinberryphase_parallel(length, steplength, datas, nMea, ne, ncore);
-//            else laughlinberryphase(length, steplength, datas, nMea, ne);
-//            vector<double> phase(3);
-//            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
-//            bout<<nMeas<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
-//        }
-//    }
-//    if (test=="loop") {
-//        for (double x=0.05; x<0.8; x+=0.05) {
-//            length[0]=x; length[1]=x;
-//            if (ncore>1) laughlinberryphase_parallel(length, steplength, datas, nMea, ne, ncore);
-//            else laughlinberryphase(length, steplength, datas, nMea, ne);
-//            vector<double> phase(3);
-//            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
-//            bout<<x<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
-//        }
-//    }
-//    if (test=="normality") {
-//        for (double steplength=0.01; steplength<0.25; steplength+=0.01) {
-//            if (ncore>1) laughlinberryphase_parallel(length, steplength, datas, 0, 0, ncore);
-//            else laughlinberryphase(length, steplength, datas, 0, 0);
-//            
-//            bout<<steplength<<endl;
-//            for (int i=0; i<datas.size(); i++) {
-//                bout<<datas[i].num<<" "<<datas[i].dfromnorm<<endl;
-//            }
-//            bout<<endl;
-//        }
-//    }
-//    
-//}
-
-
-
+void test_error(int ne, double loop, double steplength, int nMea, int ncore, string test, int num_core){
+    void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, int change_nMeas, int change_Ne, int num_core);
+    vector<double> length(2); vector<data> datas;
+    length[0]=loop; length[1]=loop;
+    
+    ofstream bout("test");
+    if (test=="steplength") {
+        for (double steplength=0.001; steplength<loop; steplength+=0.002) {
+            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
+            vector<double> phase(3);
+            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
+            bout<<steplength<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
+        }
+    }
+    if (test=="ne") {
+        for (int ne=2; ne<22; ne=ne+2) {
+            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
+            vector<double> phase(3);
+            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
+            bout<<ne<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
+        }
+    }
+    if (test=="nMea") {
+        for (int nMeas=10; nMeas<20; nMeas+=2){
+            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
+            vector<double> phase(3);
+            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
+            bout<<nMeas<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
+        }
+    }
+    if (test=="loop") {
+        for (double x=0.05; x<0.8; x+=0.05) {
+            length[0]=x; length[1]=x;
+            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
+            vector<double> phase(3);
+            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
+            bout<<x<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
+        }
+    }
+    if (test=="normality") {
+        for (double steplength=0.01; steplength<0.25; steplength+=0.01) {
+            laughlinberryphase(length, steplength, datas, 0, 0, num_core);
+            
+            bout<<steplength<<endl;
+            for (int i=0; i<datas.size(); i++) {
+                bout<<datas[i].num<<" "<<datas[i].dfromnorm<<endl;
+            }
+            bout<<endl;
+        }
+    }
+    
+}
 
 #endif

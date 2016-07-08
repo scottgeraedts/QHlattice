@@ -29,8 +29,7 @@ int supermod(int k, int n);
 
 
 void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas);
-void laughlinberryphase_parallel(vector<double> length, double steplength, vector<data> &datas, int change_nMeas, int change_Ne, int num_core);
-void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, int change_nMeas, int change_Ne);
-void test_error(int ne, double loop, int nMea, int ncore, string filename, string test);
+void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, int change_nMeas, int change_Ne, int num_core);
+void test_error(int ne, double loop, double steplength, int nMea, int ncore, string filename, string test);
 
 #endif

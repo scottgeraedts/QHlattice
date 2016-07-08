@@ -1,7 +1,6 @@
 #ifndef LATTICE_H
 #define LATTICE_H
 
-#include <omp.h>
 #include <stdio.h>
 #include "utils.h"
 #include <Eigen/LU>
