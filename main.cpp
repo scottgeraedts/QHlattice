@@ -1,23 +1,81 @@
 using namespace std;
-//#include <omp.h>
 #include "lattice.h"
 #include "berry_phase.h"
 
 int main(){
-    void CFL_berry_phases(vector<data> &datas);
-    void CFL_berry_phases_parallel(vector<data> &datas, int num_core);
-    vector<data> datas; int num_core;
-    num_core=1;
-	CFL_berry_phases(datas);
-    cout<<"----------"<<endl;
-    CFL_berry_phases_parallel(datas, num_core);
-
+    void test_laughlinwf();
+    test_laughlinwf();
+    
+//    void laughlin_bp_single_state(int gs, vector<double> length, double steplength, int change_nMeas, vector<data> &datas, int num_core);
+//    double steplength=0.05;
+//    vector<double> length(2); length[1]=0.5; length[2]=0.5;
+//    vector<data> datas;
+//    int gs=0, num_core=2;
+//    ofstream outfile("single_bp");
+//    for (int nMeas=1000; nMeas<2000; nMeas+=500) {
+//        laughlin_bp_single_state(gs, length, steplength, nMeas, datas, num_core);
+//        double phase=0.;
+//        for (int i=0; i<datas.size(); i++) {
+//            phase+=datas[i].ang[gs];
+//        }
+//        outfile<<nMeas<<" "<<phase<<endl;
+//    }
+    
+//    //CFL berry phase.
+//    void CFL_berry_phases(vector<data> &datas);
+//    void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
+//    vector<data> datas; int num_core;
+//    
+//    num_core=2;
+//    CFL_berry_phases_parallel(datas, "params", "output", num_core);
+    
+    //------
+    
+//    ofstream bout("result");
+//    for (double steplength=0.001; steplength<loop; steplength+=0.002) {
+//        laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
+//        vector<double> phase(3);
+//        for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
+//        bout<<steplength<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
+//    }
+    
+//    //laughlin-hole berry phase.
 //    void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, int change_nMeas, int change_Ne, int num_core);
-//    vector<double> length(2); double steplength; int nMeas, ne, ncore; vector<data> datas;
+//    vector<double> length(2); double steplength; int nMeas, ne, ncore;
 //    length[0]=0.1; length[1]=0.1; steplength=0.01; nMeas=0; ne=0; ncore=2;
 //    laughlinberryphase(length, steplength, datas, nMeas, ne, ncore);
 }
 
+void test_laughlinwf(){
+    bool testing=false; string type="laughlin"; int seed=0;
+    int Ne=2, invNu=3, NPhi=6;
+    
+    LATTICE lau(Ne, invNu, testing, type, seed, 0);
+    vector<vector<int> > zs(2, vector<int>(2));
+    zs[0]=vector<int>{1, 1}; zs[1]=vector<int>{2, 2};
+    cout<<"w.f. = "<<lau.get_wf(zs)<<endl;
+    
+    int nWarmup=5000, nMeas=10000, nSteps=10;
+    for (int m=1; m<2; m++) {
+        for (int n=m; n<2; n++) {
+            LATTICE ll, pp;
+            ll=LATTICE(Ne, invNu, testing, type, seed, m);
+            pp=LATTICE(Ne, invNu, testing, type, seed, n);
+            ll.reset(); ll.step(nWarmup);
+            
+            vector<complex<double> > overlaps(2);
+            for (int k=0; k<nMeas; k++) {
+                ll.step(nSteps);
+                complex<double> temp=pp.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+                overlaps[0]+=temp; overlaps[1]+=norm(temp);
+            }
+            for (int l=0; l<2; l++) overlaps[l]/=(1.*nMeas);
+            overlaps[0]/=sqrt(abs(overlaps[1]));
+            cout<<"m="<<m<<" n="<<n<<" overlap="<<overlaps[0]<<endl;
+        }
+    }
+    
+}
 void CFL_berry_phases(vector<data> &datas){
     int supermod(int k, int n);
 	int tempNe,Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
@@ -246,7 +304,7 @@ void CFL_berry_phases(vector<data> &datas){
 	int nds=extra_ds.size();
 
 	//ll is the object we will do monte carlo on, pp is the object with the electrons (or holes) shifted by one space
-	int dsteps=3; //nds
+	int dsteps=nds; //nds
     vector<LATTICE> ll(invNu), pp(invNu);
     for (int i=0; i<invNu; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
@@ -355,7 +413,7 @@ void CFL_berry_phases(vector<data> &datas){
     Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
     datas[0].ang_trace = arg(berrymatrix_integral.trace());
     datas[0].det = arg(berrymatrix_integral.determinant());
-    cout<<"\n\n Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<1<<endl;
+    cout<<"\n Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<1<<endl;
     cout<<"phase sum = "; for (int i=0; i<invNu; i++) {cout<<phases[i]<<" "; avephase+=phases[i]/(1.*invNu);} cout<<"\nphase average = "<<avephase<<endl;
     cout<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
     cout<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<abs(es.eigenvalues()[i])<<" "; cout<<endl;
@@ -364,19 +422,17 @@ void CFL_berry_phases(vector<data> &datas){
     cout<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
     cout<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
     cout<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl;
-    
 }
 
-
-
-void CFL_berry_phases_parallel(vector<data> &datas, int num_core){
+void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core){
+    ofstream outfile(output_name.c_str());
     int supermod(int k, int n);
     int tempNe,Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     string type;
     
     //get  inputs from the params file
-    ifstream infile("params");
+    ifstream infile(params_name.c_str());
     //number of electrons, and inverse of filling fraction
     infile>>tempNe>>invNu;
     //monte carlo parameters
@@ -589,6 +645,11 @@ void CFL_berry_phases_parallel(vector<data> &datas, int num_core){
             
             extra_ds.push_back(vector<int>{2,-3});
             extra_ds.push_back(vector<int>{3,-2});
+        }else if(tempNe==9){
+            extra_ds.push_back(vector<int>{1,1});
+            extra_ds.push_back(vector<int>{1,-1});
+            extra_ds.push_back(vector<int>{-1,-1});
+            extra_ds.push_back(vector<int>{-1,1});
         }else{
             cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
             exit(0);
@@ -597,7 +658,7 @@ void CFL_berry_phases_parallel(vector<data> &datas, int num_core){
     int nds=extra_ds.size();
     
     //ll is the object we will do monte carlo on, pp is the object with the electrons (or holes) shifted by one space
-    int dsteps=3; //nds
+    int dsteps=nds; //nds
 //    vector<LATTICE> ll(invNu), pp(invNu);
 //    for (int i=0; i<invNu; i++) {
 //        ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
@@ -716,6 +777,11 @@ void CFL_berry_phases_parallel(vector<data> &datas, int num_core){
         }
         tmp.dfromnorm=normmatrix-normeigenvalue;
         
+        //outfile.
+        outfile<<b<<" ";
+        for (int i=0; i<invNu; i++) outfile<<tmp.ang[i]<<" ";
+        outfile<<tmp.dfromnorm<<endl;
+        
         datas.push_back(tmp);
     }
     
@@ -723,7 +789,7 @@ void CFL_berry_phases_parallel(vector<data> &datas, int num_core){
     Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
     datas[0].ang_trace = arg(berrymatrix_integral.trace());
     datas[0].det = arg(berrymatrix_integral.determinant());
-    cout<<"\n\n Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
+    cout<<"\n Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
     cout<<"phase sum = "; for (int i=0; i<invNu; i++) {cout<<phases[i]<<" "; avephase+=phases[i]/(1.*invNu);} cout<<"\nphase average = "<<avephase<<endl;
     cout<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
     cout<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<abs(es.eigenvalues()[i])<<" "; cout<<endl;
@@ -734,3 +800,67 @@ void CFL_berry_phases_parallel(vector<data> &datas, int num_core){
     cout<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl;
 }
 
+void laughlin_bp_single_state(int gs, vector<double> length, double steplength, int change_nMeas, vector<data> &datas, int num_core){
+    int Ne,invNu,nWarmup,nMeas_t,nSteps,nBins,seed;
+    bool testing;
+    string type;
+    ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas_t>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+//    ofstream outfile(output_name.c_str());
+    
+    int nMeas;
+    if (change_nMeas==0) nMeas=nMeas_t;
+    else nMeas=change_nMeas;
+    
+    
+    vector<vector<double> > holes; vector<int> Grid(2);
+    for (int i=0; i<2; i++) {Grid[i]=(int)(length[i]/steplength);}
+    for (int i=0; i<Grid[0]; i++) {vector<double> a(2); a[0]=steplength*i; a[1]=0.;                  holes.push_back(a);}
+    for (int i=0; i<Grid[1]; i++) {vector<double> a(2); a[1]=steplength*i; a[0]=length[0];           holes.push_back(a);}
+    for (int i=0; i<Grid[0]; i++) {vector<double> a(2); a[0]=length[0]-steplength*i; a[1]=length[1]; holes.push_back(a);}
+    for (int i=0; i<Grid[1]; i++) {vector<double> a(2); a[1]=length[1]-steplength*i; a[0]=0.;        holes.push_back(a);}
+    int nds=holes.size();
+    vector<vector<double> > holes2(nds, vector<double>(2,0));
+    int supermod(int k, int n);
+    for(int i=0;i<nds;i++) holes2[supermod(i-1,nds)]=holes[i];//(holes[b],holes2[b]) = (holes[b],holes[b+1]).
+    
+    vector<LATTICE> ll(num_core), pp(num_core);
+    for (int k=0; k<num_core; k++) {ll[k]=LATTICE(Ne, invNu, testing, type, seed, gs); pp[k]=LATTICE(Ne, invNu, testing, type, seed, gs);}
+    
+    vector<vector<complex<double> > > overlaps(nds, vector<complex<double>>(2));
+    
+    omp_set_num_threads(num_core);
+#pragma omp parallel for
+    for(int b=0;b<nds;b++){
+        int coren=omp_get_thread_num();
+        ll[coren].set_hole(holes[b]); pp[coren].set_hole(holes2[b]);
+        ll[coren].reset(); ll[coren].step(nWarmup);
+        pp[coren].reset();
+        
+        for(int k=0;k<nMeas;k++){
+            ll[coren].step(nSteps);
+            complex<double> temp=pp[coren].get_wf(ll[coren].get_locs())/ll[coren].get_wf(ll[coren].get_locs());
+            overlaps[b][0]+=temp; overlaps[b][1]+=norm(temp);
+        }
+        for (int l=0; l<2; l++) overlaps[b][l]/=(1.*nMeas);
+        
+        overlaps[b][0]/=sqrt(abs(overlaps[b][1]));
+    }
+    
+    datas.clear();
+    for (int b=0; b<nds; b++) {
+        data tmp;
+        tmp.position[0]=holes[b][0]; tmp.position[1]=holes[b][1];
+        tmp.amp[gs]=abs(overlaps[b][0]); tmp.ang[gs]=arg(overlaps[b][0]);
+        datas.push_back(tmp);
+//        outfile<<tmp.position[0]<<" "<<tmp.position[1]<<" "<<tmp.amp[gs]<<" "<<tmp.ang[gs]<<endl;
+    }
+//    outfile.close();
+    
+}

@@ -46,6 +46,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 
 	double center_frac[2]={0.,0.};
     dbar_parameter=vector<double>(2);
+    
 	if(type=="CFL"){
 		if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
@@ -63,6 +64,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 //		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
 //		cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
 	}
+    
 	holes_set=false;
 
 	//********calls to duncan's functions
@@ -267,6 +269,7 @@ int LATTICE::m(int site){
 double LATTICE::get_weight(const vector< vector<int> > &zs){
 	double out=0,x,y;
 	complex<double> temp,temp2;
+    
 	//hole piece
 	if(type=="laughlin-hole"){
 		for(int i=0;i<Ne;i++){
@@ -275,9 +278,8 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 			z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
 			out+=log(norm(temp));
 		}
-	}		
-		
-
+	}
+    
 	//vandermonde piece
 	int vandermonde_exponent=invNu;
 	if(type=="CFL") vandermonde_exponent-=2;
@@ -342,7 +344,16 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 		out+=log(norm(temp/oldDivisor))+2*log(oldDivisor);
 //		temp2=temp*exp(out);
 //		out=log(real(temp2*conj(temp)));
-	}		
+	}
+    
+    //phase previously missing. for laughlin only for now.
+    vector<double> wsum(2);
+    for (int i=0; i<invNu; i++) {wsum[0]+=ws[i][0]; wsum[1]+=ws[i][1];}
+    complex<double> w_comp = wsum[0]*L1+wsum[1]*L2;
+    complex<double> zcom_comp = COM[0]/(1.*NPhi)*L1+COM[1]/(1.*NPhi)*L2;
+    complex<double> tmp = exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp-w_comp*conj(zcom_comp) ));
+    out+=log(norm(tmp));
+    
 	return out;
 } 
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
@@ -370,10 +381,14 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 			for( int j=i+1;j<Ne;j++){
 				ix=(zs[i][0]-zs[j][0]);
 				iy=(zs[i][1]-zs[j][1]);
-				out*=pow(lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one),vandermonde_exponent);
+//                complex<double> z=1.*ix/(1.*NPhi)*L1+1.*iy/(1.*NPhi)*L2;
+//                complex<double> tmp =lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one)*exp(0.5*norm(z)/(1.*NPhi));
+                out*=pow(lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one),vandermonde_exponent);//lattice_z_ function is sigma-gaussian.
+//                out*=pow(tmp, vandermonde_exponent);
 			}
 		}
 	}
+//    cout<<"out = "<<out<<endl;
 	
 	//COM piece
 	int COM[2]={0,0};
@@ -398,7 +413,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 		for( int i=0;i<invNu;i++){
 			dx=COM[0]/(1.*NPhi)-ws[i][0];
 			dy=COM[1]/(1.*NPhi)-ws[i][1];
-			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);//z_function is also sigma-gaussian.
 			out*=temp;
 		}
 	}
@@ -421,9 +436,17 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 		}
 		detSolver.compute(M);
 		out=out*detSolver.determinant();
-	}		
+	}
+    
+    //phase previously missing. for laughlin only for now.
+    vector<double> wsum(2);
+    for (int i=0; i<invNu; i++) {wsum[0]+=ws[i][0]; wsum[1]+=ws[i][1];}
+    complex<double> w_comp = wsum[0]*L1+wsum[1]*L2;
+    complex<double> zcom_comp = COM[0]/(1.*NPhi)*L1+COM[1]/(1.*NPhi)*L2;
+    out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - w_comp*conj(zcom_comp) ));
+    
 	return conj(out);
-} 
+}
 
 void LATTICE::sum_locs(int out[]){
 	out[0]=0; out[1]=0;
@@ -662,6 +685,7 @@ void LATTICE::reset(){
 			oldDeterminant=detSolver.determinant();
 //			cout<<in_determinant_rescaling<<" "<<oldDeterminant<<endl;
 		}
+        
 		running_weight=get_weight(locs);
 		initial_state_counter++;
 		if(initial_state_counter>1000){
@@ -669,6 +693,7 @@ void LATTICE::reset(){
 			exit(0);
 		}
 	}
+    
     check_sanity();
 }
 //checks a few different things to make sure that they make sense
