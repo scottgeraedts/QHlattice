@@ -1,37 +1,13 @@
 using namespace std;
 #include "lattice.h"
-#include "berry_phase.h"
+#include "berry_tests.h"
 
 int main(){
-<<<<<<< HEAD
-//    plot_CFL_coule_vsdbar(10);
-    
-//    berry_phase bp(20);
-//    bp.two_full_braiding();
-
-//    berry_phase bp(16);
-//    bp.two_full_braiding();
     
 	single_run();
 
-//    void two_holes_scott();
-//    two_holes_scott();
-//    string str;
-//    void two_holes(string str, int nmeasurement, data&);//str="test" or "".
-    
-//    ofstream bout("test_may20");
-//    for (int i=500; i<10000; i=i+50) {
-//        data test;
-//        two_holes("test", i, test);
-//        bout<<i<<" "<<test.amp[0]<<" "<<test.amp[1]<<" "<<test.amp[2]<<" "<<test.ang[0]<<" "<<test.ang[1]<<" "<<test.ang[2]<<endl;
-//    }
-    
-//    data test;
-//    two_holes("", 0, test);
-=======
-    void test_laughlinwf();
-    test_laughlinwf();
->>>>>>> 8d5243c074bd13805e3822dc567c662a1de7f9cc
+//    void test_laughlinwf();
+//    test_laughlinwf();
     
 //    void laughlin_bp_single_state(int gs, vector<double> length, double steplength, int change_nMeas, vector<data> &datas, int num_core);
 //    double steplength=0.05;
@@ -47,46 +23,6 @@ int main(){
 //        }
 //        outfile<<nMeas<<" "<<phase<<endl;
 //    }
-<<<<<<< HEAD
-//    ofstream bout("berry_laughlin_single_state");
-//    for (int i=0; i<datas.size(); i++) {
-//        bout<<datas[i].position[0]<<" "<<datas[i].position[1]<<" "<<datas[i].amp[gs]<<" "<<datas[i].ang[gs]<<endl;
-//    }
-    
-
-//    testeigen();
-    
-//    test_largesize();
-
-//	void CFL_berry_phases();
-//	CFL_berry_phases();
-}
-
-
-void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas){
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-    bool testing;
-    string type;
-    ifstream infile("params");
-    infile>>Ne>>invNu;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    //initialize MC object
-
-    vector<vector<double> > holes; vector<int> Grid(2);
-    for (int i=0; i<2; i++) {Grid[i]=(int)(length[i]/steplength);}
-    for (int i=0; i<Grid[0]; i++) {vector<double> a(2); a[0]=steplength*i; a[1]=0.;                  holes.push_back(a);}
-    for (int i=0; i<Grid[1]; i++) {vector<double> a(2); a[1]=steplength*i; a[0]=length[0];           holes.push_back(a);}
-    for (int i=0; i<Grid[0]; i++) {vector<double> a(2); a[0]=length[0]-steplength*i; a[1]=length[1]; holes.push_back(a);}
-    for (int i=0; i<Grid[1]; i++) {vector<double> a(2); a[1]=length[1]-steplength*i; a[0]=0.;        holes.push_back(a);}
-    int nds=holes.size();
-    vector<vector<double> > holes2(nds, vector<double>(2,0));
-    int supermod(int k, int n);
-    for(int i=0;i<nds;i++) holes2[supermod(i-1,nds)]=holes[i];//(holes[b],holes2[b]) = (holes[b],holes[b+1]).
-=======
->>>>>>> 8d5243c074bd13805e3822dc567c662a1de7f9cc
     
 //    //CFL berry phase.
 //    void CFL_berry_phases(vector<data> &datas);
@@ -103,22 +39,15 @@ void laughlin_bp_single_state(int gs, vector<double> length, double steplength, 
 //        laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
 //        vector<double> phase(3);
 //        for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
-//        bout<<steplength<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
-//    }
-    
-//    //laughlin-hole berry phase.
-//    void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, int change_nMeas, int change_Ne, int num_core);
-//    vector<double> length(2); double steplength; int nMeas, ne, ncore;
-//    length[0]=0.1; length[1]=0.1; steplength=0.01; nMeas=0; ne=0; ncore=2;
-//    laughlinberryphase(length, steplength, datas, nMeas, ne, ncore);
+//        bout<<steplength<<" "<<phase[0]<<" "<<phase[1]<<" "<<pEAD
 }
-
 void test_laughlinwf(){
     bool testing=false; string type="laughlin"; int seed=0;
     int Ne=2, invNu=3, NPhi=6;
     
     LATTICE lau(Ne, invNu, testing, type, seed, 0);
     vector<vector<int> > zs(2, vector<int>(2));
+
     zs[0]=vector<int>{1, 1}; zs[1]=vector<int>{2, 2};
     cout<<"w.f. = "<<lau.get_wf(zs)<<endl;
     
@@ -141,7 +70,7 @@ void test_laughlinwf(){
             cout<<"m="<<m<<" n="<<n<<" overlap="<<overlaps[0]<<endl;
         }
     }
-    
+   
 }
 void CFL_berry_phases(vector<data> &datas){
     int supermod(int k, int n);
@@ -386,11 +315,7 @@ void CFL_berry_phases(vector<data> &datas){
 	int nds=extra_ds.size();
 
 	//ll is the object we will do monte carlo on, pp is the object with the electrons (or holes) shifted by one space
-<<<<<<< HEAD
-	int dsteps=nds;
-=======
 	int dsteps=nds; //nds
->>>>>>> 8d5243c074bd13805e3822dc567c662a1de7f9cc
     vector<LATTICE> ll(invNu), pp(invNu);
     for (int i=0; i<invNu; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);

@@ -1,4 +1,4 @@
-//#include "berry_tests.h"
+#include "berry_tests.h"
 
 complex<double> chop(complex<double> input){
     double rea=real(input), ima=imag(input);
@@ -432,3 +432,244 @@ void laughlin_bp_single_state(int gs, vector<double> length, double steplength, 
     cout<<endl;
     
 }
+ 
+//---------- parallel programming code ------//
+void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, int change_nMeas, int change_Ne, int num_core){
+    int Ne,Ne_t,invNu,nWarmup,nMeas,nMeas_t,nSteps,nBins,seed;
+    bool testing;
+    string type;
+    ifstream infile("params");
+    infile>>Ne_t>>invNu;
+    infile>>nWarmup>>nMeas_t>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    //if change_nMeas==0/ change_Ne==0, nMeas/ Ne is set according to 'params'.
+    if (change_nMeas==0) nMeas=nMeas_t;
+    else nMeas=change_nMeas;
+    if (change_Ne==0) Ne=Ne_t;
+    else Ne=change_Ne;
+    
+    
+    vector<vector<double> > holes; vector<int> Grid(2);
+    for (int i=0; i<2; i++) {Grid[i]=(int)(length[i]/steplength);}
+    for (int i=0; i<Grid[0]; i++) {vector<double> a(2); a[0]=steplength*i; a[1]=0.;                  holes.push_back(a);}
+    for (int i=0; i<Grid[1]; i++) {vector<double> a(2); a[1]=steplength*i; a[0]=length[0];           holes.push_back(a);}
+    for (int i=0; i<Grid[0]; i++) {vector<double> a(2); a[0]=length[0]-steplength*i; a[1]=length[1]; holes.push_back(a);}
+    for (int i=0; i<Grid[1]; i++) {vector<double> a(2); a[1]=length[1]-steplength*i; a[0]=0.;        holes.push_back(a);}
+    int nds=holes.size();
+    vector<vector<double> > holes2(nds, vector<double>(2,0));
+    int supermod(int k, int n);
+    for(int i=0;i<nds;i++) holes2[supermod(i-1,nds)]=holes[i];//(holes[b],holes2[b]) = (holes[b],holes[b+1]).
+    
+    //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
+    vector<vector<Eigen::MatrixXcd > > overlaps(nds, vector<Eigen::MatrixXcd>(4, Eigen::MatrixXcd::Zero(3, 3)));
+    
+    omp_set_num_threads(num_core);
+    vector<vector<LATTICE> > ll(num_core, vector<LATTICE>(3)), pp(num_core, vector<LATTICE>(3));//do this to avoid wrong memory access since openmp share memory.
+    for (int k=0; k<num_core; k++) for (int i=0; i<3; i++) {ll[k][i]=LATTICE(Ne, invNu, testing, type, seed, i); pp[k][i]=LATTICE(Ne, invNu, testing, type, seed, i);}
+    
+    //parallel programming begin.
+#pragma omp parallel for
+    for(int b=0; b<nds; b++) {
+        int coren = omp_get_thread_num();
+        for (int i=0; i<3; i++) {
+            ll[coren][i].set_hole(holes[b]);
+            pp[coren][i].set_hole(holes2[b]);
+            ll[coren][i].reset(); ll[coren][i].step(nWarmup);
+            pp[coren][i].reset();
+        }
+        
+        for (int k=0; k<nMeas; k++) {
+            for (int i=0; i<3; i++) ll[coren][i].step(nSteps);
+            for (int i=0; i<3; i++) {
+                for (int j=0; j<3; j++) {
+                    vector<complex<double> > temp(2);
+                    temp[0]=pp[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
+                    overlaps[b][0](i,j)+=temp[0];
+                    overlaps[b][1](i,j)+=norm(temp[0]);
+                    temp[1]=ll[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
+                    overlaps[b][2](i,j)+=temp[1];
+                    overlaps[b][3](i,j)+=norm(temp[1]);
+                }
+            }
+        }
+        for (int l=0; l<4; l++) overlaps[b][l]/=(1.*nMeas);
+        overlaps[b][0]=overlaps[b][0].array()/overlaps[b][1].array().sqrt();
+        overlaps[b][2]=overlaps[b][2].array()/overlaps[b][3].array().sqrt();
+        
+        hermitianize(overlaps[b][2]);
+    }
+    //parallel programming end.
+    
+    
+    vector<Eigen::MatrixXcd> berrymatrix_step(nds);
+    for (int b=0; b<nds; b++) berrymatrix_step[b] = overlaps[b][2].inverse() * overlaps[b][0];
+    
+    Eigen::MatrixXcd berrymatrix_integral = Eigen::MatrixXcd::Identity(invNu, invNu);
+    vector<double> phases(invNu, 0.);
+    datas.clear();
+    for (int b=0; b<nds; b++) {
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_step[b]);
+        data tmp;
+        berrymatrix_integral *= berrymatrix_step[b];
+        for (int i=0; i<invNu; i++) {
+            phases[i]+=arg(es.eigenvalues()[i]);
+            tmp.num = b; tmp.amp[i] = abs(es.eigenvalues()[i]); tmp.ang[i] = arg(es.eigenvalues()[i]);
+        }
+        
+        // dfromnorm. calculates deviation from normality.
+        double normeigenvalue=0., normmatrix=0.;
+        for (int i=0; i<invNu; i++) {
+            normeigenvalue+=sqrt(norm(es.eigenvalues()[i]));
+        }
+        for (int i=0; i<invNu; i++) {
+            for (int j=0; j<invNu; j++) {
+                normmatrix+=sqrt(norm(berrymatrix_step[b](i,j)));
+            }
+        }
+        tmp.dfromnorm=normmatrix-normeigenvalue;
+        
+        datas.push_back(tmp);
+    }
+    
+    double avephase;
+    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
+    datas[0].ang_trace = arg(berrymatrix_integral.trace());
+    datas[0].det = arg(berrymatrix_integral.determinant());
+    cout<<"\n\n Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
+    cout<<"phase sum = "; for (int i=0; i<invNu; i++) {cout<<phases[i]<<" "; avephase+=phases[i]/(1.*invNu);} cout<<"\nphase average = "<<avephase<<endl;
+    cout<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
+    cout<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<abs(es.eigenvalues()[i])<<" "; cout<<endl;
+    cout<<"arg(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<arg(es.eigenvalues()[i])<<" ";cout<<endl;
+    avephase=0.; for (int i=0; i<invNu; i++) avephase+=arg(es.eigenvalues()[i])/(1.*invNu); cout<<"sum arg(berrymatrix_integral.eigenvalue) = "<<avephase<<endl;
+    cout<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
+    cout<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
+    cout<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl;
+    
+}
+
+void test_error(int ne, double loop, double steplength, int nMea, int ncore, string test, int num_core){
+    void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, int change_nMeas, int change_Ne, int num_core);
+    vector<double> length(2); vector<data> datas;
+    length[0]=loop; length[1]=loop;
+    
+    ofstream bout("test");
+    if (test=="steplength") {
+        for (double steplength=0.001; steplength<loop; steplength+=0.002) {
+            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
+            vector<double> phase(3);
+            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
+            bout<<steplength<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
+        }
+    }
+    if (test=="ne") {
+        for (int ne=2; ne<22; ne=ne+2) {
+            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
+            vector<double> phase(3);
+            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
+            bout<<ne<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
+        }
+    }
+    if (test=="nMea") {
+        for (int nMeas=10; nMeas<20; nMeas+=2){
+            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
+            vector<double> phase(3);
+            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
+            bout<<nMeas<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
+        }
+    }
+    if (test=="loop") {
+        for (double x=0.05; x<0.8; x+=0.05) {
+            length[0]=x; length[1]=x;
+            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
+            vector<double> phase(3);
+            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
+            bout<<x<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
+        }
+    }
+    if (test=="normality") {
+        for (double steplength=0.01; steplength<0.25; steplength+=0.01) {
+            laughlinberryphase(length, steplength, datas, 0, 0, num_core);
+            
+            bout<<steplength<<endl;
+            for (int i=0; i<datas.size(); i++) {
+                bout<<datas[i].num<<" "<<datas[i].dfromnorm<<endl;
+            }
+            bout<<endl;
+        }
+    }
+    
+}
+void single_run_jie(){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    string type;
+    ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    int gs=0;
+    LATTICE ll(Ne, invNu, testing, type, seed, gs);
+    ofstream outfile("out");
+    ofstream eout("energy");
+    ll.print_ds();
+    
+    ofstream auto_out("auto_jie");
+    for (int step=1; step<=10; step+=1) {
+        nSteps=step;
+//        ll.change_dbar_parameter(s*0.1,s*0.1);
+        ll.reset();
+        ll.step(nWarmup);
+        double E=0,E2=0;
+        double P=0,P2=0,three=0;
+        double e,p;
+        complex<double> berry_phase(0,0);
+        deque<double> e_tracker, p_tracker;
+        int Ntrack=10;
+        vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
+        
+        for(int i=0;i<nMeas;i++){
+            ll.step(nSteps);
+            e=ll.coulomb_energy();
+            E+=e;
+            E2+=e*e;
+            //            p=log(ll.running_weight); //this is a bug since changes are made in lattice.cpp, caus running_weight is logarithm of psi square.
+            p=ll.running_weight;
+            P+=p;
+            P2+=p*p;
+            eout<<e<<endl;
+            
+            //autocorrelations
+            e_tracker.push_front(e);
+            p_tracker.push_front(p);
+            if(i>=Ntrack){
+                for(int j=0;j<Ntrack;j++){
+                    autocorr_e[j]+=e_tracker[j]*e;
+                    autocorr_p[j]+=p_tracker[j]*p;
+                }
+                e_tracker.pop_back();
+                p_tracker.pop_back();
+            }
+            
+            //structure factor
+            //            ll.update_structure_factors();
+        }
+        
+        //output auto
+        auto_out<<step<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<endl;
+    }
+    
+    outfile<<endl;
+    //    ll.print_structure_factors(nMeas*nBins);
+    eout.close();
+    outfile.close();
+    
+}
+

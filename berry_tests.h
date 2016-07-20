@@ -3,6 +3,8 @@
 
 #include "utils.h"
 #include "lattice.h"
+#include <complex>
+#include <Eigen/Core>
 
 struct data{
     int num;
@@ -21,6 +23,7 @@ void hermitianize(Eigen::MatrixXcd &x);
 void testeigen();
 void test_largesize();
 void single_run();
+void single_run_jie();
 void plot_CFL_coule_vsdbar(int grid);
 void coul_energy_CFL_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins, double* dbar_parameter);
 void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins);
