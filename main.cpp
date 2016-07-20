@@ -13,8 +13,7 @@ int main(){
 //    berry_phase bp(16);
 //    bp.two_full_braiding();
     
-//	void single_run();
-//	single_run();
+	single_run();
 
 //    void two_holes_scott();
 //    two_holes_scott();
@@ -86,8 +85,8 @@ int main(){
     
 //    test_largesize();
 
-	void CFL_berry_phases();
-	CFL_berry_phases();
+//	void CFL_berry_phases();
+//	CFL_berry_phases();
 }
 
 
@@ -370,7 +369,16 @@ void CFL_berry_phases(){
 	//to go to larger sizes, it will be necessary to add more possible values of tempNe
 	//it may end up being more convenient to write code to automate this step
 	if(!holes){
-		if(tempNe==21){
+		if(tempNe==4){
+			extra_ds.push_back(vector<int>{2,0});	
+			extra_ds.push_back(vector<int>{2,1});	
+			extra_ds.push_back(vector<int>{1,2});	
+			extra_ds.push_back(vector<int>{0,2});	
+			extra_ds.push_back(vector<int>{-1,1});	
+			extra_ds.push_back(vector<int>{-1,0});	
+			extra_ds.push_back(vector<int>{0,-1});	
+			extra_ds.push_back(vector<int>{1,-1});	
+		}else if(tempNe==21){
 			extra_ds.push_back(vector<int>{3,0});	
 			extra_ds.push_back(vector<int>{3,1});	
 			extra_ds.push_back(vector<int>{2,2});	
@@ -474,7 +482,13 @@ void CFL_berry_phases(){
 		}
 	//this code does the same thing as above, but it lists all the positions just inside the fermi surface, where electrons should be removed if we are doing holes
 	}else{
-		if(tempNe==21){
+		if(tempNe==9){
+			extra_ds=vector< vector<int> > (4, vector<int>(2));
+			extra_ds[0][0]=1; extra_ds[0][1]=1;
+			extra_ds[1][0]=1; extra_ds[1][1]=-1;
+			extra_ds[2][0]=-1; extra_ds[2][1]=-1;
+			extra_ds[3][0]=-1; extra_ds[3][1]=1;
+		}else if(tempNe==21){
 			extra_ds.push_back(vector<int>{1,0});	
 			extra_ds.push_back(vector<int>{0,1});	
 			extra_ds.push_back(vector<int>{-1,0});	
@@ -544,7 +558,7 @@ void CFL_berry_phases(){
 	}	
 	int nds=extra_ds.size();
 	//ll is the object we will do monte carlo on, pp is the object with the electrons (or holes) shifted by one space
-	int dsteps=3; //nds
+	int dsteps=nds;
     vector<LATTICE> ll(invNu), pp(invNu);
     for (int i=0; i<invNu; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
@@ -563,8 +577,8 @@ void CFL_berry_phases(){
 			new_ds_ll.push_back(extra_ds[b]);
 			new_ds_pp.push_back(extra_ds[supermod(b+1,nds)]);
 			
-			dKx=2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
-			dKy=2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
+			dKx=(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
+			dKy=(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
 			if(type=="twod"){
 				dKx=0; dKy=0;
 				new_ds_ll.push_back(extra_ds[supermod(b+nds/2,nds)]);
@@ -598,6 +612,11 @@ void CFL_berry_phases(){
             energy+=ll[0].coulomb_energy();
             for (int i=0; i<invNu; i++) {
                 for (int j=0; j<invNu; j++) {
+                	if(i!=j){
+                		overlaps[b][0](i,j)+=0;
+                		overlaps[b][1](i,j)+=1;
+                		continue;
+                	}
                     temp=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
                     overlaps[b][0](i,j)+=temp*ll[i].rhoq(dKx,dKy,ll[i].get_locs());
                     overlaps[b][1](i,j)+=norm(temp);
@@ -633,18 +652,19 @@ void CFL_berry_phases(){
 //        Eigen::MatrixXcd berrymatrix_step = overlaps[b][2];//for non-orthogonal.
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_step);
         
-        cout<<"-----"<<extra_ds[b][0]<<" "<<extra_ds[b][1]<<endl;
-        cout<<overlaps[b][0]<<endl;
-        cout<<overlaps[b][1]<<endl;
-        cout<<overlaps[b][2]<<endl;
-        cout<<overlaps[b][3]<<endl;
-        cout<<berrymatrix_step<<endl;
-        cout<<alphas[b].adjoint()*alphas[b]<<endl;
-        berrymatrix_integral *= berrymatrix_step * overlaps[b][0];
+        cout<<"----- "<<extra_ds[b][0]<<" "<<extra_ds[b][1]<<endl;
+        cout<<norm(overlaps[b][0](0,0))<<" "<<arg(overlaps[b][0](0,0))<<endl;
+        cout<<norm(overlaps[b][0](1,1))<<" "<<arg(overlaps[b][0](1,1))<<endl;
+//        cout<<overlaps[b][1]<<endl;
+//        cout<<overlaps[b][1]<<endl;
+//        cout<<overlaps[b][3]<<endl;
+//        cout<<berrymatrix_step<<endl;
+//        cout<<alphas[b].adjoint()*alphas[b]<<endl;
+        berrymatrix_integral *=  overlaps[b][0]; //if doing both gs, want to multiply by berry_matrix_step
 //        berrymatrix_integral *=  overlaps[b][0];
 //        output<<"b = "<<b<<"berrymatrix_step = \n"<<berrymatrix_step<<endl;
     }
-    cout<<berrymatrix_integral<<endl;
+    cout<<"done"<<endl<<berrymatrix_integral<<endl;
     cout<<"\ntrace of total berry matrix = "<<berrymatrix_integral.trace()<<" ang(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
 //    cout<<"\nberrymatrix_integral = \n"<<berrymatrix_integral<<endl;
     

@@ -125,12 +125,29 @@ void single_run(){
 	//initialize MC object
     
     int gs=0;
+	LATTICE ds_generator(9,2,testing,type,seed,0);
+	vector< vector<int> > old_ds=ds_generator.get_ds();
+	vector<int> temp_ds(2);
+
+	//remove a d at -1,-1
+	temp_ds[0]=-1; temp_ds[1]=-1;
+	old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
+
+	temp_ds[0]=1; temp_ds[1]=1;
+	old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
+
+//	//add a d at 2,2
+	temp_ds[0]=2; temp_ds[1]=2;
+	old_ds.push_back(temp_ds);
+	
 	LATTICE ll(Ne,invNu, testing, type, seed, gs);
-	ofstream outfile("out"),eout("energy");
+	ll.set_ds(old_ds);
     ll.print_ds();
+
+	ofstream outfile("out"),eout("energy");
     for(int s=0;s<nBins;s++){
         
-		ll.change_dbar_parameter(s*0.1,s*0.1);
+//		ll.change_dbar_parameter(s*0.1,s*0.1);
         ll.reset();
         ll.step(nWarmup);
         double E=0,E2=0;

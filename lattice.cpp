@@ -455,7 +455,7 @@ void LATTICE::setup_coulomb(){
 	complex<double> eL2=L2*sqrt(2.);
 	for(int m=0;m<NPhi;m++){
 		for(int n=0;n<NPhi;n++){
-			coulomb_table[m][n]=v_coulomb_(&NPhi,&m,&n,&eL1,&eL2);
+			coulomb_table[m][n]=new_v_coulomb_(&NPhi,&m,&n,&eL1,&eL2);
 		}
 	}
 }
@@ -615,9 +615,9 @@ complex<double> LATTICE::formfactor(int qx, int qy){
 complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 	complex<double> out=0;
 	for(int i=0;i<Ne;i++){
-		out+=omega[supermod(2*(qx*locs[i][0]+qy*locs[i][1]),2*NPhi)];
+		out+=omega[supermod((2*qx*locs[i][0]+2*qy*locs[i][1]),2*NPhi)];
 	}	
-	return out/formfactor(qx,qy);
+	return out/(formfactor(qx,qy)*(1.*NPhi));
 }
 void LATTICE::reset(){
 	tries=0; accepts=0;
