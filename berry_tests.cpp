@@ -1,6 +1,4 @@
-#include "berry_tests.h"
-
-using namespace std;
+//#include "berry_tests.h"
 
 complex<double> chop(complex<double> input){
     double rea=real(input), ima=imag(input);
@@ -12,7 +10,6 @@ complex<double> chop(complex<double> input){
     }
     return rea+complex<double>(0,1)*ima;
 }
-
 Eigen::MatrixXcd chop(Eigen::MatrixXcd mat){
     int m=mat.rows(), n=mat.cols();
     Eigen::MatrixXcd ret = Eigen::MatrixXcd(m,n);
@@ -31,7 +28,6 @@ void hermitianize(Eigen::MatrixXcd &x){
 		}
 	}
 }
-
 void testeigen(){
     Eigen::Matrix2cd MM;
     complex<double> ii = complex<double> (0,1);
@@ -63,7 +59,6 @@ void testeigen(){
 //    int supermod(int k, int n);
 //    cout<<"supermod = "<<supermod(5,4)<<endl;
 }
-
 void test_largesize(){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
@@ -374,4 +369,66 @@ double phasemod(complex<double> in){
         else if (out>2*M_PI) return out-2*M_PI;
         else return out;
     return out;
+}
+void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    string type;
+    ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    vector<vector<double> > holes; vector<int> Grid(2);
+    for (int i=0; i<2; i++) {Grid[i]=(int)(length[i]/steplength);}
+    for (int i=0; i<Grid[0]; i++) {vector<double> a(2); a[0]=steplength*i; a[1]=0.;                  holes.push_back(a);}
+    for (int i=0; i<Grid[1]; i++) {vector<double> a(2); a[1]=steplength*i; a[0]=length[0];           holes.push_back(a);}
+    for (int i=0; i<Grid[0]; i++) {vector<double> a(2); a[0]=length[0]-steplength*i; a[1]=length[1]; holes.push_back(a);}
+    for (int i=0; i<Grid[1]; i++) {vector<double> a(2); a[1]=length[1]-steplength*i; a[0]=0.;        holes.push_back(a);}
+    int nds=holes.size();
+    vector<vector<double> > holes2(nds, vector<double>(2,0));
+    int supermod(int k, int n);
+    for(int i=0;i<nds;i++) holes2[supermod(i-1,nds)]=holes[i];//(holes[b],holes2[b]) = (holes[b],holes[b+1]).
+    
+    LATTICE ll(Ne, invNu, testing, type, seed, gs), pp(Ne, invNu, testing, type, seed, gs);
+    vector<vector<complex<double> > > overlaps;
+    //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|psi(xb)|psi(xb+1)|^2>, overlaps[b][2](i,j)=overlaps[b][0](i,j)/sqrt{overlaps[b][1](i,j)}.
+    for (int b=0; b<nds; b++) {
+        vector<complex<double> > aa;
+        aa.push_back(0.); aa.push_back(0.); aa.push_back(0.);
+        overlaps.push_back(aa);
+    }
+    
+    for(int b=0;b<nds;b++){
+        ll.set_hole(holes[b]); pp.set_hole(holes2[b]);
+        ll.reset(); ll.step(nWarmup);
+        for(int k=0;k<nMeas;k++){
+            ll.step(nSteps);
+            complex<double> temp=pp.get_wf(ll.get_locs())/ll.get_wf(ll.get_locs());
+            overlaps[b][0]+=temp; overlaps[b][1]+=norm(temp);
+        }
+        for (int l=0; l<3; l++) {
+            overlaps[b][l]/=(1.*nMeas);
+        }
+        overlaps[b][2] = overlaps[b][0]/sqrt(overlaps[b][1]);
+        // 	    cout<<holes[b][0]<<" "<<holes[b][1]<<" "<<overlaps[b][2]<<endl;
+    }
+    datas.clear();
+    for (int b=0; b<nds; b++) {
+        data tmp;
+        tmp.position[0]=holes[b][0]; tmp.position[1]=holes[b][1];
+        tmp.amp[gs]=abs(overlaps[b][2]); tmp.ang[gs]=arg(overlaps[b][2]);
+        datas.push_back(tmp);
+    }
+    
+    double phase=0.;
+    for (int b=0; b<nds; b++) {
+        phase+=datas[b].ang[gs];
+    }
+    cout<<"\n\nphase = "<<phase<<endl;
+    cout<<endl;
+    
 }

@@ -1,13 +1,14 @@
 #ifndef LATTICE_H
 #define LATTICE_H
 
+#include <stdio.h>
 #include "utils.h"
 #include <Eigen/LU>
 #include <Eigen/Eigenvalues>
 #include "MersenneTwister.h"
 #include <numeric>
 #include <deque>
-#include "weierstrass.h"
+//#include "weierstrass.h"
 
 using namespace std;
 
@@ -78,7 +79,7 @@ public:
 private:
 	void sum_locs(int []);
 	void setup_coulomb();
-	void setup_weierstrass();
+//	void setup_weierstrass();
 	int simple_update();// returns '1' if updated, '0' if not updated.
 	vector<int> random_move(const vector<int> &oldsite);
 	int p(int); int m(int);
@@ -86,8 +87,8 @@ private:
 	void hotter_start();
 	void det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z);
     double det_helper(int z1, int z2, int d, double dbar_parameter);
-    complex<double> jies_weierstrass(double x, double y);
-    weierstrass weiers;
+//    complex<double> jies_weierstrass(double x, double y);
+//    weierstrass weiers;
 
 //    complex<double> L1,L2;
 	int NPhi;
