@@ -1,0 +1,22 @@
+2016-05-03
+Fixed coulomb energy.  The matrix elements in the
+Landau basis are also now available.  (The lattice
+compicatification is slighly different from the continuum
+form, mostly in the m=0 pseudopontial)
+
+Implemented self-tuning of mc acceptance ratio
+
+2016-05-09
+Separated sampling code from metropolis code.
+The coulomb, s(q), and strips are also separated
+into independent code.
+
+Initial equilibration is now monitored  with the |wf|**2 weight.
+
+Fixed a bug when r4_uni returned 1 exactly  (it produces a
+number in [0,1] with boundaries included).
+
+The S(Q) printout now gives  s(q),  s_bar(q) and s0(q)
+where s0(q) is the guiding-center structure factor, s_bar(q)
+is s0(q) times the gaussiang form factor, and s(q) is the
+"lowest-Landau-level" particle-coordinate form-factor.

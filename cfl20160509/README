@@ -1,0 +1,33 @@
+The set of .f90 programs here is a complete single sample
+
+mc_singlef90 
+single-sample metropolis calculation  for Laughlin nu = 1/m 
+
+sq_m.f90
+sampling code for producing s(q)
+
+strip_m.f90
+sampling code for strip occupations (for entanglement cuts)
+
+energy_m.f90
+sampling code for couomb energy
+
+
+z_function_m.f90
+routines for the modified sigma function
+
+wf_tools.f90
+tools for Laughlon wavefunction
+
+
+new_coulomb_m.f90
+implementation of ("lowest-landau-level") coulomb intercation
+
+
+mc_tools_m.f90
+Metropolis, etc
+
+ziggurat.f90
+random number generator
+
+

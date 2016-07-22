@@ -1,0 +1,51 @@
+The program twobody_testcomputes the two-body Coulomb energies o the plabe (without neutralizing
+background, so thay can be compared to lowest-landau-level pseudpotentials
+
+
+It calls routines in
+wf_tools.f90
+z_function_m.f90
+new_coulomb_m.f90
+
+It shows how to setup geometry, z_function
+ coulomb, and landau-bass matrix-elements of Coulomb,
+(the computation of the matrix elemenst involves 
+norb**4 and becomes slow after norb about 40 or so).
+
+after this
+the parameters for a Landau basis construction of the second-quantized
+coulomb Hamiltonian  are available:
+
+H = nel*(e0/2) + 1/2 sum_{k1,k2,k3,k4} V(k1,k2,k3,k4) c(k1)+c(k2)+c(k3)c(4)
+
+
+This can be used to check MC results from  this compactification of Coulomb
+------------------------------
+
+Details
+complex (kind=8) :: l1,l2, landau_coulom
+real (kind=8) :: madelung, metric(2,2)
+integer :: norb, k1,k2,k3,k4
+
+
+norb =   (your choice)
+metric = 0
+call set_geometry(norb,metric)    (asks you to specify geometry if metric is not valid) 
+call get_l(norb,l1,l2)            (provides you with l1 and l2 corresponding to chosen geometry)
+call  setup_zfunction_table
+call coulomb_setup
+call make_landau_coulomb
+e0 =  madeling()
+forall (k1 = 1:norb, k2=1:norb, k3=1:norb, k4=1:norb)  &
+ &    v(k1,k2,k3,k4) =   landau_coulomb(k1,k2,k3,k4)         (Landau basis states are eigenstates of t(L1/norb))
+
+
+Here:
+k1, k2, k3 ,k4 are integers: only their values modulo norb matter.
+also v(k1,k2,k3,k4) = 0 unless modulo(k1 + k2 - k3 - k4, norb) = 0
+and v(k1+k,k2+k,k3+k,k4+k) = v(k1,k2,k3,k4), v(k2,k1,k4,k3) = v(k1,k2,k3,k4)
+v(-k1,-k2,-k3,-j4) = conjg(v(k1,k2,k3,k4)
+
+
+
+
