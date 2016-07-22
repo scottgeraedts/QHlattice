@@ -346,13 +346,20 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 //		out=log(real(temp2*conj(temp)));
 	}
     
-    //phase previously missing. for laughlin only for now.
+    //phase previously missing. for laughlin/laughin-hole/CFL.
     vector<double> wsum(2);
     for (int i=0; i<invNu; i++) {wsum[0]+=ws[i][0]; wsum[1]+=ws[i][1];}
     complex<double> w_comp = wsum[0]*L1+wsum[1]*L2;
-    complex<double> zcom_comp = COM[0]/(1.*NPhi)*L1+COM[1]/(1.*NPhi)*L2;
-    complex<double> tmp = exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp-w_comp*conj(zcom_comp) ));
-    out+=log(norm(tmp));
+    complex<double> zcom_comp = 1.*COM[0]/(1.*NPhi)*L1+1.*COM[1]/(1.*NPhi)*L2;
+    if (type == "laughlin" || type == "laughlin-hole") {
+        complex<double> tmp = exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp-w_comp*conj(zcom_comp) ));
+        out+=log(norm(tmp));
+    }
+    else {
+        complex<double> dsum_comp = 1.*dsum[0]/(1.*NPhi)*L1+1.*dsum[1]/(1.*NPhi)*L2;
+        complex<double> tmp = exp(1./(2.*NPhi)*( conj(w_comp-dsum_comp)*zcom_comp - (w_comp-dsum_comp)*conj(zcom_comp)  ));
+        out+=log(norm(tmp));
+    }
     
 	return out;
 } 
@@ -438,12 +445,19 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 		out=out*detSolver.determinant();
 	}
     
-    //phase previously missing. for laughlin only for now.
+    //phase previously missing. for laughlin/laughlin-hole/CFL.
     vector<double> wsum(2);
     for (int i=0; i<invNu; i++) {wsum[0]+=ws[i][0]; wsum[1]+=ws[i][1];}
     complex<double> w_comp = wsum[0]*L1+wsum[1]*L2;
-    complex<double> zcom_comp = COM[0]/(1.*NPhi)*L1+COM[1]/(1.*NPhi)*L2;
-    out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - w_comp*conj(zcom_comp) ));
+    complex<double> zcom_comp = 1.*COM[0]/(1.*NPhi)*L1+1.*COM[1]/(1.*NPhi)*L2;
+    if (type == "laughlin" || type == "laughlin-hole") {
+        out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - w_comp*conj(zcom_comp) ));
+    }
+    else {
+        complex<double> dsum_comp=1.*dsum[0]/(1.*NPhi)*L1+1.*dsum[1]/(1.*NPhi)*L2;
+        out*=exp(1./(2.*NPhi)*( conj(w_comp-dsum_comp)*zcom_comp - (w_comp-dsum_comp)*conj(zcom_comp)  ));
+    }
+    
     
 	return conj(out);
 }
