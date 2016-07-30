@@ -5,53 +5,20 @@ bool IsOdd (int i) {
     return ((i%2)==1);
 }
 int main(){
-    
-//	single_run();
-    findstate();
-//    std::vector<int> myvector;
-    
-//    myvector.push_back(10);
-//    myvector.push_back(25);
-//    myvector.push_back(40);
-//    myvector.push_back(55);
-//    
-//    std::vector<int>::iterator it = std::find_if (myvector.begin(), myvector.end(), IsOdd);
-//    std::cout << "The first odd value is " << *it << '\n';
-
-//    void test_laughlinwf();
-//    test_laughlinwf();
-    
-//    void laughlin_bp_single_state(int gs, vector<double> length, double steplength, int change_nMeas, vector<data> &datas, int num_core);
-//    double steplength=0.05;
-//    vector<double> length(2); length[1]=0.5; length[2]=0.5;
-//    vector<data> datas;
-//    int gs=0, num_core=2;
-//    ofstream outfile("single_bp");
-//    for (int nMeas=1000; nMeas<2000; nMeas+=500) {
-//        laughlin_bp_single_state(gs, length, steplength, nMeas, datas, num_core);
-//        double phase=0.;
-//        for (int i=0; i<datas.size(); i++) {
-//            phase+=datas[i].ang[gs];
-//        }
-//        outfile<<nMeas<<" "<<phase<<endl;
-//    }
-    
 //    //CFL berry phase.
 //    void CFL_berry_phases(vector<data> &datas);
 //    void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
 //    vector<data> datas; int num_core;
-//    
 //    num_core=2;
-//    CFL_berry_phases_parallel(datas, "params", "output", num_core);
+//    CFL_berry_phases_parallel(datas, "params", "CFL_berryphase", num_core);
     
-    //------
+//    void check_orthogonality(string type);
+//    check_orthogonality("CFL");
+//    check_orthogonality("laughlin");
     
-//    ofstream bout("result");
-//    for (double steplength=0.001; steplength<loop; steplength+=0.002) {
-//        laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
-//        vector<double> phase(3);
-//        for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
-//        bout<<steplength<<" "<<phase[0]<<" "<<phase[1]<<" "<<pEAD
+    void findstate();
+    findstate();
+    
 }
 void test_laughlinwf(){
     bool testing=false; string type="laughlin"; int seed=0;
@@ -384,11 +351,11 @@ void CFL_berry_phases(vector<data> &datas){
             energy+=ll[0].coulomb_energy();
             for (int i=0; i<invNu; i++) {
                 for (int j=0; j<invNu; j++) {
-                	if(i!=j){
-                		overlaps[b][0](i,j)+=0;
-                		overlaps[b][1](i,j)+=1;
-                		continue;
-                	}
+//                	if(i!=j){
+//                		overlaps[b][0](i,j)+=0;
+//                		overlaps[b][1](i,j)+=1;
+//                		continue;
+//                	}
                     temp=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
                     overlaps[b][0](i,j)+=temp*ll[i].rhoq(dKx,dKy,ll[i].get_locs());//why times rhoq???
                     overlaps[b][1](i,j)+=norm(temp);
@@ -446,7 +413,7 @@ void CFL_berry_phases(vector<data> &datas){
     cout<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
     cout<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<abs(es.eigenvalues()[i])<<" "; cout<<endl;
     cout<<"arg(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<arg(es.eigenvalues()[i])<<" ";cout<<endl;
-    avephase=0.; for (int i=0; i<invNu; i++) avephase+=arg(es.eigenvalues()[i])/(1.*invNu); cout<<"sum arg(berrymatrix_integral.eigenvalue) = "<<avephase<<endl;
+    avephase=0.; for (int i=0; i<invNu; i++) avephase+=arg(es.eigenvalues()[i])/(1.*invNu); cout<<"ave arg(berrymatrix_integral.eigenvalue) = "<<avephase<<endl;
     cout<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
     cout<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
     cout<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl;
@@ -454,6 +421,8 @@ void CFL_berry_phases(vector<data> &datas){
 
 void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core){
     ofstream outfile(output_name.c_str());
+    string outfile2name=output_name+"_Mathmatica";
+    ofstream outfile2(outfile2name.c_str());
     int supermod(int k, int n);
     int tempNe,Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
@@ -675,9 +644,13 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
             extra_ds.push_back(vector<int>{3,-2});
         }else if(tempNe==9){
             extra_ds.push_back(vector<int>{1,1});
+//            extra_ds.push_back(vector<int>{1,0});
             extra_ds.push_back(vector<int>{1,-1});
+//            extra_ds.push_back(vector<int>{0,-1});
             extra_ds.push_back(vector<int>{-1,-1});
+//            extra_ds.push_back(vector<int>{-1,0});
             extra_ds.push_back(vector<int>{-1,1});
+//            extra_ds.push_back(vector<int>{0,1});
         }else{
             cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
             exit(0);
@@ -687,145 +660,149 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
     
     //ll is the object we will do monte carlo on, pp is the object with the electrons (or holes) shifted by one space
     int dsteps=nds; //nds
-//    vector<LATTICE> ll(invNu), pp(invNu);
-//    for (int i=0; i<invNu; i++) {
-//        ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
-//        pp[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
-//    }
-    
-    //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
-    vector<vector<Eigen::MatrixXcd > > overlaps(nds, vector<Eigen::MatrixXcd>(4, Eigen::MatrixXcd::Zero(invNu,invNu) ) );
     
     omp_set_num_threads(num_core);
     vector<vector<LATTICE> > ll(num_core, vector<LATTICE>(invNu)), pp(num_core, vector<LATTICE>(invNu));//do this to avoid wrong memory access since openmp share memory.
     for (int k=0; k<num_core; k++) for (int i=0; i<invNu; i++) {ll[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i); pp[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);}
     
-    //parallel programming begin.
-    vector<double> energy(dsteps);
-#pragma omp parallel for
-    for(int b=0; b<dsteps; b++) {
+    for (unsigned nbin=0; nbin<nBins; nbin++) {
+        //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
+        vector<vector<Eigen::MatrixXcd > > overlaps(nds, vector<Eigen::MatrixXcd>(4, Eigen::MatrixXcd::Zero(invNu,invNu) ) );
         
-        int coren = omp_get_thread_num();
-        
-        int dKx,dKy;
-        vector<vector<int> > new_ds_ll, new_ds_pp;
-        new_ds_ll=old_ds;
-        new_ds_pp=old_ds;
-        
-        //depending on the mode, this adds one or two electons just outside the Fermi surface
-        if(!holes){
-            new_ds_ll.push_back(extra_ds[b]);
-            new_ds_pp.push_back(extra_ds[supermod(b+1,nds)]);
+        //parallel programming begin.
+        vector<double> energy(dsteps);
+        #pragma omp parallel for
+        for(int b=0; b<dsteps; b++) {
+            int coren = omp_get_thread_num();
+            int dKx,dKy;
+            vector<vector<int> > new_ds_ll, new_ds_pp;
+            new_ds_ll=old_ds;
+            new_ds_pp=old_ds;
             
-            dKx=2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
-            dKy=2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
-            if(type=="twod"){
-                dKx=0; dKy=0;
-                new_ds_ll.push_back(extra_ds[supermod(b+nds/2,nds)]);
-                new_ds_pp.push_back(extra_ds[supermod(b+nds/2+1,nds)]);
-            }
-            //this removes one or two electrons from the list of ds, if we are doing holes
-        }else{
-            new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[b]),new_ds_ll.end());
-            new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+1,nds)]),new_ds_pp.end());
-            dKx=-2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
-            dKy=-2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
-            if(type=="mtwod"){
-                dKx=0; dKy=0;
-                new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[supermod(b+nds/2,nds)]),new_ds_ll.end());
-                new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+nds/2+1,nds)]),new_ds_pp.end());
-            }
-        }
-        
-        for (int i=0; i<invNu; i++) {
-            ll[coren][i].set_ds(new_ds_ll);
-            pp[coren][i].set_ds(new_ds_pp);
-            ll[coren][i].reset(); pp[coren][i].reset();
-            ll[coren][i].step(nWarmup);
-        }
-//        cout<<"warmed up"<<endl;
-//        pp[0].print_ds();
-//        energy=0;
-        energy[b]=0.;
-        
-        for (int k=0; k<nMeas; k++) {
-            for (int i=0; i<invNu; i++) ll[coren][i].step(nSteps);
-            
-            energy[b]+=ll[coren][0].coulomb_energy();
-            
-            for (int i=0; i<invNu; i++) {
-                for (int j=0; j<invNu; j++) {
-                    complex<double> temp;
-                    temp=pp[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
-                    overlaps[b][0](i,j)+=temp*ll[coren][i].rhoq(dKx,dKy,ll[coren][i].get_locs());//why times rhoq???
-                    overlaps[b][1](i,j)+=norm(temp);
-                    temp=ll[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
-                    overlaps[b][2](i,j)+=temp;
-                    overlaps[b][3](i,j)+=norm(temp);
+            //depending on the mode, this adds one or two electons just outside the Fermi surface
+            if(!holes){
+                new_ds_ll.push_back(extra_ds[b]);
+                new_ds_pp.push_back(extra_ds[supermod(b+1,nds)]);
+                
+                dKx=2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
+                dKy=2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
+                if(type=="twod"){
+                    dKx=0; dKy=0;
+                    new_ds_ll.push_back(extra_ds[supermod(b+nds/2,nds)]);
+                    new_ds_pp.push_back(extra_ds[supermod(b+nds/2+1,nds)]);
+                }
+                //this removes one or two electrons from the list of ds, if we are doing holes
+            }else{
+                new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[b]),new_ds_ll.end());
+                new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+1,nds)]),new_ds_pp.end());
+                dKx=-2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
+                dKy=-2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
+                if(type=="mtwod"){
+                    dKx=0; dKy=0;
+                    new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[supermod(b+nds/2,nds)]),new_ds_ll.end());
+                    new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+nds/2+1,nds)]),new_ds_pp.end());
                 }
             }
-        }
-        
-        for (int l=0; l<4; l++) overlaps[b][l]/=(1.*nMeas);
-        overlaps[b][0]=overlaps[b][0].array()/overlaps[b][1].array().sqrt();
-        overlaps[b][2]=overlaps[b][2].array()/overlaps[b][3].array().sqrt();
-        hermitianize(overlaps[b][2]);
-//        cout<<"energy: "<<energy/(1.*nMeas*Ne)<<endl;
-    }
-    //parallel programming end.
-    
-    for (int b=0; b<dsteps; b++) {
-        cout<<"b = "<<b<<" energy = "<<energy[b]/(1.*nMeas*Ne)<<endl;
-    }
-    
-    vector<Eigen::MatrixXcd> berrymatrix_step(dsteps);
-    for (int b=0; b<dsteps; b++) berrymatrix_step[b] = overlaps[b][2].inverse() * overlaps[b][0];
-    
-    Eigen::MatrixXcd berrymatrix_integral = Eigen::MatrixXcd::Identity(invNu, invNu);
-    vector<double> phases(invNu, 0.);
-    datas.clear();
-    for (int b=0; b<dsteps; b++) {
-        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_step[b]);
-        data tmp;
-        berrymatrix_integral *= berrymatrix_step[b];
-        for (int i=0; i<invNu; i++) {
-            phases[i]+=arg(es.eigenvalues()[i]);
-            tmp.num = b; tmp.amp[i] = abs(es.eigenvalues()[i]); tmp.ang[i] = arg(es.eigenvalues()[i]);
-        }
-        
-        // dfromnorm. calculates deviation from normality.
-        double normeigenvalue=0., normmatrix=0.;
-        for (int i=0; i<invNu; i++) {
-            normeigenvalue+=sqrt(norm(es.eigenvalues()[i]));
-        }
-        for (int i=0; i<invNu; i++) {
-            for (int j=0; j<invNu; j++) {
-                normmatrix+=sqrt(norm(berrymatrix_step[b](i,j)));
+            
+            for (int i=0; i<invNu; i++) {
+                ll[coren][i].set_ds(new_ds_ll);
+                pp[coren][i].set_ds(new_ds_pp);
+                ll[coren][i].reset(); pp[coren][i].reset();
+                ll[coren][i].step(nWarmup);
             }
+            //        cout<<"warmed up"<<endl;
+            //        pp[0].print_ds();
+            //        energy=0;
+            energy[b]=0.;
+            
+            for (int k=0; k<nMeas; k++) {
+                for (int i=0; i<invNu; i++) ll[coren][i].step(nSteps);
+                
+                energy[b]+=ll[coren][0].coulomb_energy();
+                
+                for (int i=0; i<invNu; i++) {
+                    for (int j=0; j<invNu; j++) {
+                        complex<double> temp;
+                        temp=pp[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
+                        overlaps[b][0](i,j)+=temp*ll[coren][i].rhoq(dKx,dKy,ll[coren][i].get_locs());//why times rhoq???
+                        overlaps[b][1](i,j)+=norm(temp);
+                        temp=ll[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
+                        overlaps[b][2](i,j)+=temp;
+                        overlaps[b][3](i,j)+=norm(temp);
+                    }
+                }
+            }
+            
+            for (int l=0; l<4; l++) overlaps[b][l]/=(1.*nMeas);
+            overlaps[b][0]=overlaps[b][0].array()/overlaps[b][1].array().sqrt();
+            overlaps[b][2]=overlaps[b][2].array()/overlaps[b][3].array().sqrt();
+            hermitianize(overlaps[b][2]);
+            //        cout<<"energy: "<<energy/(1.*nMeas*Ne)<<endl;
         }
-        tmp.dfromnorm=normmatrix-normeigenvalue;
+        //parallel programming end.
         
-        //outfile.
-        outfile<<b<<" ";
-        for (int i=0; i<invNu; i++) outfile<<tmp.ang[i]<<" ";
-        outfile<<tmp.dfromnorm<<endl;
+        vector<Eigen::MatrixXcd> berrymatrix_step(dsteps);
+        for (int b=0; b<dsteps; b++) berrymatrix_step[b] = overlaps[b][2].inverse() * overlaps[b][0];
         
-        datas.push_back(tmp);
+        Eigen::MatrixXcd berrymatrix_integral = Eigen::MatrixXcd::Identity(invNu, invNu);
+        vector<double> phases(invNu, 0.);
+        datas.clear();//clear datas.
+        for (int b=0; b<dsteps; b++) {
+            Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_step[b]);
+            data tmp;
+            berrymatrix_integral *= berrymatrix_step[b];
+            for (int i=0; i<invNu; i++) {
+                phases[i]+=arg(es.eigenvalues()[i]);
+                tmp.num = b; tmp.amp[i] = abs(es.eigenvalues()[i]); tmp.ang[i] = arg(es.eigenvalues()[i]);
+            }
+//            // dfromnorm. calculates deviation from normality.
+//            double normeigenvalue=0., normmatrix=0.;
+//            for (int i=0; i<invNu; i++) {normeigenvalue+=sqrt(norm(es.eigenvalues()[i]));}
+//            for (int i=0; i<invNu; i++) {
+//                for (int j=0; j<invNu; j++) {normmatrix+=sqrt(norm(berrymatrix_step[b](i,j)));}
+//            }
+//            tmp.dfromnorm=normmatrix-normeigenvalue;
+            datas.push_back(tmp);
+        }
+        
+        double avephase=0.;
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
+        //write into outfile.
+        outfile<<"----------\nnBin="<<nbin<<endl;
+        outfile<<"Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
+        for (int b=0; b<dsteps; b++) {
+            outfile<<"step = ("<<extra_ds[b][0]<<", "<<extra_ds[b][1]<<"),\n          phases = "; for (int i=0; i<invNu; i++) outfile<<datas[b].ang[i]<<" ";
+            outfile<<"\n          amplitude = "; for (int i=0; i<invNu; i++) outfile<<datas[b].amp[i]<<" ";
+            outfile<<"\n          energy = "<<energy[b]/(1.*nMeas*Ne)<<endl;
+        }
+        avephase=0.;
+        outfile<<"phase sum = "; for (int i=0; i<invNu; i++) {outfile<<phases[i]<<" "; avephase+=phases[i]/(1.*invNu);} outfile<<"\nphase average = "<<avephase<<endl;
+        
+        datas[0].ang_trace = arg(berrymatrix_integral.trace());
+        datas[0].det = arg(berrymatrix_integral.determinant());
+        outfile<<endl;
+        outfile<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
+        outfile<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) outfile<<abs(es.eigenvalues()[i])<<" "; outfile<<endl;
+        outfile<<"arg(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) outfile<<arg(es.eigenvalues()[i])<<" "; outfile<<endl;
+        avephase=0.; for (int i=0; i<invNu; i++) avephase+=arg(es.eigenvalues()[i])/(1.*invNu); outfile<<"ave arg(berrymatrix_integral.eigenvalue) = "<<avephase<<endl;
+        outfile<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
+        outfile<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
+        outfile<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl<<endl;
+        
+        
+        //write into outfile2.
+        outfile2<<"nBin="<<nbin<<", Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
+        for (int b=0; b<dsteps; b++) {
+            for (int i=0; i<invNu; i++) outfile2<<datas[b].ang[i]<<" ";//output phases in each step.
+            outfile2<<endl;
+            for (int i=0; i<invNu; i++) outfile2<<datas[b].amp[i]<<" ";//output amplitude in each step.
+            outfile2<<endl;
+            outfile2<<energy[b]/(1.*nMeas*Ne)<<endl;
+        }
     }
+    outfile.close();
+    outfile2.close();
     
-    double avephase;
-    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
-    datas[0].ang_trace = arg(berrymatrix_integral.trace());
-    datas[0].det = arg(berrymatrix_integral.determinant());
-    cout<<"\n Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
-    cout<<"phase sum = "; for (int i=0; i<invNu; i++) {cout<<phases[i]<<" "; avephase+=phases[i]/(1.*invNu);} cout<<"\nphase average = "<<avephase<<endl;
-    cout<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
-    cout<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<abs(es.eigenvalues()[i])<<" "; cout<<endl;
-    cout<<"arg(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<arg(es.eigenvalues()[i])<<" ";cout<<endl;
-    avephase=0.; for (int i=0; i<invNu; i++) avephase+=arg(es.eigenvalues()[i])/(1.*invNu); cout<<"sum arg(berrymatrix_integral.eigenvalue) = "<<avephase<<endl;
-    cout<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
-    cout<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
-    cout<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl;
 }
 
 void laughlin_bp_single_state(int gs, vector<double> length, double steplength, int change_nMeas, vector<data> &datas, int num_core){
@@ -892,3 +869,56 @@ void laughlin_bp_single_state(int gs, vector<double> length, double steplength, 
 //    outfile.close();
     
 }
+
+void check_orthogonality(string type){
+    cout<<"--->type = "<<type<<", nMeas=50000, nStep=20, Ne=9. General d, sum of d neq 0."<<endl;
+    int Ne=9, invNu, nWarmup=5000, nMeas=50000, nSteps=20, seed=0;
+    if (type=="CFL") invNu=2;
+    if (type=="laughlin") invNu=3;
+    vector<LATTICE> cfl;
+    for (int i=0; i<invNu; i++) {
+        cfl.push_back(LATTICE(Ne, invNu, false, "CFL", 0, i));
+    }
+    
+    if (type=="CFL") {
+        vector<vector<int> > ds;
+        for (int i=0; i<Ne; i++) {
+            vector<int> tmp {i,1}; ds.push_back(tmp);
+        }
+        cfl[0].set_ds(ds); cfl[1].set_ds(ds);
+    }
+    cfl[1].print_ds();
+    
+    //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
+    for (int nBins=0; nBins<5; nBins++) {
+        vector<Eigen::MatrixXcd > overlaps(4, Eigen::MatrixXcd::Zero(invNu, invNu));
+        for (int l=0; l<2; l++) {
+            cfl[l].reset();
+//            cfl[l].print_ds();
+            cfl[l].step(nWarmup);
+        }
+        for (int k=0; k<nMeas; k++) {
+            for (int i=0; i<2; i++)
+                cfl[i].step(nSteps);
+            for (int i=0; i<invNu; i++) {
+                for (int j=0; j<invNu; j++) {
+                    complex<double> temp;
+                    //                temp=cfl[j].get_wf(cfl[i].get_locs())/cfl[i].get_wf(cfl[i].get_locs());
+                    //                overlaps[0](i,j)+=temp;
+                    //                overlaps[1](i,j)+=norm(temp);
+                    temp=cfl[j].get_wf(cfl[i].get_locs())/cfl[i].get_wf(cfl[i].get_locs());
+                    overlaps[2](i,j)+=temp;
+                    overlaps[3](i,j)+=norm(temp);
+                }
+            }
+        }
+        
+        for (int l=0; l<4; l++) overlaps[l]/=(1.*nMeas);
+        //    overlaps[0]=overlaps[0].array()/overlaps[1].array().sqrt();
+        overlaps[2]=overlaps[2].array()/overlaps[3].array().sqrt();
+        //        hermitianize(overlaps[2]);
+        cout<<"\nnBins="<<nBins<<", overlap matrix = "<<overlaps[2](0,0)<<" "<<overlaps[2](1,1)<<" "<<overlaps[2](0,1)<<" "<<overlaps[2](1,0)<<endl;
+    }
+}
+
+

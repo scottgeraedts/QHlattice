@@ -187,7 +187,6 @@ void findstate(){
     LATTICE ll(Ne,invNu, testing, type, seed, gs);
     
     ofstream outfile("ds_energys");
-    cout<<"create result"<<endl;
     for (int k=0; k<configurations.size(); k++) {
         old_ds=old_ds2;
         vector<vector<int> > deletelist=configurations[k].deletelist;
@@ -197,7 +196,7 @@ void findstate(){
             old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
             outfile<<deletelist[i][0]<<" "<<deletelist[i][1]<<" ";
         }
-        outfile<<"//";
+        outfile<<"// ";
         for (int i=0; i<addlist.size(); i++) {
             temp_ds[0]=addlist[i][0]; temp_ds[1]=addlist[i][1];
             old_ds.push_back(temp_ds);

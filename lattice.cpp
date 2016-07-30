@@ -189,7 +189,6 @@ int LATTICE::simple_update(){
 	complex<double> newDeterminant;
 	Eigen::MatrixXcd newMatrix=oldMatrix;
     if(type=="CFL"){
-		
 		make_CFL_det(newMatrix, newloc, electron, newDeterminant);
 		prob+=log(norm(newDeterminant/oldDeterminant));
 	}
@@ -357,7 +356,8 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
     }
     else {
         complex<double> dsum_comp = 1.*dsum[0]/(1.*NPhi)*L1+1.*dsum[1]/(1.*NPhi)*L2;
-        complex<double> tmp = exp(1./(2.*NPhi)*( conj(w_comp-dsum_comp)*zcom_comp - (w_comp-dsum_comp)*conj(zcom_comp)  ));
+//        complex<double> tmp = exp(1./(2.*NPhi)*( conj(w_comp-dsum_comp)*zcom_comp - (w_comp-dsum_comp)*conj(zcom_comp)  ));
+        complex<double> tmp = exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp)  ));
         out+=log(norm(tmp));
     }
     
@@ -455,7 +455,9 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
     }
     else {
         complex<double> dsum_comp=1.*dsum[0]/(1.*NPhi)*L1+1.*dsum[1]/(1.*NPhi)*L2;
-        out*=exp(1./(2.*NPhi)*( conj(w_comp-dsum_comp)*zcom_comp - (w_comp-dsum_comp)*conj(zcom_comp)  ));
+//        out*=exp(1./(2.*NPhi)*( conj(w_comp-dsum_comp)*zcom_comp - (w_comp-dsum_comp)*conj(zcom_comp)  ));
+        out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp)  ));
+        
     }
     
     
