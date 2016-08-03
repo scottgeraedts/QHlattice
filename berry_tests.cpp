@@ -127,12 +127,13 @@ void single_run(){
 	//remove a d at -1,-1
 	temp_ds[0]=-1; temp_ds[1]=-1;
 	old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
-
-	temp_ds[0]=1; temp_ds[1]=1;
-	old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
+	//temp_ds[0]=0; temp_ds[1]=-1;
+	//old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
+	//temp_ds[0]=1; temp_ds[1]=-1;
+	//old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
 
 //	//add a d at 2,2
-	temp_ds[0]=2; temp_ds[1]=2;
+	temp_ds[0]=2; temp_ds[1]=1;
 	old_ds.push_back(temp_ds);
 	
 	LATTICE ll(Ne,invNu, testing, type, seed, gs);
