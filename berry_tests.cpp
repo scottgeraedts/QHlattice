@@ -28,85 +28,7 @@ void hermitianize(Eigen::MatrixXcd &x){
 		}
 	}
 }
-void testeigen(){
-    Eigen::Matrix2cd MM;
-    complex<double> ii = complex<double> (0,1);
-    MM<<1,2.+ii,3.-ii,4;
-    cout<<"MM=\n"<<MM<<endl;
-    cout<<"MM.adjoint =\n "<<MM.adjoint()<<endl;
-//    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(MM);
-//    cout<<"\n eigenvectors = \n"<<es.eigenvectors()<<endl;//eigenvectors are columns.
-//    cout<<"eigenvalues = \n"<<es.eigenvalues()<<endl;
-//    cout<<endl;
-//    cout<<"eigenvectors . eigenvectors.adjoint = \n"<<es.eigenvectors()*es.eigenvectors().adjoint()<<endl;
-//    cout<<"eigenvectors.adjoint . eigenvectors = \n"<<es.eigenvectors().adjoint()*es.eigenvectors()<<endl;
-//    cout<<endl;
-//    cout<<"eigenvectors.adjoit() * MM * eigenvectors = \n"<<es.eigenvectors().adjoint()*MM*es.eigenvectors()<<endl;
-//    
-//    Eigen::Matrix2f mat;
-//    mat<<1,4,5,9;
-//    cout<<"\nmat=\n"<<mat;
-//    mat=mat*mat+mat;
-////    cout<<"\nsqrt(mat)=\n"<<mat;
-//    
-//    Eigen::Vector2cd V; V(0)=1.; V(1)=ii;
-//    cout<<"(1,1).squared norm = "<<V.squaredNorm()<<endl;
-    
-//    Eigen::Matrix2cd M2;
-//    M2.col(0)=V;
-//    cout<<"\nM2=\n"<<M2<<endl;
-    
-//    int supermod(int k, int n);
-//    cout<<"supermod = "<<supermod(5,4)<<endl;
-}
-void test_largesize(){
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-    bool testing;
-    string type;
-    ifstream infile("params");
-    infile>>Ne>>invNu;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    //initialize MC object
-    
-    vector<double> hole0(2), hole1(2);
-    hole0[0]=0.; hole0[1]=0.; hole1[0]=0.; hole1[1]=0.01;
-    
-    ofstream bout("test_large_size");
-    vector<LATTICE> ll(invNu),ll2(invNu);
-    Eigen::MatrixXcd overlaps = Eigen::MatrixXcd::Zero(invNu, invNu);
-    
-    for (int ne=15; ne<23; ne++) {
-        for(int gs=0;gs<invNu;gs++){
-            ll[gs]=LATTICE(ne,invNu,testing,type,seed,gs);
-            ll[gs].set_hole(hole0);
-            ll2[gs]=LATTICE(ne,invNu,testing,type,seed,gs);
-        }
-        complex<double> berry=0.;
-        for(int gs1=0;gs1<invNu;gs1++){
-            ll[gs1].reset();
-            ll[gs1].step(nWarmup);
-            complex<double> btemp;
-            for(int i=0;i<nMeas;i++){
-                ll[gs1].step(nSteps);
-                //            energy+=ll[gs1].coulomb_energy();
-                for(int gs2=0;gs2<invNu;gs2++){
-                    ll2[gs2].set_hole(hole1);
-                    ll2[gs2].reset();
-                    berry=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
-                    overlaps(gs1,gs2)+=berry;
-                }
-            }
-        }
-        
-        overlaps/=(1.*nMeas);
-        cout<<"overlapmatrix = \n"<<overlaps<<endl;
-        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps);
-        bout<<ne<<" "<<abs(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[1])<<" "<<abs(es.eigenvalues()[2])<<" "<<arg(es.eigenvalues()[2])<<endl;
-    }
-}
+
 void single_run(){
 	int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
 	bool testing;
@@ -124,6 +46,15 @@ void single_run(){
 	vector< vector<int> > old_ds=ds_generator.get_ds();
 	vector<int> temp_ds(2);
 
+//    cout<<"ds.size = "<<old_ds.size()<<endl;
+//    cout<<"print out ds"<<endl;
+//    for (int i=0; i<old_ds.size(); i++) {
+//        for (int j=0; j<old_ds[i].size(); j++) {
+//            cout<<old_ds[i][j]<<" ";
+//        }
+//        cout<<endl;
+//    }
+    
 	//remove a d at -1,-1
 	temp_ds[0]=-1; temp_ds[1]=-1;
 	old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
@@ -135,12 +66,12 @@ void single_run(){
 //	//add a d at 2,2
 	temp_ds[0]=2; temp_ds[1]=1;
 	old_ds.push_back(temp_ds);
-	
+
 	LATTICE ll(Ne,invNu, testing, type, seed, gs);
 	ll.set_ds(old_ds);
     ll.print_ds();
 
-	ofstream outfile("out"),eout("energy");
+	ofstream outfile("out"), eout("energy");
     for(int s=0;s<nBins;s++){
         
 //		ll.change_dbar_parameter(s*0.1,s*0.1);
@@ -173,7 +104,7 @@ void single_run(){
             //				p_tracker.pop_back();
             //			}
             
-            ll.update_structure_factors();
+//            ll.update_structure_factors();
         }
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
@@ -188,9 +119,118 @@ void single_run(){
         //		}
     }
     outfile<<endl;
-    ll.print_structure_factors(nMeas*nBins);
+//    ll.print_structure_factors(nMeas*nBins);
     eout.close();
     outfile.close();
+}
+struct oneconfig{
+    vector<vector<int> > deletelist, addlist;
+    int num;
+};
+void findstate(){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    string type;
+    ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    ifstream dslist("dslist");
+
+    vector<oneconfig> configurations;
+    string tmp, ds;
+    vector<string> dss;
+    bool deorad=0;
+    vector<int> d(2);
+    int num=0;
+    while (getline(dslist, tmp)) {
+        oneconfig conf;
+        deorad=0;
+        istringstream record(tmp);
+        while (record>>ds) {
+            if (ds=="//") {deorad=1; continue;}
+            if (!deorad) {
+                d[0]=stoi(ds); record>>ds; d[1]=stoi(ds);
+                conf.deletelist.push_back(d);
+            }
+            else {
+                d[0]=stoi(ds); record>>ds; d[1]=stoi(ds);
+                conf.addlist.push_back(d);
+            }
+        }
+        conf.num=(num++);
+        configurations.push_back(conf);
+    }
+//    for (int i=0; i<configurations.size(); i++) {
+//        cout<<"num = "<<configurations[i].num<<endl;
+//        cout<<"deletelist = ";
+//        for (int j=0; j<configurations[i].deletelist.size(); j++) {
+//            cout<<configurations[i].deletelist[j][0]<<" "<<configurations[i].deletelist[j][1]<<", ";
+//        }
+//        cout<<endl<<"addlist = ";
+//        for (int j=0; j<configurations[i].addlist.size(); j++) {
+//            cout<<configurations[i].addlist[j][0]<<" "<<configurations[i].addlist[j][1]<<", ";
+//        }
+//        cout<<endl<<endl;
+//    }
+
+    
+    
+    int gs=0;
+    LATTICE ds_generator(9,2,testing,type,seed,0);
+    vector< vector<int> > old_ds, old_ds2=ds_generator.get_ds();
+    vector<int> temp_ds(2);
+
+    LATTICE ll(Ne,invNu, testing, type, seed, gs);
+    
+    ofstream outfile("ds_energys");
+    for (int k=0; k<configurations.size(); k++) {
+        old_ds=old_ds2;
+        vector<vector<int> > deletelist=configurations[k].deletelist;
+        vector<vector<int> > addlist=configurations[k].addlist;
+        for (int i=0; i<deletelist.size(); i++) {
+            temp_ds[0]=deletelist[i][0]; temp_ds[1]=deletelist[i][1];
+            old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
+            outfile<<deletelist[i][0]<<" "<<deletelist[i][1]<<" ";
+        }
+        outfile<<"// ";
+        for (int i=0; i<addlist.size(); i++) {
+            temp_ds[0]=addlist[i][0]; temp_ds[1]=addlist[i][1];
+            old_ds.push_back(temp_ds);
+            outfile<<addlist[i][0]<<" "<<addlist[i][1]<<" ";
+        }
+        outfile<<endl;
+        
+        ll.set_ds(old_ds);
+        //    ll.print_ds();
+        
+        for(int s=0;s<nBins;s++){
+            ll.reset();
+            ll.step(nWarmup);
+            double E=0,E2=0;
+            //double P=0,P2=0,three=0;
+            double e; //,p;
+            complex<double> berry_phase(0,0);
+            deque<double> e_tracker, p_tracker;
+            int Ntrack=10;
+            vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
+            for(int i=0;i<nMeas;i++){
+                ll.step(nSteps);
+                e=ll.coulomb_energy();
+                E+=e;
+                E2+=e*e;
+            }
+            outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" ";
+//            cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
+        }
+        outfile<<endl<<endl;
+    }
+    outfile.close();
+    
 }
 
 void plot_CFL_coule_vsdbar(int grid){
@@ -239,20 +279,19 @@ void coul_energy_CFL_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas,
     ave_E=sumE/(1.*nBins);
 }
 
-void coul_energy_laughlin(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins){
+void coul_energy_laughlin(LATTICE& laughlin, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins){
     double sumE=0;
     for (int s=0; s<nBins; s++) {
-        edbar.reset();
-        edbar.step(nWarmup);
+        laughlin.reset();
+        laughlin.step(nWarmup);
         double E=0, E2=0, e;
         for(int i=0;i<nMeas;i++){
-            edbar.step(nSteps);
-            e=edbar.coulomb_energy();
+            laughlin.step(nSteps);
+            e=laughlin.coulomb_energy();
             E+=e;
             E2+=e*e;
         }
-        sumE+=E/(1.*nMeas*edbar.Ne);
-//        cout<<E/(1.*nMeas*edbar.Ne)<<endl;
+        sumE+=E/(1.*nMeas*laughlin.Ne);
     }
     ave_E=sumE/(1.*nBins);
 }
