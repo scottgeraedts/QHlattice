@@ -396,8 +396,10 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 		}
 	}
 //    cout<<"out = "<<out<<endl;
+    cout<<"ret part = "<<out<<endl;
 	
 	//COM piece
+    complex<double> assist=1.;
 	int COM[2]={0,0};
 	for( int i=0;i<Ne;i++){
 		COM[0]+=zs[i][0];
@@ -422,13 +424,16 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 			dy=COM[1]/(1.*NPhi)-ws[i][1];
 			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);//z_function is also sigma-gaussian.
 			out*=temp;
+            assist*=temp;
 		}
 	}
-
+    cout<<"COM part = "<<assist<<endl;
+    
+    Eigen::MatrixXcd M(Ne,Ne);
 	if(type=="CFL"){
 		complex<double> product;
 		vector<int> z(2);
-		Eigen::MatrixXcd M(Ne,Ne);
+//		Eigen::MatrixXcd M(Ne,Ne);
 		for(int i=0;i<Ne;i++){
 			for(int j=0;j<Ne;j++){
 				product=1;
@@ -437,11 +442,21 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 					det_helper(zs[i],zs[k],ds[j],z);
 					temp=modded_lattice_z(z[0],z[1]);
 					product*=temp;
+                    if (i==0 && j==0) {
+                        cout<<endl;
+                        cout<<"k="<<k<<" temp="<<temp<<endl;
+                    }
 				}
-				M(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
+//				M(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
+                M(i,j)=product*polar(1., 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
+//                if (i==0 && j==0) {
+//                    cout<<"phase factor = "<<polar(1., 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) )<<endl;
+//                }
 			}
 		}
+        det_M=Eigen::MatrixXcd(Ne, Ne); det_M=M;
 		detSolver.compute(M);
+//        cout<<"det = "<<M.determinant()<<endl;
 		out=out*detSolver.determinant();
 	}
     
@@ -450,15 +465,16 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
     for (int i=0; i<invNu; i++) {wsum[0]+=ws[i][0]; wsum[1]+=ws[i][1];}
     complex<double> w_comp = wsum[0]*L1+wsum[1]*L2;
     complex<double> zcom_comp = 1.*COM[0]/(1.*NPhi)*L1+1.*COM[1]/(1.*NPhi)*L2;
-    if (type == "laughlin" || type == "laughlin-hole") {
-        out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - w_comp*conj(zcom_comp) ));
-    }
-    else {
-        complex<double> dsum_comp=1.*dsum[0]/(1.*NPhi)*L1+1.*dsum[1]/(1.*NPhi)*L2;
-//        out*=exp(1./(2.*NPhi)*( conj(w_comp-dsum_comp)*zcom_comp - (w_comp-dsum_comp)*conj(zcom_comp)  ));
-        out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp)  ));
-        
-    }
+    out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - w_comp*conj(zcom_comp) ));
+    
+//    if (type == "laughlin" || type == "laughlin-hole") {
+//        out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - w_comp*conj(zcom_comp) ));
+//    }
+//    else {
+//        complex<double> dsum_comp=1.*dsum[0]/(1.*NPhi)*L1+1.*dsum[1]/(1.*NPhi)*L2;
+////        out*=exp(1./(2.*NPhi)*( conj(w_comp-dsum_comp)*zcom_comp - (w_comp-dsum_comp)*conj(zcom_comp)  ));
+//        out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp)  ));
+//    }
     
     
 	return conj(out);
