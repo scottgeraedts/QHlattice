@@ -16,10 +16,59 @@ int main(){
 //    check_orthogonality("CFL");
 //    check_orthogonality("laughlin");
     
-    void findstate();
-    findstate();
+//    void findstate();
+//    findstate();
+    
+    void CFL_det_errorprone();
+    CFL_det_strangefinding();
     
 }
+void CFL_det_errorprone(){
+    double theta=M_PI/2, alpha=1.; int Nphi=18, invNu=2, Ne=9;
+//    vector<vector<double> > ws(2, vector<double>(2));
+    vector<vector<int> > zs(Ne, vector<int>(2)), ds(9, vector<int>(2)); vector<double> dbar=vector<double> {0., 0.};
+    
+    for (int i=0; i<Ne; i++) {zs[i][0]=2; zs[i][1]=i+1;}
+    for (int i=0; i<3; i++) {for (int j=0; j<3; j++) {ds[i*3+j]=vector<int>{i-1, j-1};}}
+    
+    LATTICE cfl(Ne, invNu, 0, "CFL", 0, 0);
+    cfl.set_ds(ds);
+    cout<<"w.f.="<<cfl.get_wf(zs);
+    cout<<"output det matrix\n"<<cfl.det_M<<endl;
+    cout<<"\n det M = "<<cfl.det_M.determinant()<<endl;
+    
+    //output M matrix into a file, and then read it, get a new matrix. calculate det of new matrix. (found different)
+    ofstream outfile("det");//PRETTY strange a LOT! the det of M calculated is not the same in another cpp file!!!
+    for (int i=0; i<Ne; i++) {
+        for (int j=0; j<Ne; j++) {
+            outfile<<real(cfl.det_M(i,j))<<" "<<imag(cfl.det_M(i,j))<<" ";
+        }
+        outfile<<endl;
+    }
+    
+    ifstream infile("det");
+    Eigen::MatrixXcd M_new(Ne, Ne);
+    for (int i=0; i<Ne; i++) {
+        for (int j=0; j<Ne; j++) {
+            double a, b;
+            infile>>a>>b;
+            M_new(i,j)=a+complex<double>(0,1)*b;
+        }
+    }
+    cout<<"new M matrix = \n"<<M_new<<endl;
+    cout<<"det of new matrix = "<<M_new.determinant()<<endl;
+    
+    //check if det_M and M_new are the same.
+    Eigen::MatrixXcd M_dif = cfl.det_M-M_new;
+    for (int i=0; i<Ne; i++) {
+        for (int j=0; j<Ne; j++) {
+            if(abs(M_dif(i,j))>pow(10,-5)) cout<<"i="<<i<<" j="<<j<<" M_dif = "<<M_dif(i,j)<<endl;
+        }
+    }
+    
+    
+}
+
 void test_laughlinwf(){
     bool testing=false; string type="laughlin"; int seed=0;
     int Ne=2, invNu=3, NPhi=6;
@@ -920,5 +969,3 @@ void check_orthogonality(string type){
         cout<<"\nnBins="<<nBins<<", overlap matrix = "<<overlaps[2](0,0)<<" "<<overlaps[2](1,1)<<" "<<overlaps[2](0,1)<<" "<<overlaps[2](1,0)<<endl;
     }
 }
-
-

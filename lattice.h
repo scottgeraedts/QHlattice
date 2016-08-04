@@ -13,7 +13,8 @@
 using namespace std;
 
 //this number is multiplied by every term in the determinants to ensure that they don't overflow
-const double in_determinant_rescaling=0.2;
+//const double in_determinant_rescaling=0.2;
+const double in_determinant_rescaling=1.0;
 
 extern"C"{
 	void z_function_(double *x, double *y, complex<double> *l1, complex<double> *l2, int * rationalize, int *denom, complex<double> *z);
@@ -39,6 +40,8 @@ public:
 	double running_weight;//running_weight is a global variable. need reset in every run.
     int tries,accepts;
     complex<double> L1,L2;
+    
+    Eigen::MatrixXcd det_M;
     
     vector<double> hole;
     bool fermions,holes_set;
