@@ -7,10 +7,13 @@ bool IsOdd (int i) {
 int main(){
 //    //CFL berry phase.
 //    void CFL_berry_phases(vector<data> &datas);
-//    void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
-//    vector<data> datas; int num_core;
-//    num_core=2;
-//    CFL_berry_phases_parallel(datas, "params", "CFL_berryphase", num_core);
+    void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
+    vector<data> datas; int num_core;
+    num_core=2;
+//    CFL_berry_phases_parallel(datas, "params_ne8", "CFL_berryphase_ne8", num_core);
+//    CFL_berry_phases_parallel(datas, "params_ne10", "CFL_berryphase_ne10", num_core);
+    num_core=2;
+//    CFL_berry_phases_parallel(datas, "params", "bp", num_core);
     
 //    void check_orthogonality(string type);
 //    check_orthogonality("CFL");
@@ -20,55 +23,52 @@ int main(){
 //    findstate();
     
     void CFL_det_errorprone();
-    CFL_det_strangefinding();
+//    CFL_det_errorprone();
     
 }
 void CFL_det_errorprone(){
     double theta=M_PI/2, alpha=1.; int Nphi=18, invNu=2, Ne=9;
-//    vector<vector<double> > ws(2, vector<double>(2));
+    //    vector<vector<double> > ws(2, vector<double>(2));
     vector<vector<int> > zs(Ne, vector<int>(2)), ds(9, vector<int>(2)); vector<double> dbar=vector<double> {0., 0.};
     
-    for (int i=0; i<Ne; i++) {zs[i][0]=2; zs[i][1]=i+1;}
+    for (int i=0; i<Ne; i++) {zs[i][0]=2; zs[i][1]=i+1;}//calculate value of wavefunction in this particular zs configuration.
     for (int i=0; i<3; i++) {for (int j=0; j<3; j++) {ds[i*3+j]=vector<int>{i-1, j-1};}}
     
-    LATTICE cfl(Ne, invNu, 0, "CFL", 0, 0);
+    LATTICE cfl(Ne, invNu, 0, "CFL", 0, 0);//com zeros are set as (-0.25,0) and (0.25,0).
     cfl.set_ds(ds);
-    cout<<"w.f.="<<cfl.get_wf(zs);
-    cout<<"output det matrix\n"<<cfl.det_M<<endl;
-    cout<<"\n det M = "<<cfl.det_M.determinant()<<endl;
+    cout<<"w.f.="<<cfl.get_wf(zs)<<endl;
+//    cout<<"output det matrix\n"<<*cfl.det_M<<endl;
+//    cout<<"\n det M = "<<(*cfl.det_M).determinant()<<endl;
     
-    //output M matrix into a file, and then read it, get a new matrix. calculate det of new matrix. (found different)
-    ofstream outfile("det");//PRETTY strange a LOT! the det of M calculated is not the same in another cpp file!!!
-    for (int i=0; i<Ne; i++) {
-        for (int j=0; j<Ne; j++) {
-            outfile<<real(cfl.det_M(i,j))<<" "<<imag(cfl.det_M(i,j))<<" ";
-        }
-        outfile<<endl;
-    }
-    
-    ifstream infile("det");
-    Eigen::MatrixXcd M_new(Ne, Ne);
-    for (int i=0; i<Ne; i++) {
-        for (int j=0; j<Ne; j++) {
-            double a, b;
-            infile>>a>>b;
-            M_new(i,j)=a+complex<double>(0,1)*b;
-        }
-    }
-    cout<<"new M matrix = \n"<<M_new<<endl;
-    cout<<"det of new matrix = "<<M_new.determinant()<<endl;
-    
-    //check if det_M and M_new are the same.
-    Eigen::MatrixXcd M_dif = cfl.det_M-M_new;
-    for (int i=0; i<Ne; i++) {
-        for (int j=0; j<Ne; j++) {
-            if(abs(M_dif(i,j))>pow(10,-5)) cout<<"i="<<i<<" j="<<j<<" M_dif = "<<M_dif(i,j)<<endl;
-        }
-    }
-    
-    
+//    //output M matrix into a file, then read it to get a new matrix. calculate det of new matrix. (found different from det of the first matrix, real part off 10^7!!!)
+//    ofstream outfile("det");
+//    for (int i=0; i<Ne; i++) {
+//        for (int j=0; j<Ne; j++) {
+//            outfile<<real(cfl.det_M(i,j))<<" "<<imag(cfl.det_M(i,j))<<" ";
+//        }
+//        outfile<<endl;
+//    }
+//    
+//    ifstream infile("det");
+//    Eigen::MatrixXcd M_new(Ne, Ne);
+//    for (int i=0; i<Ne; i++) {
+//        for (int j=0; j<Ne; j++) {
+//            double a, b;
+//            infile>>a>>b;
+//            M_new(i,j)=a+complex<double>(0,1)*b;
+//        }
+//    }
+//    cout<<"new M matrix = \n"<<M_new<<endl;
+//    cout<<"det of new matrix = "<<M_new.determinant()<<endl;
+//    
+//    //check if det_M and M_new are the same.
+//    Eigen::MatrixXcd M_dif = cfl.det_M-M_new;
+//    for (int i=0; i<Ne; i++) {
+//        for (int j=0; j<Ne; j++) {
+//            if(abs(M_dif(i,j))>pow(10,-5)) cout<<"i="<<i<<" j="<<j<<" M_dif = "<<M_dif(i,j)<<endl;
+//        }
+//    }
 }
-
 void test_laughlinwf(){
     bool testing=false; string type="laughlin"; int seed=0;
     int Ne=2, invNu=3, NPhi=6;
@@ -524,7 +524,20 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
     //to go to larger sizes, it will be necessary to add more possible values of tempNe
     //it may end up being more convenient to write code to automate this step
     if(!holes){
-        if(tempNe==21){
+        if(tempNe==9){
+	    extra_ds.push_back(vector<int>{2,0});
+	    extra_ds.push_back(vector<int>{2,1});
+	    extra_ds.push_back(vector<int>{1,2});
+	    extra_ds.push_back(vector<int>{0,2});
+	    extra_ds.push_back(vector<int>{-1,2});
+	    extra_ds.push_back(vector<int>{-2,1});
+	    extra_ds.push_back(vector<int>{-2,0});
+	    extra_ds.push_back(vector<int>{-2,-1});
+	    extra_ds.push_back(vector<int>{-1,-2});
+	    extra_ds.push_back(vector<int>{0,-2});
+	    extra_ds.push_back(vector<int>{1,-2});
+	    extra_ds.push_back(vector<int>{2,-1});
+        }else if(tempNe==21){
             extra_ds.push_back(vector<int>{3,0});
             extra_ds.push_back(vector<int>{3,1});
             extra_ds.push_back(vector<int>{2,2});
@@ -936,7 +949,6 @@ void check_orthogonality(string type){
         }
         cfl[0].set_ds(ds); cfl[1].set_ds(ds);
     }
-    cfl[1].print_ds();
     
     //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
     for (int nBins=0; nBins<5; nBins++) {
@@ -969,3 +981,5 @@ void check_orthogonality(string type){
         cout<<"\nnBins="<<nBins<<", overlap matrix = "<<overlaps[2](0,0)<<" "<<overlaps[2](1,1)<<" "<<overlaps[2](0,1)<<" "<<overlaps[2](1,0)<<endl;
     }
 }
+
+

@@ -14,7 +14,7 @@ using namespace std;
 
 //this number is multiplied by every term in the determinants to ensure that they don't overflow
 //const double in_determinant_rescaling=0.2;
-const double in_determinant_rescaling=1.0;
+const double in_determinant_rescaling=1.;
 
 extern"C"{
 	void z_function_(double *x, double *y, complex<double> *l1, complex<double> *l2, int * rationalize, int *denom, complex<double> *z);
@@ -32,7 +32,9 @@ class LATTICE{
     friend class berry_phase;
 public:
 	LATTICE();
-	LATTICE(int, int, bool, string, int seed, int gs=0); // LATTICE(int Ne_t, int invNu_t, int seed);
+//    LATTICE(int, int, bool, string, int seed, int gs=0);
+    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", double theta=0.5*M_PI, double alpha=1.0, int seed=0, int gs=0);
+    LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs) : LATTICE(Ne_t, invNu_t, testing_t, type_t, 0.5*M_PI, 1.0, seed, gs){} ;
     // dbar = (dbar_parameter[0]/NPhi*L1, dbar_parameter[1]/NPhi*L2);
 	~LATTICE();
 
@@ -40,8 +42,6 @@ public:
 	double running_weight;//running_weight is a global variable. need reset in every run.
     int tries,accepts;
     complex<double> L1,L2;
-    
-    Eigen::MatrixXcd det_M;
     
     vector<double> hole;
     bool fermions,holes_set;
@@ -80,6 +80,7 @@ public:
 	complex<double> rhoq(int qx ,int qy, const vector< vector<int> > &zs);
 	
 private:
+    double theta, alpha;
 	void sum_locs(int []);
 	void setup_coulomb();
 //	void setup_weierstrass();

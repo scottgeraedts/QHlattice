@@ -5,50 +5,37 @@ int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 LATTICE::LATTICE(){
 	Ne=0;
 }
-LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs):Ne(Ne_t),invNu(invNu_t),type(type_t){
+
+LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, double theta_t, double alpha_t, int seed, int gs):Ne(Ne_t),invNu(invNu_t), testing(testing_t), type(type_t),theta(theta_t),alpha(alpha_t){
 	//various parameters from input file
-	testing=testing_t;
 	NPhi=Ne*invNu;
-	if(type=="laughlin-hole"){
-		NPhi++;
-	}
-	L1=sqrt(2*M_PI*NPhi)/sqrt(2.);//these are only used for calls to Duncan's functions, if you use them in other places there will be problems due to 
-	L2=complex<double> (0,real(L1));//the different definitions of magnetic length
+	if(type=="laughlin-hole") NPhi++;
+    
+    L1=sqrt(1.*M_PI*NPhi/sin(theta))*alpha;
+    L2=sqrt(1.*M_PI*NPhi/sin(theta))/alpha*polar(1.,theta);
+
 	ran.seed(seed);
 	fermions=true;
-    /*
-	//setting up jie's function, might never use this
-    vector<complex<double> > zeros; for(int i=0; i<NPhi; i++) zeros.push_back(complex<double>(0,0));
-	weiers=weierstrass(.5*L1, .5*L2, zeros);
-     */
     
 	one=1; zero=0; //useful for fortran calls
 
 	//****initialize z's, w's, d's
-	locs=vector< vector<int> >(Ne, vector<int>(2,0));//initalize locations of all electrons
+	locs=vector< vector<int> >(Ne, vector<int>(2,0)); //initalize locations of all electrons
 
 	//setting the ws. Note that the sum of these is ALWAYS zero, adding things like composite fermion momenta or holes doesn't change this.
 	//in the y direction these take the values gs*L/invNu, where gs in (0,invNu-1) is an integer which labels the ground state
 	ws=vector< vector<double> > (invNu, vector<double>(2,0) );
-    vector<vector<double> > shift(3, vector<double>(2, 0.));
-    shift[0][0]=0.1; shift[0][1]=0.1;
-    shift[1][0]=-0.15; shift[1][1]=-0.05;
-    shift[2][0]=0.-shift[0][0]-shift[1][0]; shift[2][1]=0.-shift[0][1]-shift[1][1];
     
 	for( int i=0;i<invNu;i++){
         ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
         ws[i][1]=gs/(1.*invNu);
-//        ws[i][1]=( (i+0.5)/(1.*invNu)-0.5);
-//        ws[i][0]=gs/(1.*invNu);
-//        ws[i][0]+=shift[i][0];
-//        ws[i][1]+=shift[i][1];
 	}
 
 	double center_frac[2]={0.,0.};
     dbar_parameter=vector<double>(2);
     
 	if(type=="CFL"){
-		if(Ne%2==0){ center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
+		if(Ne%2==0){center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
 				
 		print_ds();
@@ -85,6 +72,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL
 	sq3=vector <vector< vector< vector <complex<double> > > > >(NPhi, vector <vector <vector< complex<double> > > >(NPhi, vector <vector <complex<double> > >(NPhi, vector<complex<double> >(NPhi,0))));
 	delete [] sl2z;
 }
+
 void LATTICE::step(int Nsteps){
 	for(int i=0;i<Nsteps*Ne;i++){
 		tries++;
@@ -345,21 +333,21 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 //		out=log(real(temp2*conj(temp)));
 	}
     
-    //phase previously missing. for laughlin/laughin-hole/CFL.
+    //phase previously missing. for laughlin/laughin-hole. CFL has no additional phase.
     vector<double> wsum(2);
     for (int i=0; i<invNu; i++) {wsum[0]+=ws[i][0]; wsum[1]+=ws[i][1];}
     complex<double> w_comp = wsum[0]*L1+wsum[1]*L2;
     complex<double> zcom_comp = 1.*COM[0]/(1.*NPhi)*L1+1.*COM[1]/(1.*NPhi)*L2;
-    if (type == "laughlin" || type == "laughlin-hole") {
-        complex<double> tmp = exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp-w_comp*conj(zcom_comp) ));
-        out+=log(norm(tmp));
+    complex<double> tmp;
+    if (type=="laughlin" || type=="laughlin-hole") {
+        tmp=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
     }
-    else {
-        complex<double> dsum_comp = 1.*dsum[0]/(1.*NPhi)*L1+1.*dsum[1]/(1.*NPhi)*L2;
-//        complex<double> tmp = exp(1./(2.*NPhi)*( conj(w_comp-dsum_comp)*zcom_comp - (w_comp-dsum_comp)*conj(zcom_comp)  ));
-        complex<double> tmp = exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp)  ));
-        out+=log(norm(tmp));
+    else if(type=="CFL") {
+//        complex<double> dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L1;
+//        tmp=exp(1./(2.*NPhi)*( conj(w_comp + dsum_comp)*zcom_comp - (w_comp+dsum_comp)*conj(zcom_comp) ));
     }
+    out+=log(norm(tmp));
+    
     
 	return out;
 } 
@@ -395,11 +383,10 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 			}
 		}
 	}
-//    cout<<"out = "<<out<<endl;
-    cout<<"ret part = "<<out<<endl;
+    cout<<" vandermonde piece = "<<out<<endl;
+    complex<double> assist=out;
 	
 	//COM piece
-    complex<double> assist=1.;
 	int COM[2]={0,0};
 	for( int i=0;i<Ne;i++){
 		COM[0]+=zs[i][0];
@@ -424,16 +411,16 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 			dy=COM[1]/(1.*NPhi)-ws[i][1];
 			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);//z_function is also sigma-gaussian.
 			out*=temp;
-            assist*=temp;
 		}
 	}
-    cout<<"COM part = "<<assist<<endl;
+    cout<<" com piece = "<<out/assist<<endl; assist=out;
     
-    Eigen::MatrixXcd M(Ne,Ne);
+
+    //Determinant piece
 	if(type=="CFL"){
 		complex<double> product;
 		vector<int> z(2);
-//		Eigen::MatrixXcd M(Ne,Ne);
+		Eigen::MatrixXcd M(Ne,Ne);
 		for(int i=0;i<Ne;i++){
 			for(int j=0;j<Ne;j++){
 				product=1;
@@ -442,40 +429,29 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 					det_helper(zs[i],zs[k],ds[j],z);
 					temp=modded_lattice_z(z[0],z[1]);
 					product*=temp;
-                    if (i==0 && j==0) {
-                        cout<<endl;
-                        cout<<"k="<<k<<" temp="<<temp<<endl;
-                    }
 				}
-//				M(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
-                M(i,j)=product*polar(1., 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
-//                if (i==0 && j==0) {
-//                    cout<<"phase factor = "<<polar(1., 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) )<<endl;
-//                }
+				M(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
 			}
 		}
-        det_M=Eigen::MatrixXcd(Ne, Ne); det_M=M;
+//        det_M=Eigen::MatrixXcd(Ne, Ne); det_M=M;
+//        Eigen::MatrixXcd *det_M = new Eigen::MatrixXcd(Ne, Ne); det_M=&M;
 		detSolver.compute(M);
-//        cout<<"det = "<<M.determinant()<<endl;
 		out=out*detSolver.determinant();
 	}
+    cout<<" det part = "<<out/assist<<endl;
     
-    //phase previously missing. for laughlin/laughlin-hole/CFL.
+    //phase previously missing. for laughlin/laughlin-hole. CFL has no additional phase..
     vector<double> wsum(2);
     for (int i=0; i<invNu; i++) {wsum[0]+=ws[i][0]; wsum[1]+=ws[i][1];}
     complex<double> w_comp = wsum[0]*L1+wsum[1]*L2;
-    complex<double> zcom_comp = 1.*COM[0]/(1.*NPhi)*L1+1.*COM[1]/(1.*NPhi)*L2;
-    out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - w_comp*conj(zcom_comp) ));
-    
-//    if (type == "laughlin" || type == "laughlin-hole") {
-//        out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - w_comp*conj(zcom_comp) ));
-//    }
-//    else {
-//        complex<double> dsum_comp=1.*dsum[0]/(1.*NPhi)*L1+1.*dsum[1]/(1.*NPhi)*L2;
-////        out*=exp(1./(2.*NPhi)*( conj(w_comp-dsum_comp)*zcom_comp - (w_comp-dsum_comp)*conj(zcom_comp)  ));
-//        out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp)  ));
-//    }
-    
+    complex<double> zcom_comp = 1.*COM[0]/NPhi*L1+1.*COM[1]/NPhi*L2;
+    if (type=="laughlin" || type=="laughlin-hole") {
+        out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+    }
+    else if(type=="CFL") {
+//        complex<double> dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L1;
+//        out*=exp(1./(2.*NPhi)*( conj(w_comp + dsum_comp)*zcom_comp - (w_comp+dsum_comp)*conj(zcom_comp) ));
+    }
     
 	return conj(out);
 }
