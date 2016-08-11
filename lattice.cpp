@@ -6,7 +6,7 @@ LATTICE::LATTICE(){
 	Ne=0;
 }
 
-LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, double theta_t, double alpha_t, int seed, int gs_t):Ne(Ne_t),invNu(invNu_t), testing(testing_t), type(type_t),theta(theta_t),alpha(alpha_t),gs(gs_t){
+LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t){
 	//various parameters from input file
 	NPhi=Ne*invNu;
 	if(type=="laughlin-hole") NPhi++;
@@ -337,7 +337,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
     }
     else if(type=="CFL") {
         complex<double> dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L2;
-        tmp=exp(1./(2.*NPhi)*( conj(w_comp + dsum_comp)*zcom_comp - (w_comp + dsum_comp)*conj(zcom_comp) ));
+        tmp=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
     }
     out+=log(norm(tmp));
 	return out;

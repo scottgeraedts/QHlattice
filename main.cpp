@@ -1,7 +1,7 @@
 using namespace std;
 #include "lattice.h"
 #include "berry_tests.h"
-#include <iomanip>
+//#include <iomanip>
 bool IsOdd (int i) {
     return ((i%2)==1);
 }
@@ -11,9 +11,13 @@ int main(){
     void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
     vector<data> datas; int num_core;
     num_core=2;
-    CFL_berry_phases_parallel(datas, "params_ne8", "CFL_berryphase_ne8", num_core);
-    CFL_berry_phases_parallel(datas, "params_ne10", "CFL_berryphase_ne10", num_core);
+//    CFL_berry_phases_parallel(datas, "params_ne8", "CFL_berryphase_ne8", num_core);
+//    CFL_berry_phases_parallel(datas, "params_ne10", "CFL_berryphase_ne10", num_core);
 //    CFL_berry_phases_parallel(datas, "params", "bp", num_core);
+    
+//    if( __cplusplus == 201103L ) std::cout << "C++11\n" ;
+//    else if( __cplusplus == 19971L ) std::cout << "C++98\n" ;
+//    else std::cout << "pre-standard C++\n" ;
     
 //    void check_orthogonality(string type);
 //    check_orthogonality("CFL");
@@ -23,7 +27,10 @@ int main(){
 //    findstate();
     
     void CFL_det_errorprone();
-//    CFL_det_errorprone();
+    CFL_det_errorprone();
+    
+//    LATTICE templl(9, 2, 1, "CFL", 1, 0);
+    
     
 }
 void CFL_det_errorprone(){

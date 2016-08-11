@@ -32,10 +32,9 @@ class LATTICE{
     friend class berry_phase;
 public:
 	LATTICE();
-//    LATTICE(int, int, bool, string, int seed, int gs=0);
-    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", double theta=0.5*M_PI, double alpha=1.0, int seed=0, int gs_t=0);
-    LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t) : LATTICE(Ne_t, invNu_t, testing_t, type_t, 0.5*M_PI, 1.0, seed, gs_t){} ;
-    // dbar = (dbar_parameter[0]/NPhi*L1, dbar_parameter[1]/NPhi*L2);
+    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0, double theta=0.5*M_PI, double alpha=1.0);
+//    LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t) : LATTICE(Ne_t, invNu_t, testing_t, type_t, 0.5*M_PI, 1.0, seed, gs_t){};
+//    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0);
 	~LATTICE();
 
 	int Ne;
