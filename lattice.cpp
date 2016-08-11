@@ -6,11 +6,12 @@ LATTICE::LATTICE(){
 	Ne=0;
 }
 
-LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, double theta_t, double alpha_t, int seed, int gs):Ne(Ne_t),invNu(invNu_t), testing(testing_t), type(type_t),theta(theta_t),alpha(alpha_t){
+LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, double theta_t, double alpha_t, int seed, int gs_t):Ne(Ne_t),invNu(invNu_t), testing(testing_t), type(type_t),theta(theta_t),alpha(alpha_t),gs(gs_t){
 	//various parameters from input file
 	NPhi=Ne*invNu;
 	if(type=="laughlin-hole") NPhi++;
     
+    //make l1, l2 through theta, alpha.
     L1=sqrt(1.*M_PI*NPhi/sin(theta))*alpha;
     L2=sqrt(1.*M_PI*NPhi/sin(theta))/alpha*polar(1.,theta);
 
@@ -22,35 +23,33 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, double th
 	//****initialize z's, w's, d's
 	locs=vector< vector<int> >(Ne, vector<int>(2,0)); //initalize locations of all electrons
 
-	//setting the ws. Note that the sum of these is ALWAYS zero, adding things like composite fermion momenta or holes doesn't change this.
-	//in the y direction these take the values gs*L/invNu, where gs in (0,invNu-1) is an integer which labels the ground state
-	ws=vector< vector<double> > (invNu, vector<double>(2,0) );
-    
-	for( int i=0;i<invNu;i++){
-        ws[i][0]=( (i+0.5)/(1.*invNu)-0.5);
-        ws[i][1]=gs/(1.*invNu);
-	}
-
 	double center_frac[2]={0.,0.};
     dbar_parameter=vector<double>(2);
     
 	if(type=="CFL"){
 		if(Ne%2==0){center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
-				
-		print_ds();
-		dsum=vector<int>(2,0);
-		for(int i=0;i<Ne;i++){
-			dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu;
-            //dsum=NPhi * Ne dbar, i.e. it is the point on the lattice of electrons where the TOTAL d lives
-            //'ds' is defined on L/Ne lattice, 'dsum' in this way is defined on L/Nphi lattice.
-		}
-		change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));
-
-		//the average d should also be on a lattice point, so dividing dsum by Ne should yield an integer
-//		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
-//		cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
+////		print_ds();
+//		dsum=vector<int>(2,0);
+//		for(int i=0;i<Ne;i++){
+//			dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu;
+//            //dsum=NPhi * Ne dbar, i.e. it is the point on the lattice of electrons where the TOTAL d lives
+//            //'ds' is defined on L/Ne lattice, 'dsum' in this way is defined on L/Nphi lattice.
+//		}
+//		change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));
+//		//the average d should also be on a lattice point, so dividing dsum by Ne should yield an integer
+////		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
+////		cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
 	}
+    
+    //setting the ws. Note that the sum of these is ALWAYS zero, adding things like composite fermion momenta or holes doesn't change this.
+    //in the y direction these take the values gs*L/invNu, where gs in (0,invNu-1) is an integer which labels the ground state
+    ws0=vector< vector<double> > (invNu, vector<double>(2,0) );
+    for( int i=0;i<invNu;i++){
+        ws0[i][0]=( (i+0.5)/(1.*invNu)-0.5);
+        ws0[i][1]=gs/(1.*invNu);
+    }
+    set_ds(ds);//set ds, and reset ws.
     
 	holes_set=false;
 
@@ -72,7 +71,6 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, double th
 	sq3=vector <vector< vector< vector <complex<double> > > > >(NPhi, vector <vector <vector< complex<double> > > >(NPhi, vector <vector <complex<double> > >(NPhi, vector<complex<double> >(NPhi,0))));
 	delete [] sl2z;
 }
-
 void LATTICE::step(int Nsteps){
 	for(int i=0;i<Nsteps*Ne;i++){
 		tries++;
@@ -136,11 +134,11 @@ int LATTICE::simple_update(){
 
 	int oldCOM[2], newCOM[2];
 	sum_locs(oldCOM);// 'locs' is defined on L/Nphi lattice. So does COM.
-	if(type=="CFL"){
-		oldCOM[0]-=dsum[0]/invNu;
-		oldCOM[1]-=dsum[1]/invNu;
-	    //The reason for dividing invNu is: sum_{i=1}^{invNu}w_i = sum_{j=1}^{Ne}d_j, so dsum/invNu Actually means average of w_i. The w_i in this code sums to 0.
-	}
+//	if(type=="CFL"){
+//		oldCOM[0]-=dsum[0]/invNu;
+//		oldCOM[1]-=dsum[1]/invNu;
+//	    //The reason for dividing invNu is: sum_{i=1}^{invNu}w_i = sum_{j=1}^{Ne}d_j, so dsum/invNu Actually means average of w_i. The w_i in this code sums to 0.
+//	}
 	newCOM[0]=oldCOM[0]-locs[electron][0]+newloc[0];
 	newCOM[1]=oldCOM[1]-locs[electron][1]+newloc[1];
 
@@ -180,6 +178,7 @@ int LATTICE::simple_update(){
 		make_CFL_det(newMatrix, newloc, electron, newDeterminant);
 		prob+=log(norm(newDeterminant/oldDeterminant));
 	}
+    //******phase. no, since calculating weight.
 	  
     //*******************update or not
 	bool update=false;
@@ -282,15 +281,10 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 	}
 	
 	//com part
-	int COM[2]={0,0};
+    int COM[2]={0,0};
 	for( int i=0;i<Ne;i++){
 		COM[0]+=zs[i][0];
 		COM[1]+=zs[i][1];
-	}
-
-	if(type=="CFL"){
-		COM[0]-=dsum[0]/invNu;//this is correct since dsum lives on the same lattice as the zs
-		COM[1]-=dsum[1]/invNu;
 	}
 	for( int i=0;i<invNu;i++){
 		x=COM[0]/(1.*NPhi)-ws[i][0];
@@ -329,26 +323,23 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 		//ameliorate large determinants by shrinking before taking their norm
 		oldDivisor=abs(real(temp))+abs(imag(temp));
 		out+=log(norm(temp/oldDivisor))+2*log(oldDivisor);
-//		temp2=temp*exp(out);
-//		out=log(real(temp2*conj(temp)));
 	}
     
     //phase previously missing. for laughlin/laughin-hole. CFL has no additional phase.
     vector<double> wsum(2);
-    for (int i=0; i<invNu; i++) {wsum[0]+=ws[i][0]; wsum[1]+=ws[i][1];}
-    complex<double> w_comp = wsum[0]*L1+wsum[1]*L2;
-    complex<double> zcom_comp = 1.*COM[0]/(1.*NPhi)*L1+1.*COM[1]/(1.*NPhi)*L2;
-    complex<double> tmp;
+    for (int i=0; i<invNu; i++) {
+        wsum[0]+=ws[i][0];
+        wsum[1]+=ws[i][1];
+    }
+    complex<double> w_comp = wsum[0]*L1+wsum[1]*L2, zcom_comp = 1.*COM[0]/(1.*NPhi)*L1+1.*COM[1]/(1.*NPhi)*L2, tmp;
     if (type=="laughlin" || type=="laughlin-hole") {
         tmp=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
     }
     else if(type=="CFL") {
-//        complex<double> dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L1;
-//        tmp=exp(1./(2.*NPhi)*( conj(w_comp + dsum_comp)*zcom_comp - (w_comp+dsum_comp)*conj(zcom_comp) ));
+        complex<double> dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L2;
+        tmp=exp(1./(2.*NPhi)*( conj(w_comp + dsum_comp)*zcom_comp - (w_comp + dsum_comp)*conj(zcom_comp) ));
     }
     out+=log(norm(tmp));
-    
-    
 	return out;
 } 
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
@@ -356,7 +347,6 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 	complex<double> out=1,temp;
 	int ix,iy;
-
 	double x,y;
 	//hole part
 	if(type=="laughlin-hole"){
@@ -383,7 +373,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 			}
 		}
 	}
-    cout<<" vandermonde piece = "<<out<<endl;
+//    cout<<" vandermonde piece = "<<out<<endl;
     complex<double> assist=out;
 	
 	//COM piece
@@ -397,23 +387,19 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 		for( int i=0;i<invNu;i++){
 			dx=COM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
 			dy=COM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
-			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-			out*=temp;
+            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+            out*=temp;
 		}
 	}
     else{
-		if(type=="CFL"){
-			COM[0]-=dsum[0]/invNu;
-			COM[1]-=dsum[1]/invNu;
-		}
 		for( int i=0;i<invNu;i++){
 			dx=COM[0]/(1.*NPhi)-ws[i][0];
 			dy=COM[1]/(1.*NPhi)-ws[i][1];
-			z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);//z_function is also sigma-gaussian.
-			out*=temp;
+            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+            out*=temp;
 		}
 	}
-    cout<<" com piece = "<<out/assist<<endl; assist=out;
+//    cout<<" com piece = "<<out/assist<<endl; assist=out;
     
 
     //Determinant piece
@@ -434,26 +420,33 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 			}
 		}
 //        det_M=Eigen::MatrixXcd(Ne, Ne); det_M=M;
-//        Eigen::MatrixXcd *det_M = new Eigen::MatrixXcd(Ne, Ne); det_M=&M;
 		detSolver.compute(M);
 		out=out*detSolver.determinant();
 	}
-    cout<<" det part = "<<out/assist<<endl;
-    
-    //phase previously missing. for laughlin/laughlin-hole. CFL has no additional phase..
+//    cout<<" det part = "<<out/assist<<endl;
+//    cout<<"value = "<<out<<endl;
+    //phase previously missing. for laughlin/laughlin-hole/CFL.
     vector<double> wsum(2);
-    for (int i=0; i<invNu; i++) {wsum[0]+=ws[i][0]; wsum[1]+=ws[i][1];}
-    complex<double> w_comp = wsum[0]*L1+wsum[1]*L2;
-    complex<double> zcom_comp = 1.*COM[0]/NPhi*L1+1.*COM[1]/NPhi*L2;
+    for (int i=0; i<invNu; i++) {
+        wsum[0]+=ws[i][0];
+        wsum[1]+=ws[i][1];
+    }
+    complex<double> w_comp = wsum[0]*L1+wsum[1]*L2, zcom_comp = 1.*COM[0]/NPhi*L1+1.*COM[1]/NPhi*L2;
     if (type=="laughlin" || type=="laughlin-hole") {
         out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
     }
     else if(type=="CFL") {
-//        complex<double> dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L1;
-//        out*=exp(1./(2.*NPhi)*( conj(w_comp + dsum_comp)*zcom_comp - (w_comp+dsum_comp)*conj(zcom_comp) ));
+        complex<double> dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L2;
+        out*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+//        cout<<"wcomp = "<<w_comp<<" dsum_comp = "<<dsum_comp<<" zcom_comp = "<<zcom_comp<<endl;
+//        cout<<" phase = "<<exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ))<<endl;
+//        for (int i=0; i<ds.size(); i++) {
+//            cout<<ds[i][0]<<" "<<ds[i][1]<<endl;
+//        }
+//        cout<<"dsum = "<<dsum[0]<<" "<<dsum[1]<<endl;
     }
-    
-	return conj(out);
+//	return conj(out);//why conj(out)??????
+    return out;
 }
 
 void LATTICE::sum_locs(int out[]){
@@ -466,9 +459,9 @@ void LATTICE::sum_locs(int out[]){
 //	out[1]=out[1]%NPhi;
 }
 
-vector< vector<int> > LATTICE::get_locs(){ return locs; }
+vector< vector<int> > LATTICE::get_locs(){return locs;}
 
-vector< vector<int> > LATTICE::get_ds(){ return ds; }
+vector< vector<int> > LATTICE::get_ds(){return ds;}//'ds' are private, so call 'get_ds' function.
 
 ///***********MEASUREMENT FUNCTIONS *******///////////////
 //right now I'm using Duncan's function for this
@@ -660,6 +653,7 @@ complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 void LATTICE::reset(){
 	tries=0; accepts=0;
 	cold_start();
+    
 	//**** setting up the initial determinant matrix
 	running_weight=0;
 	int site=0;
@@ -744,16 +738,20 @@ void LATTICE::change_dbar_parameter(double dbarx, double dbary){
 	}
 }
 void LATTICE::set_ds(vector< vector<int> > tds){
-	ds=tds;
-	dsum=vector<int>(2,0);
+    ds=tds; dsum=vector<int>(2,0);
 	for(int i=0;i<Ne;i++){
-		dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu;
-        //dsum=NPhi * Ne dbar, i.e. it is the point on the lattice of electrons where the TOTAL d lives
-        //'ds' is defined on L/Ne lattice, 'dsum' in this way is defined on L/Nphi lattice.
+        dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu; //'ds' is on L/Ne lattice, 'dsum' is on L/Nphi lattice.
 	}
 	//print_ds();
-	change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));	
-	reset();
+	change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));
+    
+    //reset ws, according to ds.
+    ws.clear(); ws=ws0;
+    if (type=="CFL") {
+        for (int i=0; i<ws.size(); i++) {
+            ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.
+        }
+    }
 }
 void LATTICE::set_hole(vector<double> temphole){
 	hole=temphole;
@@ -844,8 +842,8 @@ void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int 
     
     detSolver.compute(newMatrix);
     new_det=detSolver.determinant();
-    //		cout<<electron<<endl;
-    //		cout<<oldMatrix<<endl<<endl<<newMatrix<<endl;
+//    cout<<electron<<endl;
+//    cout<<oldMatrix<<endl<<endl<<newMatrix<<endl;
 }
 
 vector<double> LATTICE::get_dbar_parameter(){

@@ -1,6 +1,7 @@
 using namespace std;
 #include "lattice.h"
 #include "berry_tests.h"
+#include <iomanip>
 bool IsOdd (int i) {
     return ((i%2)==1);
 }
@@ -10,9 +11,8 @@ int main(){
     void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
     vector<data> datas; int num_core;
     num_core=2;
-//    CFL_berry_phases_parallel(datas, "params_ne8", "CFL_berryphase_ne8", num_core);
-//    CFL_berry_phases_parallel(datas, "params_ne10", "CFL_berryphase_ne10", num_core);
-    num_core=2;
+    CFL_berry_phases_parallel(datas, "params_ne8", "CFL_berryphase_ne8", num_core);
+    CFL_berry_phases_parallel(datas, "params_ne10", "CFL_berryphase_ne10", num_core);
 //    CFL_berry_phases_parallel(datas, "params", "bp", num_core);
     
 //    void check_orthogonality(string type);
@@ -33,41 +33,23 @@ void CFL_det_errorprone(){
     
     for (int i=0; i<Ne; i++) {zs[i][0]=2; zs[i][1]=i+1;}//calculate value of wavefunction in this particular zs configuration.
     for (int i=0; i<3; i++) {for (int j=0; j<3; j++) {ds[i*3+j]=vector<int>{i-1, j-1};}}
+    vector<int> ds_tmp=vector<int>{1, 1};
+    ds.erase(remove(ds.begin(),ds.end(),ds_tmp),ds.end());
+    ds.push_back(vector<int>{7, 8});
     
-    LATTICE cfl(Ne, invNu, 0, "CFL", 0, 0);//com zeros are set as (-0.25,0) and (0.25,0).
-    cfl.set_ds(ds);
+    
+    LATTICE cfl(Ne, invNu, 0, "CFL", 0, 1);//com zeros are set as (-0.25,0) and (0.25,0).
+    cfl.set_ds(ds); cfl.print_ds();
+
     cout<<"w.f.="<<cfl.get_wf(zs)<<endl;
-//    cout<<"output det matrix\n"<<*cfl.det_M<<endl;
-//    cout<<"\n det M = "<<(*cfl.det_M).determinant()<<endl;
     
-//    //output M matrix into a file, then read it to get a new matrix. calculate det of new matrix. (found different from det of the first matrix, real part off 10^7!!!)
-//    ofstream outfile("det");
-//    for (int i=0; i<Ne; i++) {
-//        for (int j=0; j<Ne; j++) {
-//            outfile<<real(cfl.det_M(i,j))<<" "<<imag(cfl.det_M(i,j))<<" ";
-//        }
-//        outfile<<endl;
-//    }
-//    
-//    ifstream infile("det");
-//    Eigen::MatrixXcd M_new(Ne, Ne);
-//    for (int i=0; i<Ne; i++) {
-//        for (int j=0; j<Ne; j++) {
-//            double a, b;
-//            infile>>a>>b;
-//            M_new(i,j)=a+complex<double>(0,1)*b;
-//        }
-//    }
-//    cout<<"new M matrix = \n"<<M_new<<endl;
-//    cout<<"det of new matrix = "<<M_new.determinant()<<endl;
-//    
-//    //check if det_M and M_new are the same.
-//    Eigen::MatrixXcd M_dif = cfl.det_M-M_new;
-//    for (int i=0; i<Ne; i++) {
-//        for (int j=0; j<Ne; j++) {
-//            if(abs(M_dif(i,j))>pow(10,-5)) cout<<"i="<<i<<" j="<<j<<" M_dif = "<<M_dif(i,j)<<endl;
-//        }
-//    }
+    vector<int> shift{3,5};
+    for (int i=0; i<ds.size(); i++) {
+        ds[i][0]+=shift[0];
+        ds[i][1]+=shift[1];
+    }
+    cfl.set_ds(ds); cfl.reset();
+    cout<<"w.f.="<<cfl.get_wf(zs)<<endl;
 }
 void test_laughlinwf(){
     bool testing=false; string type="laughlin"; int seed=0;
@@ -722,8 +704,9 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
     
     //ll is the object we will do monte carlo on, pp is the object with the electrons (or holes) shifted by one space
     int dsteps=nds; //nds
-    
+
     omp_set_num_threads(num_core);
+    
     vector<vector<LATTICE> > ll(num_core, vector<LATTICE>(invNu)), pp(num_core, vector<LATTICE>(invNu));//do this to avoid wrong memory access since openmp share memory.
     for (int k=0; k<num_core; k++) for (int i=0; i<invNu; i++) {ll[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i); pp[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);}
     
@@ -864,7 +847,6 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
     }
     outfile.close();
     outfile2.close();
-    
 }
 
 void laughlin_bp_single_state(int gs, vector<double> length, double steplength, int change_nMeas, vector<data> &datas, int num_core){
