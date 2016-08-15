@@ -976,8 +976,8 @@ void check_orthogonality(string type){
 }
 
 void phase_variance(){
-    ofstream outfile("onestep");
-    int Ne=8,invNu=2,nWarmup=5000,nMeas=500,nSteps=20,nBins=5000,seed=0;
+    ofstream outfile("M");
+    int Ne=8,invNu=2,nWarmup=5000,nMeas=100,nSteps=20,nBins=1000,seed=0;
     outfile<<"Ne=8, invNu=2, nWarmup="<<nWarmup<<", nMeas="<<nMeas<<", nSteps="<<nSteps<<", nBins="<<nBins<<endl;
     bool testing=false;
     int Nphi=Ne*invNu;
@@ -1044,6 +1044,8 @@ void phase_variance(){
         Eigen::MatrixXcd berrymatrix=overlaps[2].inverse() * overlaps[0];
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix);
         outfile<<nbin<<" "<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[1])<<endl;
+        outfile<<nbin<<" "<<berrymatrix(0,0).real()<<" "<<berrymatrix(0,0).imag()<<" "<<berrymatrix(1,1).real()<<" "<<berrymatrix(1,1).imag()<<" "<<berrymatrix(0,1).real()<<" "<<berrymatrix(0,1).imag()<<" "<<berrymatrix(1,0).real()<<" "<<berrymatrix(1,0).imag()<<endl;
+        outfile<<endl;
         
     }
     outfile.close();
