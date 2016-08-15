@@ -27,9 +27,13 @@ int main(){
 //    findstate();
     
     void CFL_det_errorprone();
-    CFL_det_errorprone();
+//    CFL_det_errorprone();
     
-//    LATTICE templl(9, 2, 1, "CFL", 1, 0);
+    void check_orthogonality(string type);
+//    check_orthogonality("laughlin");
+    
+    void phase_variance();
+    phase_variance();
     
     
 }
@@ -776,7 +780,7 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
                     for (int j=0; j<invNu; j++) {
                         complex<double> temp;
                         temp=pp[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
-                        overlaps[b][0](i,j)+=temp*ll[coren][i].rhoq(dKx,dKy,ll[coren][i].get_locs());//why times rhoq???
+                        overlaps[b][0](i,j)+=temp*ll[coren][i].rhoq(dKx,dKy,ll[coren][i].get_locs());//?
                         overlaps[b][1](i,j)+=norm(temp);
                         temp=ll[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
                         overlaps[b][2](i,j)+=temp;
@@ -922,8 +926,8 @@ void laughlin_bp_single_state(int gs, vector<double> length, double steplength, 
 }
 
 void check_orthogonality(string type){
-    cout<<"--->type = "<<type<<", nMeas=50000, nStep=20, Ne=9. General d, sum of d neq 0."<<endl;
-    int Ne=9, invNu, nWarmup=5000, nMeas=50000, nSteps=20, seed=0;
+    cout<<"--->type = "<<type<<", nMeas=50000, nStep=20, Ne=2. General d, sum of d neq 0."<<endl;
+    int Ne=2, invNu, nWarmup=5000, nMeas=50000, nSteps=30, seed=0;
     if (type=="CFL") invNu=2;
     if (type=="laughlin") invNu=3;
     vector<LATTICE> cfl;
@@ -934,7 +938,7 @@ void check_orthogonality(string type){
     if (type=="CFL") {
         vector<vector<int> > ds;
         for (int i=0; i<Ne; i++) {
-            vector<int> tmp {i,1}; ds.push_back(tmp);
+            vector<int> tmp {i,0}; ds.push_back(tmp);
         }
         cfl[0].set_ds(ds); cfl[1].set_ds(ds);
     }
@@ -971,4 +975,77 @@ void check_orthogonality(string type){
     }
 }
 
+void phase_variance(){
+    ofstream outfile("onestep");
+    int Ne=8,invNu=2,nWarmup=5000,nMeas=500,nSteps=20,nBins=5000,seed=0;
+    outfile<<"Ne=8, invNu=2, nWarmup="<<nWarmup<<", nMeas="<<nMeas<<", nSteps="<<nSteps<<", nBins="<<nBins<<endl;
+    bool testing=false;
+    int Nphi=Ne*invNu;
+    //initialize MC object
+    
+    //this instance of LATTICE is only to set up the circular fermi surface of tempNe electrons
+    LATTICE templl(Ne+1, invNu, testing, "CFL", seed, 0);
+    vector<vector<int> > old_ds=templl.get_ds(), extra_ds;
+    //old_dbar is the center of the circular fermi surface
+    vector<double> old_dbar=templl.get_dbar_parameter();
+    
+    extra_ds.push_back(vector<int>{1,-1});
+    extra_ds.push_back(vector<int>{1,1});
+    
+    vector<vector<int>> ds0=old_ds, ds1=old_ds;
+    ds0.erase(remove(ds0.begin(), ds0.end(), extra_ds[0]), ds0.end());//missing {1,-1}.
+    ds1.erase(remove(ds1.begin(), ds1.end(), extra_ds[1]), ds1.end());//missing {1,1}.
+    
+    vector<LATTICE> ll(invNu), pp(invNu);
+    for (int i=0; i<invNu; i++) {
+        ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
+        ll[i].set_ds(ds0);
+        pp[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
+        pp[i].set_ds(ds1);
+    }
+    
+    int dKx, dKy;
+    dKx=-invNu*(extra_ds[1][0]-extra_ds[0][0]);
+    dKy=-invNu*(extra_ds[1][1]-extra_ds[0][1]);
+    
+    //Monte Carlo Part & Output.
+    for (unsigned nbin=0; nbin<nBins; nbin++) {
+        //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
+        vector<Eigen::MatrixXcd> overlaps(4, Eigen::MatrixXcd::Zero(invNu, invNu));
+        
+        for (int i=0; i<invNu; i++) {
+            ll[i].reset();
+            pp[i].reset();
+            ll[i].step(nWarmup);
+        }
+        
+        for (int k=0; k<nMeas; k++) {
+            for (int i=0; i<invNu; i++) ll[i].step(nSteps);
+            
+            for (int i=0; i<invNu; i++) {
+                for (int j=0; j<invNu; j++) {
+                    complex<double> temp;
+                    temp=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
+                    overlaps[0](i,j)+=temp*ll[i].rhoq(dKx,dKy,ll[i].get_locs());//?
+                    overlaps[1](i,j)+=norm(temp);
+                    temp=ll[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
+                    overlaps[2](i,j)+=temp;
+                    overlaps[3](i,j)+=norm(temp);
+                }
+            }
+        }
+        
+        for (int l=0; l<4; l++) overlaps[l]/=(1.*nMeas);
+        overlaps[0]=overlaps[0].array()/overlaps[1].array().sqrt();
+        overlaps[2]=overlaps[2].array()/overlaps[3].array().sqrt();
+        hermitianize(overlaps[2]);
+        
+        //berry matrix.
+        Eigen::MatrixXcd berrymatrix=overlaps[2].inverse() * overlaps[0];
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix);
+        outfile<<nbin<<" "<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[1])<<endl;
+        
+    }
+    outfile.close();
+}
 
