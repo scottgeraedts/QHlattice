@@ -15,10 +15,6 @@ int main(){
 //    CFL_berry_phases_parallel(datas, "params_ne10", "CFL_berryphase_ne10", num_core);
 //    CFL_berry_phases_parallel(datas, "params", "bp", num_core);
     
-//    if( __cplusplus == 201103L ) std::cout << "C++11\n" ;
-//    else if( __cplusplus == 19971L ) std::cout << "C++98\n" ;
-//    else std::cout << "pre-standard C++\n" ;
-    
 //    void check_orthogonality(string type);
 //    check_orthogonality("CFL");
 //    check_orthogonality("laughlin");
@@ -33,9 +29,10 @@ int main(){
 //    check_orthogonality("laughlin");
     
     void phase_variance();
-    phase_variance();
+//    phase_variance();
     
-    
+    void ne4onestep();
+    ne4onestep();
 }
 void CFL_det_errorprone(){
     double theta=M_PI/2, alpha=1.; int Nphi=18, invNu=2, Ne=9;
@@ -1051,3 +1048,94 @@ void phase_variance(){
     outfile.close();
 }
 
+void ne4onestep(){
+    ofstream outfile("ne4ostp");
+    int Ne=4,invNu=2,nWarmup=5000,nMeas=500,nSteps=20,nBins=5000,seed=0;
+    outfile<<"Ne=4, invNu=2, nWarmup="<<nWarmup<<", nMeas="<<nMeas<<", nSteps="<<nSteps<<", nBins="<<nBins<<endl;
+    bool testing=false;
+    int Nphi=Ne*invNu;
+    //initialize MC object
+
+    //initialize ds.
+    vector<vector<int>> ds0;
+    vector<vector<vector<int>>> ds;
+    ds0.push_back(vector<int>{0,0});
+    ds0.push_back(vector<int>{0,1});
+    ds0.push_back(vector<int>{0,-1});
+    ds0.push_back(vector<int>{1,0});
+    ds0.push_back(vector<int>{-1,0});
+    ds=vector<vector<vector<int>>>(2, ds0);//only 2 ds.
+    ds[0].erase(remove(ds[0].begin(), ds[0].end(), vector<int>{1, 0}),ds[0].end());
+    ds[1].erase(remove(ds[1].begin(), ds[1].end(), vector<int>{0, 1}),ds[1].end());
+
+    vector<LATTICE> ll(invNu), pp(invNu);
+    for (int i=0; i<invNu; i++) {
+        ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
+        ll[i].set_ds(ds[0]);
+        pp[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
+        pp[i].set_ds(ds[1]);
+    }
+    
+    int dKx, dKy;
+    dKx=-invNu*(-1); //-invNu*(extra_ds[1][0]-extra_ds[0][0]);
+    dKy=-invNu*(1); //-invNu*(extra_ds[1][1]-extra_ds[0][1]);
+    
+    //Monte Carlo Part & Output.
+    for (unsigned nbin=0; nbin<nBins; nbin++) {
+        //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
+        vector<Eigen::MatrixXcd> overlaps(4, Eigen::MatrixXcd::Zero(invNu, invNu));
+        vector<Eigen::MatrixXcd> overlaps_density(4, Eigen::MatrixXcd::Zero(invNu, invNu));
+        
+        for (int i=0; i<invNu; i++) {
+            ll[i].reset();
+            pp[i].reset();
+            ll[i].step(nWarmup);
+        }
+        
+        for (int k=0; k<nMeas; k++) {
+            for (int i=0; i<invNu; i++)
+                ll[i].step(nSteps);
+            
+            for (int i=0; i<invNu; i++) {
+                for (int j=0; j<invNu; j++) {
+                    complex<double> temp;
+                    //excluding density operator.
+                    temp=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
+                    overlaps[0](i,j)+=temp;//here is the difference.
+                    overlaps[1](i,j)+=norm(temp);
+                    temp=ll[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
+                    overlaps[2](i,j)+=temp;
+                    overlaps[3](i,j)+=norm(temp);
+                    //including density operator.
+                    temp=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
+                    overlaps_density[0](i,j)+=temp*ll[i].rhoq(dKx,dKy,ll[i].get_locs());//here is the difference.
+                    overlaps_density[1](i,j)+=norm(temp);
+                    temp=ll[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
+                    overlaps_density[2](i,j)+=temp;
+                    overlaps_density[3](i,j)+=norm(temp);
+                }
+            }
+        }
+        
+        for (int l=0; l<4; l++) overlaps[l]/=(1.*nMeas);
+        overlaps[0]=overlaps[0].array()/overlaps[1].array().sqrt();
+        overlaps[2]=overlaps[2].array()/overlaps[3].array().sqrt();
+        hermitianize(overlaps[2]);
+        
+        for (int l=0; l<4; l++) overlaps_density[l]/=(1.*nMeas);
+        overlaps_density[0]=overlaps_density[0].array()/overlaps_density[1].array().sqrt();
+        overlaps_density[2]=overlaps_density[2].array()/overlaps_density[3].array().sqrt();
+        hermitianize(overlaps_density[2]);
+        
+        //berry matrix.
+        Eigen::MatrixXcd berrymatrix=overlaps[2].inverse() * overlaps[0];
+        Eigen::MatrixXcd berrymatrix_density=overlaps_density[2].inverse() * overlaps_density[0];
+//        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix);
+//        outfile<<nbin<<" "<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[1])<<endl;
+        outfile<<nbin<<" "<<berrymatrix(0,0).real()<<" "<<berrymatrix(0,0).imag()<<" "<<berrymatrix(1,1).real()<<" "<<berrymatrix(1,1).imag()<<" "<<berrymatrix(0,1).real()<<" "<<berrymatrix(0,1).imag()<<" "<<berrymatrix(1,0).real()<<" "<<berrymatrix(1,0).imag()<<endl;
+        outfile<<nbin<<" "<<berrymatrix_density(0,0).real()<<" "<<berrymatrix_density(0,0).imag()<<" "<<berrymatrix_density(1,1).real()<<" "<<berrymatrix_density(1,1).imag()<<" "<<berrymatrix_density(0,1).real()<<" "<<berrymatrix_density(0,1).imag()<<" "<<berrymatrix_density(1,0).real()<<" "<<berrymatrix_density(1,0).imag()<<endl;
+        outfile<<endl;
+        
+    }
+    outfile.close();
+}
