@@ -34,6 +34,9 @@ int main(){
     void ne4onestep();
     ne4onestep();
     
+    void nelatticesum(int ne);
+//    nelatticesum(2);
+    
 }
 void CFL_det_errorprone(){
     double theta=M_PI/2, alpha=1.; int Nphi=18, invNu=2, Ne=9;
