@@ -758,10 +758,19 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
             //        energy=0;
             energy[b]=0.;
             
+            //many body K.
+            for (int i=0; i<invNu; i++) {
+                for (int j=0; j<2; j++) {
+                    if (ll[coren][i].dsum[j]%invNu!=0 || pp[coren][i].dsum[j]%invNu!=0) {
+                        cout<<"dsum mod invNu != 0, somewhere wrong!"<<endl;
+                        exit(0);
+                    }
+                }
+            }
+            int dKx=ll[coren][0].dsum[0]/invNu-pp[coren][0].dsum[0]/invNu, dKy=ll[coren][0].dsum[1]/invNu-pp[coren][0].dsum[1]/invNu;
             //alphabar = K1 L1/Nphi + K2 L2/Nphi = d/invNu. (K1,K2) are many body momentums.
             //So for d = d1 L1/Ne + d2 L2/Ne => K1=sum d1, K2=sum d2.
             //dKx/y is divided by invNu, because in lattice.cpp dsum is defined on L/Nphi lattice.
-            int dKx=ll[0].dsum[0]/invNu-pp[0].dsum[0]/invNu, dKy=ll[0].dsum[1]/invNu-pp[0].dsum[1]/invNu;
             
             for (int k=0; k<nMeas; k++) {
                 for (int i=0; i<invNu; i++)
@@ -997,10 +1006,19 @@ void phase_variance(){
         pp[i].set_ds(ds1);
     }
     
+    //many body K.
+    for (int i=0; i<invNu; i++) {
+        for (int j=0; j<2; j++) {
+            if (ll[i].dsum[j]%invNu!=0 || pp[i].dsum[j]%invNu!=0) {
+                cout<<"dsum mod invNu != 0, somewhere wrong!"<<endl;
+                exit(0);
+            }
+        }
+    }
+    int dKx=ll[0].dsum[0]/invNu-pp[0].dsum[0]/invNu, dKy=ll[0].dsum[1]/invNu-pp[0].dsum[1]/invNu;
     //alphabar = K1 L1/Nphi + K2 L2/Nphi = d/invNu. (K1,K2) are many body momentums.
     //So for d = d1 L1/Ne + d2 L2/Ne => K1=sum d1, K2=sum d2.
     //dKx/y is divided by invNu, because in lattice.cpp dsum is defined on L/Nphi lattice.
-    int dKx=ll[0].dsum[0]/invNu-pp[0].dsum[0]/invNu, dKy=ll[0].dsum[1]/invNu-pp[0].dsum[1]/invNu;
     
     //Monte Carlo Part & Output.
     for (unsigned nbin=0; nbin<nBins; nbin++) {
@@ -1095,10 +1113,10 @@ void onestep(int ne, string output_name){
             }
         }
     }
+    int dKx=ll[0].dsum[0]/invNu-pp[0].dsum[0]/invNu, dKy=ll[0].dsum[1]/invNu-pp[0].dsum[1]/invNu;
     //alphabar = K1 L1/Nphi + K2 L2/Nphi = d/invNu. (K1,K2) are many body momentums.
     //So for d = d1 L1/Ne + d2 L2/Ne => K1=sum d1, K2=sum d2.
     //dKx/y is divided by invNu, because in lattice.cpp dsum is defined on L/Nphi lattice.
-    int dKx=ll[0].dsum[0]/invNu-pp[0].dsum[0]/invNu, dKy=ll[0].dsum[1]/invNu-pp[0].dsum[1]/invNu;
     
     //Monte Carlo Part & Output.
     for (unsigned nbin=0; nbin<nBins; nbin++) {
