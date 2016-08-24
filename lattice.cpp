@@ -416,14 +416,14 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 					temp=modded_lattice_z(z[0],z[1]);
 					product*=temp;
 				}
-				M(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
+				M(i,j)=product*polar(pow(in_determinant_rescaling, Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
 			}
 		}
 //        det_M=Eigen::MatrixXcd(Ne, Ne); det_M=M;
 		detSolver.compute(M);
 		out=out*detSolver.determinant();
 	}
-//    cout<<" det part = "<<out/assist<<endl;
+//    cout<<" det part = "<<detSolver.determinant()<<endl;
 //    cout<<"value = "<<out<<endl;
     //phase previously missing. for laughlin/laughlin-hole/CFL.
     vector<double> wsum(2);
@@ -646,9 +646,11 @@ complex<double> LATTICE::formfactor(int qx, int qy){
 complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 	complex<double> out=0;
 	for(int i=0;i<Ne;i++){
-		out+=omega[supermod((2*qx*locs[i][0]+2*qy*locs[i][1]),2*NPhi)];
-	}	
-	return out/(formfactor(qx,qy)*(1.*NPhi));
+//		out+=omega[supermod((2*qx*locs[i][0]+2*qy*locs[i][1]), 2*NPhi)];//need to be checked.
+        out+=omega[supermod((-2*qx*locs[i][1]+2*qy*locs[i][0]), 2*NPhi)];//temportarily modify.
+	}
+//	return out/(formfactor(qx,qy)*(1.*NPhi));//remember to change back.
+    return out;
 }
 void LATTICE::reset(){
 	tries=0; accepts=0;
@@ -695,7 +697,6 @@ void LATTICE::reset(){
 			exit(0);
 		}
 	}
-    
     check_sanity();
 }
 //checks a few different things to make sure that they make sense

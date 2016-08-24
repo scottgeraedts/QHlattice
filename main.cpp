@@ -8,9 +8,9 @@ bool IsOdd (int i) {
 int main(){
 //    //CFL berry phase.
 //    void CFL_berry_phases(vector<data> &datas);
-    void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
-    vector<data> datas; int num_core;
-    num_core=2;
+//    void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
+//    vector<data> datas; int num_core;
+//    num_core=2;
 //    CFL_berry_phases_parallel(datas, "params_ne8", "CFL_berryphase_ne8", num_core);
 //    CFL_berry_phases_parallel(datas, "params_ne10", "CFL_berryphase_ne10", num_core);
 //    CFL_berry_phases_parallel(datas, "params", "bp", num_core);
@@ -33,6 +33,7 @@ int main(){
     
     void ne4onestep();
     ne4onestep();
+    
 }
 void CFL_det_errorprone(){
     double theta=M_PI/2, alpha=1.; int Nphi=18, invNu=2, Ne=9;
@@ -1049,25 +1050,26 @@ void phase_variance(){
 }
 
 void ne4onestep(){
-    ofstream outfile("ne4ostp");
+    ofstream outfile("M0823");
     int Ne=4,invNu=2,nWarmup=5000,nMeas=500,nSteps=20,nBins=5000,seed=0;
     outfile<<"Ne=4, invNu=2, nWarmup="<<nWarmup<<", nMeas="<<nMeas<<", nSteps="<<nSteps<<", nBins="<<nBins<<endl;
     bool testing=false;
     int Nphi=Ne*invNu;
     //initialize MC object
-
-    //initialize ds.
-    vector<vector<int>> ds0;
-    vector<vector<vector<int>>> ds;
-    ds0.push_back(vector<int>{0,0});
-    ds0.push_back(vector<int>{0,1});
-    ds0.push_back(vector<int>{0,-1});
-    ds0.push_back(vector<int>{1,0});
-    ds0.push_back(vector<int>{-1,0});
-    ds=vector<vector<vector<int>>>(2, ds0);//only 2 ds.
-    ds[0].erase(remove(ds[0].begin(), ds[0].end(), vector<int>{1, 0}),ds[0].end());
-    ds[1].erase(remove(ds[1].begin(), ds[1].end(), vector<int>{0, 1}),ds[1].end());
-
+    
+    //set ds.
+    vector<vector<vector<int>>> ds(2);
+    ds[0].push_back(vector<int>{0, 0});
+    ds[0].push_back(vector<int>{0, 1});
+    ds[0].push_back(vector<int>{0,-1});
+    ds[1].push_back(vector<int>{0, 0});
+    ds[1].push_back(vector<int>{0, 1});
+    ds[1].push_back(vector<int>{0,-1});
+    
+    ds[0].push_back(vector<int>{-1, 1});
+    ds[1].push_back(vector<int>{-1, 0});
+    
+    //set cfl wfs.
     vector<LATTICE> ll(invNu), pp(invNu);
     for (int i=0; i<invNu; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
@@ -1075,10 +1077,34 @@ void ne4onestep(){
         pp[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
         pp[i].set_ds(ds[1]);
     }
+    vector<vector<int>> dsum(2, vector<int>(2));
+    for (int dn=0; dn<2; dn++) {
+        for (int i=0; i<ds[dn].size(); i++) {
+            dsum[dn][0]+=ds[dn][i][0];
+            dsum[dn][1]+=ds[dn][i][1];
+        }
+    }
+    //many body K.
+    int dKx=dsum[0][0]-dsum[1][0], dKy=dsum[0][1]-dsum[1][1];
+//    cout<<"dKx, dKy="<<dKx<<" "<<dKy<<endl;
     
-    int dKx, dKy;
-    dKx=-invNu*(-1); //-invNu*(extra_ds[1][0]-extra_ds[0][0]);
-    dKy=-invNu*(1); //-invNu*(extra_ds[1][1]-extra_ds[0][1]);
+//    //test.
+//    vector<vector<int>> zs(Ne, vector<int>(2));
+//    for (int i=0; i<Ne; i++) {
+//        zs[i][0]=i;
+//        zs[i][1]=-i;
+//    }
+//    for (int i=0; i<invNu; i++) {
+//        cout<<"ll"<<i<<" = "<<ll[i].get_wf(zs)<<endl;
+//        cout<<"pp"<<i<<" = "<<pp[i].get_wf(zs)<<endl;
+//    }
+//    complex<double> out=0.;
+//    vector<complex<double>> omega=vector<complex<double> >(2*Nphi);
+//    for(int i=0;i<2*Nphi;i++) omega[i]=polar(1.,M_PI*i/(1.*Nphi));
+//    for (int i=0; i<zs.size(); i++) {
+//        out+=omega[supermod((-2*dKx*zs[i][1]+2*dKy*zs[i][0]), 2*Nphi)];
+//    }
+//    cout<<"rhoq="<<out<<endl;
     
     //Monte Carlo Part & Output.
     for (unsigned nbin=0; nbin<nBins; nbin++) {
@@ -1099,16 +1125,16 @@ void ne4onestep(){
             for (int i=0; i<invNu; i++) {
                 for (int j=0; j<invNu; j++) {
                     complex<double> temp;
-                    //excluding density operator.
+                    //overlap.
                     temp=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
-                    overlaps[0](i,j)+=temp;//here is the difference.
+                    overlaps[0](i,j)+=temp;//excluding density operator.
                     overlaps[1](i,j)+=norm(temp);
                     temp=ll[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
                     overlaps[2](i,j)+=temp;
                     overlaps[3](i,j)+=norm(temp);
-                    //including density operator.
+                    //overlap_density.
                     temp=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
-                    overlaps_density[0](i,j)+=temp*ll[i].rhoq(dKx,dKy,ll[i].get_locs());//here is the difference.
+                    overlaps_density[0](i,j)+=temp*ll[i].rhoq(dKx,dKy,ll[i].get_locs());//including density operator.
                     overlaps_density[1](i,j)+=norm(temp);
                     temp=ll[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
                     overlaps_density[2](i,j)+=temp;
@@ -1118,24 +1144,47 @@ void ne4onestep(){
         }
         
         for (int l=0; l<4; l++) overlaps[l]/=(1.*nMeas);
-        overlaps[0]=overlaps[0].array()/overlaps[1].array().sqrt();
-        overlaps[2]=overlaps[2].array()/overlaps[3].array().sqrt();
+        overlaps[0]=overlaps[0].array()/overlaps[1].array().sqrt();// <ll|pp>
+        overlaps[2]=overlaps[2].array()/overlaps[3].array().sqrt();// <ll|ll>
         hermitianize(overlaps[2]);
         
         for (int l=0; l<4; l++) overlaps_density[l]/=(1.*nMeas);
-        overlaps_density[0]=overlaps_density[0].array()/overlaps_density[1].array().sqrt();
-        overlaps_density[2]=overlaps_density[2].array()/overlaps_density[3].array().sqrt();
+        overlaps_density[0]=overlaps_density[0].array()/overlaps_density[1].array().sqrt();// <ll|rhoq|pp>
+        overlaps_density[2]=overlaps_density[2].array()/overlaps_density[3].array().sqrt();// <ll|ll>
         hermitianize(overlaps_density[2]);
         
-        //berry matrix.
-        Eigen::MatrixXcd berrymatrix=overlaps[2].inverse() * overlaps[0];
-        Eigen::MatrixXcd berrymatrix_density=overlaps_density[2].inverse() * overlaps_density[0];
-//        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix);
-//        outfile<<nbin<<" "<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[1])<<endl;
-        outfile<<nbin<<" "<<berrymatrix(0,0).real()<<" "<<berrymatrix(0,0).imag()<<" "<<berrymatrix(1,1).real()<<" "<<berrymatrix(1,1).imag()<<" "<<berrymatrix(0,1).real()<<" "<<berrymatrix(0,1).imag()<<" "<<berrymatrix(1,0).real()<<" "<<berrymatrix(1,0).imag()<<endl;
-        outfile<<nbin<<" "<<berrymatrix_density(0,0).real()<<" "<<berrymatrix_density(0,0).imag()<<" "<<berrymatrix_density(1,1).real()<<" "<<berrymatrix_density(1,1).imag()<<" "<<berrymatrix_density(0,1).real()<<" "<<berrymatrix_density(0,1).imag()<<" "<<berrymatrix_density(1,0).real()<<" "<<berrymatrix_density(1,0).imag()<<endl;
-        outfile<<endl;
+//        //berry matrix.
+//        Eigen::MatrixXcd berrymatrix=overlaps[2].inverse() * overlaps[0];
+//        Eigen::MatrixXcd berrymatrix_density=overlaps_density[2].inverse() * overlaps_density[0];
+////        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix);
+////        outfile<<nbin<<" "<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[1])<<endl;
+//        outfile<<nbin<<" "<<berrymatrix(0,0).real()<<" "<<berrymatrix(0,0).imag()<<" "<<berrymatrix(1,1).real()<<" "<<berrymatrix(1,1).imag()<<" "<<berrymatrix(0,1).real()<<" "<<berrymatrix(0,1).imag()<<" "<<berrymatrix(1,0).real()<<" "<<berrymatrix(1,0).imag()<<endl;
+//        outfile<<nbin<<" "<<berrymatrix_density(0,0).real()<<" "<<berrymatrix_density(0,0).imag()<<" "<<berrymatrix_density(1,1).real()<<" "<<berrymatrix_density(1,1).imag()<<" "<<berrymatrix_density(0,1).real()<<" "<<berrymatrix_density(0,1).imag()<<" "<<berrymatrix_density(1,0).real()<<" "<<berrymatrix_density(1,0).imag()<<endl;
+//        outfile<<endl;
         
+        //outputs: <ll|pp> matrix, <ll|rhoq|pp>, <ll|ll>.
+        outfile<<nbin<<" ";
+        for (int i=0; i<2; i++) {
+            for (int j=0; j<2; j++) {
+                outfile<<overlaps[0](i,j).real()<<" "<<overlaps[0](i,j).imag()<<" ";
+            }
+        }
+        outfile<<endl;
+        outfile<<nbin<<" ";
+        for (int i=0; i<2; i++) {
+            for (int j=0; j<2; j++) {
+                outfile<<overlaps_density[0](i,j).real()<<" "<<overlaps_density[0](i,j).imag()<<" ";
+            }
+        }
+        outfile<<endl;
+        outfile<<nbin<<" ";
+        for (int i=0; i<2; i++) {
+            for (int j=0; j<2; j++) {
+                outfile<<overlaps[2](i,j).real()<<" "<<overlaps[2](i,j).imag()<<" ";
+            }
+        }
+        outfile<<endl;
     }
+        
     outfile.close();
 }
