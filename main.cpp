@@ -6,33 +6,17 @@ bool IsOdd (int i) {
     return ((i%2)==1);
 }
 int main(){
-//    //CFL berry phase.
-//    void CFL_berry_phases(vector<data> &datas);
-//    void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
-//    vector<data> datas; int num_core;
-//    num_core=2;
-//    CFL_berry_phases_parallel(datas, "params_ne8", "CFL_berryphase_ne8", num_core);
-//    CFL_berry_phases_parallel(datas, "params_ne10", "CFL_berryphase_ne10", num_core);
-//    CFL_berry_phases_parallel(datas, "params", "bp", num_core);
-    
-//    void check_orthogonality(string type);
-//    check_orthogonality("CFL");
-//    check_orthogonality("laughlin");
-    
-//    void findstate();
-//    findstate();
-    
-    void CFL_det_errorprone();
-//    CFL_det_errorprone();
-    
-    void check_orthogonality(string type);
-//    check_orthogonality("laughlin");
+    //CFL berry phase.
+    void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
+    vector<data> datas; int num_core;
+    num_core=2;
+    CFL_berry_phases_parallel(datas, "params_ne8", "CFL_berryphase_ne8", num_core);
     
     void phase_variance();
 //    phase_variance();
     
-    void ne4onestep();
-    ne4onestep();
+    void onestep(int ne, string output_name);
+//    onestep(3, "ne3output");
     
     void nelatticesum(int ne);
 //    nelatticesum(2);
@@ -464,14 +448,14 @@ void CFL_berry_phases(vector<data> &datas){
 
 void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core){
     ofstream outfile(output_name.c_str());
-    string outfile2name=output_name+"_Mathmatica";
+    string outfile2name=output_name+"_Mathmatica";//output data in format easy for Mathematica to deal with.
     ofstream outfile2(outfile2name.c_str());
     int supermod(int k, int n);
     int tempNe,Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     string type;
     
-    //get  inputs from the params file
+    //get inputs from the params file
     ifstream infile(params_name.c_str());
     //number of electrons, and inverse of filling fraction
     infile>>tempNe>>invNu;
@@ -486,7 +470,7 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
      This is because increasing the size may cause floating point overflow errors
      */
     infile>>testing;
-    //a string which chooses mode to run the code in. right now there are 4 choices:
+    //  a string which chooses mode to run the code in. right now there are 4 choices:
     //  twod: put two electrons outside the circular fermi surface, move them both around
     //  oned: move one electron outside the fermi surface
     //  mtwod: removes two electrons from the circular fermi surface, i.e. adds two "holes", moves these holes around
@@ -509,6 +493,7 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
     
     //this instance of LATTICE is only to set up the circular fermi surface of tempNe electrons
     LATTICE templl(tempNe, invNu, testing, "CFL", seed, 0);
+    //old_ds is the maximal circular fermi surface with tempNe electrons
     vector<vector<int> > old_ds=templl.get_ds(), extra_ds;
     //old_dbar is the center of the circular fermi surface
     vector<double> old_dbar=templl.get_dbar_parameter();
@@ -716,10 +701,10 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
     
     //ll is the object we will do monte carlo on, pp is the object with the electrons (or holes) shifted by one space
     int dsteps=nds; //nds
-
+    //num_core threads to parallel the code.
     omp_set_num_threads(num_core);
     
-    vector<vector<LATTICE> > ll(num_core, vector<LATTICE>(invNu)), pp(num_core, vector<LATTICE>(invNu));//do this to avoid wrong memory access since openmp share memory.
+    vector<vector<LATTICE> > ll(num_core, vector<LATTICE>(invNu)), pp(num_core, vector<LATTICE>(invNu));//do this to avoid accessing wrong memory since openmp shares memory.
     for (int k=0; k<num_core; k++) for (int i=0; i<invNu; i++) {ll[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i); pp[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);}
     
     for (unsigned nbin=0; nbin<nBins; nbin++) {
@@ -731,7 +716,7 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
         #pragma omp parallel for
         for(int b=0; b<dsteps; b++) {
             int coren = omp_get_thread_num();
-            int dKx,dKy;
+//            int dKx,dKy;
             vector<vector<int> > new_ds_ll, new_ds_pp;
             new_ds_ll=old_ds;
             new_ds_pp=old_ds;
@@ -741,21 +726,22 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
                 new_ds_ll.push_back(extra_ds[b]);
                 new_ds_pp.push_back(extra_ds[supermod(b+1,nds)]);
                 
-                dKx=2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
-                dKy=2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
+//                dKx=2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
+//                dKy=2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
                 if(type=="twod"){
-                    dKx=0; dKy=0;
+//                    dKx=0; dKy=0;
                     new_ds_ll.push_back(extra_ds[supermod(b+nds/2,nds)]);
                     new_ds_pp.push_back(extra_ds[supermod(b+nds/2+1,nds)]);
                 }
                 //this removes one or two electrons from the list of ds, if we are doing holes
-            }else{
+            }
+            if(holes){
                 new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[b]),new_ds_ll.end());
                 new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+1,nds)]),new_ds_pp.end());
-                dKx=-2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
-                dKy=-2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
+//                dKx=-2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
+//                dKy=-2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
                 if(type=="mtwod"){
-                    dKx=0; dKy=0;
+//                    dKx=0; dKy=0;
                     new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[supermod(b+nds/2,nds)]),new_ds_ll.end());
                     new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+nds/2+1,nds)]),new_ds_pp.end());
                 }
@@ -772,8 +758,14 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
             //        energy=0;
             energy[b]=0.;
             
+            //alphabar = K1 L1/Nphi + K2 L2/Nphi = d/invNu. (K1,K2) are many body momentums.
+            //So for d = d1 L1/Ne + d2 L2/Ne => K1=sum d1, K2=sum d2.
+            //dKx/y is divided by invNu, because in lattice.cpp dsum is defined on L/Nphi lattice.
+            int dKx=ll[0].dsum[0]/invNu-pp[0].dsum[0]/invNu, dKy=ll[0].dsum[1]/invNu-pp[0].dsum[1]/invNu;
+            
             for (int k=0; k<nMeas; k++) {
-                for (int i=0; i<invNu; i++) ll[coren][i].step(nSteps);
+                for (int i=0; i<invNu; i++)
+                    ll[coren][i].step(nSteps);
                 
                 energy[b]+=ll[coren][0].coulomb_energy();
                 
@@ -781,10 +773,10 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
                     for (int j=0; j<invNu; j++) {
                         complex<double> temp;
                         temp=pp[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
-                        overlaps[b][0](i,j)+=temp*ll[coren][i].rhoq(dKx,dKy,ll[coren][i].get_locs());//?
+                        overlaps[b][0](i,j)+=temp*ll[coren][i].rhoq(dKx,dKy,ll[coren][i].get_locs());// <ll|rhoq|pp>
                         overlaps[b][1](i,j)+=norm(temp);
                         temp=ll[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
-                        overlaps[b][2](i,j)+=temp;
+                        overlaps[b][2](i,j)+=temp;// <ll|ll>
                         overlaps[b][3](i,j)+=norm(temp);
                     }
                 }
@@ -824,6 +816,7 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
         
         double avephase=0.;
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
+        
         //write into outfile.
         outfile<<"----------\nnBin="<<nbin<<endl;
         outfile<<"Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
@@ -846,8 +839,7 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
         outfile<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
         outfile<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl<<endl;
         
-        
-        //write into outfile2.
+        //write into outfile2. Same data, just for Mathematica convenience.
         outfile2<<"nBin="<<nbin<<", Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
         for (int b=0; b<dsteps; b++) {
             for (int i=0; i<invNu; i++) outfile2<<datas[b].ang[i]<<" ";//output phases in each step.
@@ -1005,9 +997,10 @@ void phase_variance(){
         pp[i].set_ds(ds1);
     }
     
-    int dKx, dKy;
-    dKx=-invNu*(extra_ds[1][0]-extra_ds[0][0]);
-    dKy=-invNu*(extra_ds[1][1]-extra_ds[0][1]);
+    //alphabar = K1 L1/Nphi + K2 L2/Nphi = d/invNu. (K1,K2) are many body momentums.
+    //So for d = d1 L1/Ne + d2 L2/Ne => K1=sum d1, K2=sum d2.
+    //dKx/y is divided by invNu, because in lattice.cpp dsum is defined on L/Nphi lattice.
+    int dKx=ll[0].dsum[0]/invNu-pp[0].dsum[0]/invNu, dKy=ll[0].dsum[1]/invNu-pp[0].dsum[1]/invNu;
     
     //Monte Carlo Part & Output.
     for (unsigned nbin=0; nbin<nBins; nbin++) {
@@ -1021,13 +1014,14 @@ void phase_variance(){
         }
         
         for (int k=0; k<nMeas; k++) {
-            for (int i=0; i<invNu; i++) ll[i].step(nSteps);
+            for (int i=0; i<invNu; i++)
+                ll[i].step(nSteps);
             
             for (int i=0; i<invNu; i++) {
                 for (int j=0; j<invNu; j++) {
                     complex<double> temp;
                     temp=pp[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
-                    overlaps[0](i,j)+=temp*ll[i].rhoq(dKx,dKy,ll[i].get_locs());//?
+                    overlaps[0](i,j)+=temp*ll[i].rhoq(dKx,dKy,ll[i].get_locs());
                     overlaps[1](i,j)+=norm(temp);
                     temp=ll[j].get_wf(ll[i].get_locs())/ll[i].get_wf(ll[i].get_locs());
                     overlaps[2](i,j)+=temp;
@@ -1047,67 +1041,64 @@ void phase_variance(){
         outfile<<nbin<<" "<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[1])<<endl;
         outfile<<nbin<<" "<<berrymatrix(0,0).real()<<" "<<berrymatrix(0,0).imag()<<" "<<berrymatrix(1,1).real()<<" "<<berrymatrix(1,1).imag()<<" "<<berrymatrix(0,1).real()<<" "<<berrymatrix(0,1).imag()<<" "<<berrymatrix(1,0).real()<<" "<<berrymatrix(1,0).imag()<<endl;
         outfile<<endl;
-        
     }
     outfile.close();
 }
 
-void ne4onestep(){
-    ofstream outfile("M0823");
-    int Ne=4,invNu=2,nWarmup=5000,nMeas=500,nSteps=20,nBins=5000,seed=0;
-    outfile<<"Ne=4, invNu=2, nWarmup="<<nWarmup<<", nMeas="<<nMeas<<", nSteps="<<nSteps<<", nBins="<<nBins<<endl;
+void onestep(int ne, string output_name){
+    ofstream outfile(output_name.c_str());
+    int Ne=ne,invNu=2,nWarmup=5000,nMeas=500,nSteps=20,nBins=5000,seed=0,Nphi=Ne*invNu;
+    outfile<<"Ne="<<Ne<<", invNu=2, nWarmup="<<nWarmup<<", nMeas="<<nMeas<<", nSteps="<<nSteps<<", nBins="<<nBins<<endl;
     bool testing=false;
-    int Nphi=Ne*invNu;
     //initialize MC object
     
     //set ds.
     vector<vector<vector<int>>> ds(2);
-    ds[0].push_back(vector<int>{0, 0});
-    ds[0].push_back(vector<int>{0, 1});
-    ds[0].push_back(vector<int>{0,-1});
-    ds[1].push_back(vector<int>{0, 0});
-    ds[1].push_back(vector<int>{0, 1});
-    ds[1].push_back(vector<int>{0,-1});
-    
-    ds[0].push_back(vector<int>{-1, 1});
-    ds[1].push_back(vector<int>{-1, 0});
+    if (Ne==2) {
+        ds[0].push_back(vector<int>{0, 0}); ds[0].push_back(vector<int>{1, 0});
+        ds[1].push_back(vector<int>{0, 0}); ds[1].push_back(vector<int>{0, 1});
+    }
+    if (Ne==3) {
+        ds[0].push_back(vector<int>{ 1, 0});
+        ds[0].push_back(vector<int>{-1, 0});
+        ds[0].push_back(vector<int>{ 0, 1});
+        ds[1].push_back(vector<int>{ 1, 0});
+        ds[1].push_back(vector<int>{ 0, 1});
+        ds[1].push_back(vector<int>{ 0, 0});
+    }
+    if (Ne==4) {
+        ds[0].push_back(vector<int>{0, 0});
+        ds[0].push_back(vector<int>{0, 1});
+        ds[0].push_back(vector<int>{0, -1});
+        ds[1].push_back(vector<int>{0, 0});
+        ds[1].push_back(vector<int>{0, 1});
+        ds[1].push_back(vector<int>{0, -1});
+        
+        ds[0].push_back(vector<int>{-1, 0});
+        ds[1].push_back(vector<int>{-1, 1});
+    }
     
     //set cfl wfs.
     vector<LATTICE> ll(invNu), pp(invNu);
     for (int i=0; i<invNu; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
-        ll[i].set_ds(ds[0]);
+        ll[i].set_ds(ds[1]);
         pp[i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);
-        pp[i].set_ds(ds[1]);
-    }
-    vector<vector<int>> dsum(2, vector<int>(2));
-    for (int dn=0; dn<2; dn++) {
-        for (int i=0; i<ds[dn].size(); i++) {
-            dsum[dn][0]+=ds[dn][i][0];
-            dsum[dn][1]+=ds[dn][i][1];
-        }
+        pp[i].set_ds(ds[0]);
     }
     //many body K.
-    int dKx=dsum[0][0]-dsum[1][0], dKy=dsum[0][1]-dsum[1][1];
-//    cout<<"dKx, dKy="<<dKx<<" "<<dKy<<endl;
-    
-//    //test.
-//    vector<vector<int>> zs(Ne, vector<int>(2));
-//    for (int i=0; i<Ne; i++) {
-//        zs[i][0]=i;
-//        zs[i][1]=-i;
-//    }
-//    for (int i=0; i<invNu; i++) {
-//        cout<<"ll"<<i<<" = "<<ll[i].get_wf(zs)<<endl;
-//        cout<<"pp"<<i<<" = "<<pp[i].get_wf(zs)<<endl;
-//    }
-//    complex<double> out=0.;
-//    vector<complex<double>> omega=vector<complex<double> >(2*Nphi);
-//    for(int i=0;i<2*Nphi;i++) omega[i]=polar(1.,M_PI*i/(1.*Nphi));
-//    for (int i=0; i<zs.size(); i++) {
-//        out+=omega[supermod((-2*dKx*zs[i][1]+2*dKy*zs[i][0]), 2*Nphi)];
-//    }
-//    cout<<"rhoq="<<out<<endl;
+    for (int i=0; i<invNu; i++) {
+        for (int j=0; j<2; j++) {
+            if (ll[i].dsum[j]%invNu!=0 || pp[i].dsum[j]%invNu!=0) {
+                cout<<"dsum mod invNu != 0, somewhere wrong!"<<endl;
+                exit(0);
+            }
+        }
+    }
+    //alphabar = K1 L1/Nphi + K2 L2/Nphi = d/invNu. (K1,K2) are many body momentums.
+    //So for d = d1 L1/Ne + d2 L2/Ne => K1=sum d1, K2=sum d2.
+    //dKx/y is divided by invNu, because in lattice.cpp dsum is defined on L/Nphi lattice.
+    int dKx=ll[0].dsum[0]/invNu-pp[0].dsum[0]/invNu, dKy=ll[0].dsum[1]/invNu-pp[0].dsum[1]/invNu;
     
     //Monte Carlo Part & Output.
     for (unsigned nbin=0; nbin<nBins; nbin++) {
@@ -1124,7 +1115,7 @@ void ne4onestep(){
         for (int k=0; k<nMeas; k++) {
             for (int i=0; i<invNu; i++)
                 ll[i].step(nSteps);
-            
+        
             for (int i=0; i<invNu; i++) {
                 for (int j=0; j<invNu; j++) {
                     complex<double> temp;
@@ -1188,6 +1179,6 @@ void ne4onestep(){
         }
         outfile<<endl;
     }
-        
+    
     outfile.close();
 }

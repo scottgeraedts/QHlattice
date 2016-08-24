@@ -76,6 +76,7 @@ public:
 	vector <vector<int> > get_locs();
 	complex<double> formfactor(int qx, int qy);
 	complex<double> rhoq(int qx ,int qy, const vector< vector<int> > &zs);
+    vector<int> dsum;//an integer defined on an NPhi lattice
 	
 private:
 	void sum_locs(int []);
@@ -110,7 +111,6 @@ private:
 	int one,zero;
 	vector< complex<double> > omega;
     vector<vector<int> > ds;//an integer defined on an Ne lattice
-    vector<int> dsum;//an integer defined on an NPhi lattice
 };
 
 #endif
