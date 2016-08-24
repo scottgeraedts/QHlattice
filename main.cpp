@@ -22,31 +22,6 @@ int main(){
 //    nelatticesum(2);
     
 }
-void CFL_det_errorprone(){
-    double theta=M_PI/2, alpha=1.; int Nphi=18, invNu=2, Ne=9;
-    //    vector<vector<double> > ws(2, vector<double>(2));
-    vector<vector<int> > zs(Ne, vector<int>(2)), ds(9, vector<int>(2)); vector<double> dbar=vector<double> {0., 0.};
-    
-    for (int i=0; i<Ne; i++) {zs[i][0]=2; zs[i][1]=i+1;}//calculate value of wavefunction in this particular zs configuration.
-    for (int i=0; i<3; i++) {for (int j=0; j<3; j++) {ds[i*3+j]=vector<int>{i-1, j-1};}}
-    vector<int> ds_tmp=vector<int>{1, 1};
-    ds.erase(remove(ds.begin(),ds.end(),ds_tmp),ds.end());
-    ds.push_back(vector<int>{7, 8});
-    
-    
-    LATTICE cfl(Ne, invNu, 0, "CFL", 0, 1);//com zeros are set as (-0.25,0) and (0.25,0).
-    cfl.set_ds(ds); cfl.print_ds();
-
-    cout<<"w.f.="<<cfl.get_wf(zs)<<endl;
-    
-    vector<int> shift{3,5};
-    for (int i=0; i<ds.size(); i++) {
-        ds[i][0]+=shift[0];
-        ds[i][1]+=shift[1];
-    }
-    cfl.set_ds(ds); cfl.reset();
-    cout<<"w.f.="<<cfl.get_wf(zs)<<endl;
-}
 void test_laughlinwf(){
     bool testing=false; string type="laughlin"; int seed=0;
     int Ne=2, invNu=3, NPhi=6;
@@ -619,7 +594,9 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
             exit(0);
         }
         //this code does the same thing as above, but it lists all the positions just inside the fermi surface, where electrons should be removed if we are doing holes
-    }else{
+    }
+    
+    if(holes){
         if(tempNe==21){
             extra_ds.push_back(vector<int>{1,0});
             extra_ds.push_back(vector<int>{0,1});
@@ -692,6 +669,11 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
 //            extra_ds.push_back(vector<int>{-1,0});
             extra_ds.push_back(vector<int>{-1,1});
 //            extra_ds.push_back(vector<int>{0,1});
+        }else if(tempNe==5){
+            extra_ds.push_back(vector<int>{1,0});
+            extra_ds.push_back(vector<int>{0,1});
+            extra_ds.push_back(vector<int>{-1,0});
+            extra_ds.push_back(vector<int>{0,-1});
         }else{
             cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
             exit(0);
@@ -725,7 +707,6 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
             if(!holes){
                 new_ds_ll.push_back(extra_ds[b]);
                 new_ds_pp.push_back(extra_ds[supermod(b+1,nds)]);
-                
 //                dKx=2*(extra_ds[supermod(b+1,nds)][0]-extra_ds[b][0]);
 //                dKy=2*(extra_ds[supermod(b+1,nds)][1]-extra_ds[b][1]);
                 if(type=="twod"){

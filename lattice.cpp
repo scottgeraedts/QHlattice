@@ -649,7 +649,7 @@ complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 //		out+=omega[supermod((2*qx*locs[i][0]+2*qy*locs[i][1]), 2*NPhi)];//need to be checked.
         out+=omega[supermod((2*qx*locs[i][1]-2*qy*locs[i][0]), 2*NPhi)];//temportarily modify.
 	}
-//	return out/(formfactor(qx,qy)*(1.*NPhi));//remember to change back.
+//	return out/(formfactor(qx,qy)*(1.*NPhi));
     return out;
 }
 void LATTICE::reset(){
@@ -713,7 +713,6 @@ void LATTICE::check_sanity(){
 		cout<<"laughlin-hole but haven't set the hole position"<<endl;
 		exit(0);
 	}
-	
 }
 //changes the dbar (which ordinarily is the sum of d's) to whatever we want
 void LATTICE::change_dbar_parameter(double dbarx, double dbary){
@@ -766,11 +765,6 @@ inline void LATTICE::det_helper(const vector<int> &z1, const vector<int> &z2, co
 }
 inline double LATTICE::det_helper(int z1, int z2, int d, double dbarp){ return z1-z2-d*invNu+dbarp;}
 
-//complex<double> LATTICE::jies_weierstrass(double x, double y){
-//	complex<double> z(x,y);
-//	complex<double> out=weiers.wsigma(z)*exp(-0.5*pow(z,2)*weiers.Gbar/(1.))*exp(-0.5*z*conj(z)/(1.*NPhi));
-//	return out;
-//}
 void LATTICE::cold_start(){
 	for(int i=0;i<Ne;i++){
 		locs[i][0]=i;
