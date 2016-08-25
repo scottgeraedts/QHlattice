@@ -649,8 +649,8 @@ complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 //		out+=omega[supermod((2*qx*locs[i][0]+2*qy*locs[i][1]), 2*NPhi)];//need to be checked.
         out+=omega[supermod((2*qx*locs[i][1]-2*qy*locs[i][0]), 2*NPhi)];//temportarily modify.
 	}
-//	return out/(formfactor(qx,qy)*(1.*NPhi));
-    return out;
+	return out/(formfactor(qx,qy)*(1.*NPhi));
+//    return out;
 }
 void LATTICE::reset(){
 	tries=0; accepts=0;

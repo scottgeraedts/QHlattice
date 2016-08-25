@@ -10,7 +10,11 @@ int main(){
     void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
     vector<data> datas; int num_core;
     num_core=2;
-    CFL_berry_phases_parallel(datas, "params_ne8", "CFL_berryphase_ne8", num_core);
+//    CFL_berry_phases_parallel(datas, "params_ne21", "CFL_berryphase_ne21", num_core);
+    void CFL_ne20hole_berryphase(vector<data> &datas, string params_name, string out_name, int num_core, string loop);
+    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "fermisurface");
+    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "surround0");
+    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "notsurround0");
     
     void phase_variance();
 //    phase_variance();
@@ -472,6 +476,7 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
     vector<vector<int> > old_ds=templl.get_ds(), extra_ds;
     //old_dbar is the center of the circular fermi surface
     vector<double> old_dbar=templl.get_dbar_parameter();
+    templl.print_ds();
     
     //this part of the code specifies all the grid points just outside the circle made up of tempNe electrons
     //we will loop through all these positions and add electrons to them
@@ -598,24 +603,25 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
     
     if(holes){
         if(tempNe==21){
-            extra_ds.push_back(vector<int>{1,0});
-            extra_ds.push_back(vector<int>{0,1});
-            extra_ds.push_back(vector<int>{-1,0});
-            extra_ds.push_back(vector<int>{0,-1});
+//            extra_ds.push_back(vector<int>{1,0});
+//            extra_ds.push_back(vector<int>{0,1});
+//            extra_ds.push_back(vector<int>{-1,0});
+//            extra_ds.push_back(vector<int>{0,-1});
             
-            //			extra_ds.push_back(vector<int>{2,0});
-            //			extra_ds.push_back(vector<int>{2,1});
-            //			extra_ds.push_back(vector<int>{1,2});
-            //			extra_ds.push_back(vector<int>{0,2});
-            //			extra_ds.push_back(vector<int>{-1,2});
-            //			extra_ds.push_back(vector<int>{-2,1});
-            //			extra_ds.push_back(vector<int>{-2,0});
-            //			extra_ds.push_back(vector<int>{-2,-1});
-            //			extra_ds.push_back(vector<int>{-1,-2});
-            //			extra_ds.push_back(vector<int>{0,-2});
-            //			extra_ds.push_back(vector<int>{1,-2});
-            //			extra_ds.push_back(vector<int>{2,-1});
-        }else if(tempNe==32){
+            			extra_ds.push_back(vector<int>{2,0});
+            			extra_ds.push_back(vector<int>{2,1});
+            			extra_ds.push_back(vector<int>{1,2});
+            			extra_ds.push_back(vector<int>{0,2});
+            			extra_ds.push_back(vector<int>{-1,2});
+            			extra_ds.push_back(vector<int>{-2,1});
+            			extra_ds.push_back(vector<int>{-2,0});
+            			extra_ds.push_back(vector<int>{-2,-1});
+            			extra_ds.push_back(vector<int>{-1,-2});
+            			extra_ds.push_back(vector<int>{0,-2});
+            			extra_ds.push_back(vector<int>{1,-2});
+            			extra_ds.push_back(vector<int>{2,-1});
+        }
+        else if(tempNe==32){
             extra_ds.push_back(vector<int>{3,0});
             extra_ds.push_back(vector<int>{3,1});
             extra_ds.push_back(vector<int>{3,2});
@@ -632,7 +638,8 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
             extra_ds.push_back(vector<int>{1,-2});
             extra_ds.push_back(vector<int>{2,-2});
             extra_ds.push_back(vector<int>{3,-1});
-        }else if(tempNe==57){
+        }
+        else if(tempNe==57){
             extra_ds.push_back(vector<int>{4,-1});
             extra_ds.push_back(vector<int>{4,0});
             extra_ds.push_back(vector<int>{4,1});
@@ -660,7 +667,8 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
             
             extra_ds.push_back(vector<int>{2,-3});
             extra_ds.push_back(vector<int>{3,-2});
-        }else if(tempNe==9){
+        }
+        else if(tempNe==9){
             extra_ds.push_back(vector<int>{1,1});
 //            extra_ds.push_back(vector<int>{1,0});
             extra_ds.push_back(vector<int>{1,-1});
@@ -669,7 +677,8 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
 //            extra_ds.push_back(vector<int>{-1,0});
             extra_ds.push_back(vector<int>{-1,1});
 //            extra_ds.push_back(vector<int>{0,1});
-        }else if(tempNe==5){
+        }
+        else if(tempNe==5){
             extra_ds.push_back(vector<int>{1,0});
             extra_ds.push_back(vector<int>{0,1});
             extra_ds.push_back(vector<int>{-1,0});
@@ -679,6 +688,7 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
             exit(0);
         }
     }
+    
     int nds=extra_ds.size();
     
     //ll is the object we will do monte carlo on, pp is the object with the electrons (or holes) shifted by one space
@@ -801,6 +811,216 @@ void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string o
 //                for (int j=0; j<invNu; j++) {normmatrix+=sqrt(norm(berrymatrix_step[b](i,j)));}
 //            }
 //            tmp.dfromnorm=normmatrix-normeigenvalue;
+            datas.push_back(tmp);
+        }
+        
+        double avephase=0.;
+        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
+        
+        //write into outfile.
+        outfile<<"----------\nnBin="<<nbin<<endl;
+        outfile<<"Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
+        for (int b=0; b<dsteps; b++) {
+            outfile<<"step = ("<<extra_ds[b][0]<<", "<<extra_ds[b][1]<<"),\n          phases = "; for (int i=0; i<invNu; i++) outfile<<datas[b].ang[i]<<" ";
+            outfile<<"\n          amplitude = "; for (int i=0; i<invNu; i++) outfile<<datas[b].amp[i]<<" ";
+            outfile<<"\n          energy = "<<energy[b]/(1.*nMeas*Ne)<<endl;
+        }
+        avephase=0.;
+        outfile<<"phase sum = "; for (int i=0; i<invNu; i++) {outfile<<phases[i]<<" "; avephase+=phases[i]/(1.*invNu);} outfile<<"\nphase average = "<<avephase<<endl;
+        
+        datas[0].ang_trace = arg(berrymatrix_integral.trace());
+        datas[0].det = arg(berrymatrix_integral.determinant());
+        outfile<<endl;
+        outfile<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
+        outfile<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) outfile<<abs(es.eigenvalues()[i])<<" "; outfile<<endl;
+        outfile<<"arg(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) outfile<<arg(es.eigenvalues()[i])<<" "; outfile<<endl;
+        avephase=0.; for (int i=0; i<invNu; i++) avephase+=arg(es.eigenvalues()[i])/(1.*invNu); outfile<<"ave arg(berrymatrix_integral.eigenvalue) = "<<avephase<<endl;
+        outfile<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
+        outfile<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
+        outfile<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl<<endl;
+        
+        //write into outfile2. Same data, just for Mathematica convenience.
+        outfile2<<"nBin="<<nbin<<", Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
+        for (int b=0; b<dsteps; b++) {
+            for (int i=0; i<invNu; i++) outfile2<<datas[b].ang[i]<<" ";//output phases in each step.
+            outfile2<<endl;
+            for (int i=0; i<invNu; i++) outfile2<<datas[b].amp[i]<<" ";//output amplitude in each step.
+            outfile2<<endl;
+            outfile2<<energy[b]/(1.*nMeas*Ne)<<endl;
+        }
+    }
+    outfile.close();
+    outfile2.close();
+}
+
+//calculate ne=20 (one hole) state berry, 3 loop configurations available: fermisurface, surround0, notsurround0. See extra_ds.
+void CFL_ne20hole_berryphase(vector<data> &datas, string params_name, string out_name, int num_core, string loop){
+    string output_name=out_name+"_"+loop;
+    ofstream outfile(output_name.c_str());
+    string outfile2name=output_name+"_Mathmatica";//output data in format easy for Mathematica to deal with.
+    ofstream outfile2(outfile2name.c_str());
+    int supermod(int k, int n);
+    int tempNe,Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    string type;
+    
+    //get inputs from the params file
+    ifstream infile(params_name.c_str());
+    //number of electrons, and inverse of filling fraction
+    infile>>tempNe>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    
+    if (tempNe!=21) {
+        cout<<"tempNe!=21"<<endl;
+        exit(0);
+    }
+    Ne=tempNe-1;
+    
+    //this instance of LATTICE is only to set up the circular fermi surface of tempNe electrons
+    LATTICE templl(tempNe, invNu, testing, "CFL", seed, 0);
+    //old_ds is the maximal circular fermi surface with tempNe electrons
+    vector<vector<int> > old_ds=templl.get_ds(), extra_ds;
+    //old_dbar is the center of the circular fermi surface
+    vector<double> old_dbar=templl.get_dbar_parameter();
+    templl.print_ds();
+    
+    if (loop=="fermisurface") {
+        extra_ds.push_back(vector<int>{2,0});
+        extra_ds.push_back(vector<int>{2,1});
+        extra_ds.push_back(vector<int>{1,2});
+        extra_ds.push_back(vector<int>{0,2});
+        extra_ds.push_back(vector<int>{-1,2});
+        extra_ds.push_back(vector<int>{-2,1});
+        extra_ds.push_back(vector<int>{-2,0});
+        extra_ds.push_back(vector<int>{-2,-1});
+        extra_ds.push_back(vector<int>{-1,-2});
+        extra_ds.push_back(vector<int>{0,-2});
+        extra_ds.push_back(vector<int>{1,-2});
+        extra_ds.push_back(vector<int>{2,-1});
+    }
+    else if (loop=="surround0") {
+        extra_ds.push_back(vector<int>{1,0});
+        extra_ds.push_back(vector<int>{0,1});
+        extra_ds.push_back(vector<int>{-1,0});
+        extra_ds.push_back(vector<int>{0,-1});
+    }
+    else if (loop=="notsurround0") {
+        extra_ds.push_back(vector<int>{1,-1});
+        extra_ds.push_back(vector<int>{0,-1});
+        extra_ds.push_back(vector<int>{-1,-1});
+        extra_ds.push_back(vector<int>{-1,-2});
+        extra_ds.push_back(vector<int>{0,-2});
+        extra_ds.push_back(vector<int>{1,-2});
+    }
+    else{
+        cout<<"unrecognized loop"<<endl;
+        exit(0);
+    }
+    
+    int nds=extra_ds.size();
+    
+    //ll is the object we will do monte carlo on, pp is the object with the electrons (or holes) shifted by one space
+    int dsteps=nds; //nds
+    //num_core threads to parallel the code.
+    omp_set_num_threads(num_core);
+    
+    vector<vector<LATTICE> > ll(num_core, vector<LATTICE>(invNu)), pp(num_core, vector<LATTICE>(invNu));//do this to avoid accessing wrong memory since openmp shares memory.
+    for (int k=0; k<num_core; k++) for (int i=0; i<invNu; i++) {ll[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i); pp[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i);}
+    
+    for (unsigned nbin=0; nbin<nBins; nbin++) {
+        //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
+        vector<vector<Eigen::MatrixXcd > > overlaps(nds, vector<Eigen::MatrixXcd>(4, Eigen::MatrixXcd::Zero(invNu,invNu) ) );
+        
+        //parallel programming begin.
+        vector<double> energy(dsteps);
+#pragma omp parallel for
+        for(int b=0; b<dsteps; b++) {
+            int coren = omp_get_thread_num();
+            //            int dKx,dKy;
+            vector<vector<int> > new_ds_ll, new_ds_pp;
+            new_ds_ll=old_ds;
+            new_ds_pp=old_ds;
+            
+            //depending on the mode, this adds one or two electons just outside the Fermi surface
+            new_ds_ll.erase(remove(new_ds_ll.begin(),new_ds_ll.end(),extra_ds[b]),new_ds_ll.end());
+            new_ds_pp.erase(remove(new_ds_pp.begin(),new_ds_pp.end(),extra_ds[supermod(b+1,nds)]),new_ds_pp.end());
+            
+            for (int i=0; i<invNu; i++) {
+                ll[coren][i].set_ds(new_ds_ll);
+                pp[coren][i].set_ds(new_ds_pp);
+                ll[coren][i].reset(); pp[coren][i].reset();
+                ll[coren][i].step(nWarmup);
+            }
+            //        cout<<"warmed up"<<endl;
+            //        pp[0].print_ds();
+            //        energy=0;
+            energy[b]=0.;
+            
+            //many body K.
+            for (int i=0; i<invNu; i++) {
+                for (int j=0; j<2; j++) {
+                    if (ll[coren][i].dsum[j]%invNu!=0 || pp[coren][i].dsum[j]%invNu!=0) {
+                        cout<<"dsum mod invNu != 0, somewhere wrong!"<<endl;
+                        exit(0);
+                    }
+                }
+            }
+            int dKx=ll[coren][0].dsum[0]/invNu-pp[coren][0].dsum[0]/invNu, dKy=ll[coren][0].dsum[1]/invNu-pp[coren][0].dsum[1]/invNu;
+            //alphabar = K1 L1/Nphi + K2 L2/Nphi = d/invNu. (K1,K2) are many body momentums.
+            //So for d = d1 L1/Ne + d2 L2/Ne => K1=sum d1, K2=sum d2.
+            //dKx/y is divided by invNu, because in lattice.cpp dsum is defined on L/Nphi lattice.
+            
+            for (int k=0; k<nMeas; k++) {
+                for (int i=0; i<invNu; i++)
+                    ll[coren][i].step(nSteps);
+                
+                energy[b]+=ll[coren][0].coulomb_energy();
+                
+                for (int i=0; i<invNu; i++) {
+                    for (int j=0; j<invNu; j++) {
+                        complex<double> temp;
+                        temp=pp[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
+                        overlaps[b][0](i,j)+=temp*ll[coren][i].rhoq(dKx,dKy,ll[coren][i].get_locs());// <ll|rhoq|pp>
+                        overlaps[b][1](i,j)+=norm(temp);
+                        temp=ll[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
+                        overlaps[b][2](i,j)+=temp;// <ll|ll>
+                        overlaps[b][3](i,j)+=norm(temp);
+                    }
+                }
+            }
+            
+            for (int l=0; l<4; l++) overlaps[b][l]/=(1.*nMeas);
+            overlaps[b][0]=overlaps[b][0].array()/overlaps[b][1].array().sqrt();
+            overlaps[b][2]=overlaps[b][2].array()/overlaps[b][3].array().sqrt();
+            hermitianize(overlaps[b][2]);
+            //        cout<<"energy: "<<energy/(1.*nMeas*Ne)<<endl;
+        }
+        //parallel programming end.
+        
+        vector<Eigen::MatrixXcd> berrymatrix_step(dsteps);
+        for (int b=0; b<dsteps; b++) berrymatrix_step[b] = overlaps[b][2].inverse() * overlaps[b][0];
+        
+        Eigen::MatrixXcd berrymatrix_integral = Eigen::MatrixXcd::Identity(invNu, invNu);
+        vector<double> phases(invNu, 0.);
+        datas.clear();//clear datas.
+        for (int b=0; b<dsteps; b++) {
+            Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_step[b]);
+            data tmp;
+            berrymatrix_integral *= berrymatrix_step[b];
+            for (int i=0; i<invNu; i++) {
+                phases[i]+=arg(es.eigenvalues()[i]);
+                tmp.num = b; tmp.amp[i] = abs(es.eigenvalues()[i]); tmp.ang[i] = arg(es.eigenvalues()[i]);
+            }
+            //            // dfromnorm. calculates deviation from normality.
+            //            double normeigenvalue=0., normmatrix=0.;
+            //            for (int i=0; i<invNu; i++) {normeigenvalue+=sqrt(norm(es.eigenvalues()[i]));}
+            //            for (int i=0; i<invNu; i++) {
+            //                for (int j=0; j<invNu; j++) {normmatrix+=sqrt(norm(berrymatrix_step[b](i,j)));}
+            //            }
+            //            tmp.dfromnorm=normmatrix-normeigenvalue;
             datas.push_back(tmp);
         }
         
