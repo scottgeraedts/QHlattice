@@ -19,7 +19,7 @@ int main(){
 //    CFL_ne20hole_berryphase(datas, "params_ne21_m=4", "CFL_berryphase_ne21_m=4", num_core, "fermisurface");
     
     void onestep(int ne, string output_name);
-    onestep(20, "M_20");
+//    onestep(20, "M_20");
     
 }
 void test_laughlinwf(){
@@ -911,20 +911,43 @@ void CFL_ne20hole_berryphase(vector<data> &datas, string params_name, string out
         extra_ds.push_back(vector<int>{0,-2});
         extra_ds.push_back(vector<int>{1,-2});
     }
+    else if (loop=="notsurround0_2") {
+        extra_ds.push_back(vector<int>{1,-1});
+        //extra_ds.push_back(vector<int>{0,-1});
+        extra_ds.push_back(vector<int>{-1,-1});
+        extra_ds.push_back(vector<int>{-1,-2});
+        //extra_ds.push_back(vector<int>{0,-2});
+        extra_ds.push_back(vector<int>{1,-2});
+    }
     else if (loop=="loop4") {
+        extra_ds.push_back(vector<int>{1,-1});
         extra_ds.push_back(vector<int>{0,-1});
         extra_ds.push_back(vector<int>{0,-2});
-        extra_ds.push_back(vector<int>{1,-1});
     }
-    else if (loop=="loop5"){
+    else if (loop=="loop5") {
         extra_ds.push_back(vector<int>{1,-1});
         extra_ds.push_back(vector<int>{0,-1});
         extra_ds.push_back(vector<int>{1,-2});
     }
-    else if (loop=="loop6"){
+    else if (loop=="loop6") {
+        extra_ds.push_back(vector<int>{2,0});
+        extra_ds.push_back(vector<int>{1,0});
+        extra_ds.push_back(vector<int>{1,-1});
+    }
+    else if (loop=="loop7") {
         extra_ds.push_back(vector<int>{2,0});
         extra_ds.push_back(vector<int>{1,0});
         extra_ds.push_back(vector<int>{2,-1});
+    }
+    else if (loop=="loop8") {
+        extra_ds.push_back(vector<int>{1,0});
+        extra_ds.push_back(vector<int>{0,0});
+        extra_ds.push_back(vector<int>{0,-1});
+    }
+    else if (loop=="loop9") {
+        extra_ds.push_back(vector<int>{1,0});
+        extra_ds.push_back(vector<int>{0,0});
+        extra_ds.push_back(vector<int>{1,-1});
     }
     else{
         cout<<"unrecognized loop"<<endl;
