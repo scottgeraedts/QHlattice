@@ -66,9 +66,10 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 	omega=vector <complex<double> >(2*NPhi);
 	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi)); //note that spacings of these is pi/N, not 2pi/N
 
-	sq=vector<vector<complex<double> > > (NPhi, vector<complex<double> >(NPhi,0));
-	sq2=vector<vector<double> > (NPhi, vector<double>(NPhi,0));
-	sq3=vector <vector< vector< vector <complex<double> > > > >(NPhi, vector <vector <vector< complex<double> > > >(NPhi, vector <vector <complex<double> > >(NPhi, vector<complex<double> >(NPhi,0))));
+//	sq=vector<vector<complex<double> > > (NPhi, vector<complex<double> >(NPhi,0));
+//	sq2=vector<vector<double> > (NPhi, vector<double>(NPhi,0));
+//	sq3=vector <vector< vector< vector <complex<double> > > > >(NPhi, vector <vector <vector< complex<double> > > >(NPhi, vector <vector <complex<double> > >(NPhi, vector<complex<double> >(NPhi,0))));
+    //comment out sq3, otherwise memory exceed easilly for large invNu state.
 	delete [] sl2z;
 }
 void LATTICE::step(int Nsteps){

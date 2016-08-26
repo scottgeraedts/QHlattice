@@ -9,13 +9,14 @@ int main(){
     //CFL berry phase.
     void CFL_berry_phases_parallel(vector<data> &datas, string params_name, string output_name, int num_core);
     vector<data> datas; int num_core;
-    num_core=2;
+    num_core=4;
 //    CFL_berry_phases_parallel(datas, "params_ne21", "CFL_berryphase_ne21", num_core);
     void CFL_ne20hole_berryphase(vector<data> &datas, string params_name, string out_name, int num_core, string loop);
 //    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "fermisurface");
 //    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "surround0");
 //    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "notsurround0");
-    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "loop4");
+//    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "loop4");
+    CFL_ne20hole_berryphase(datas, "params_ne21_m=4", "CFL_berryphase_ne21_m=4", num_core, "fermisurface");
     
     void phase_variance();
 //    phase_variance();
