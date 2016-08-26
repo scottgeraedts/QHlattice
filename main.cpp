@@ -12,9 +12,10 @@ int main(){
     num_core=2;
 //    CFL_berry_phases_parallel(datas, "params_ne21", "CFL_berryphase_ne21", num_core);
     void CFL_ne20hole_berryphase(vector<data> &datas, string params_name, string out_name, int num_core, string loop);
-    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "fermisurface");
-    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "surround0");
-    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "notsurround0");
+//    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "fermisurface");
+//    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "surround0");
+//    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "notsurround0");
+    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "loop4");
     
     void phase_variance();
 //    phase_variance();
@@ -914,6 +915,11 @@ void CFL_ne20hole_berryphase(vector<data> &datas, string params_name, string out
         extra_ds.push_back(vector<int>{-1,-2});
         extra_ds.push_back(vector<int>{0,-2});
         extra_ds.push_back(vector<int>{1,-2});
+    }
+    else if (loop=="loop4") {
+        extra_ds.push_back(vector<int>{0,-1});
+        extra_ds.push_back(vector<int>{0,-2});
+        extra_ds.push_back(vector<int>{1,-1});
     }
     else{
         cout<<"unrecognized loop"<<endl;
