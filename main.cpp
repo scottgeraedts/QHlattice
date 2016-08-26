@@ -18,15 +18,6 @@ int main(){
 //    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "loop4");
     CFL_ne20hole_berryphase(datas, "params_ne21_m=4", "CFL_berryphase_ne21_m=4", num_core, "fermisurface");
     
-    void phase_variance();
-//    phase_variance();
-    
-    void onestep(int ne, string output_name);
-//    onestep(3, "ne3output");
-    
-    void nelatticesum(int ne);
-//    nelatticesum(2);
-    
 }
 void test_laughlinwf(){
     bool testing=false; string type="laughlin"; int seed=0;
