@@ -16,7 +16,10 @@ int main(){
 //    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "surround0");
 //    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "notsurround0");
 //    CFL_ne20hole_berryphase(datas, "params_ne21", "CFL_berryphase_ne21", num_core, "loop4");
-    CFL_ne20hole_berryphase(datas, "params_ne21_m=4", "CFL_berryphase_ne21_m=4", num_core, "fermisurface");
+//    CFL_ne20hole_berryphase(datas, "params_ne21_m=4", "CFL_berryphase_ne21_m=4", num_core, "fermisurface");
+    
+    void onestep(int ne, string output_name);
+    onestep(20, "M_20");
     
 }
 void test_laughlinwf(){
@@ -913,6 +916,16 @@ void CFL_ne20hole_berryphase(vector<data> &datas, string params_name, string out
         extra_ds.push_back(vector<int>{0,-2});
         extra_ds.push_back(vector<int>{1,-1});
     }
+    else if (loop=="loop5"){
+        extra_ds.push_back(vector<int>{1,-1});
+        extra_ds.push_back(vector<int>{0,-1});
+        extra_ds.push_back(vector<int>{1,-2});
+    }
+    else if (loop=="loop6"){
+        extra_ds.push_back(vector<int>{2,0});
+        extra_ds.push_back(vector<int>{1,0});
+        extra_ds.push_back(vector<int>{2,-1});
+    }
     else{
         cout<<"unrecognized loop"<<endl;
         exit(0);
@@ -1264,7 +1277,7 @@ void phase_variance(){
 
 void onestep(int ne, string output_name){
     ofstream outfile(output_name.c_str());
-    int Ne=ne,invNu=2,nWarmup=5000,nMeas=500,nSteps=20,nBins=5000,seed=0,Nphi=Ne*invNu;
+    int Ne=ne,invNu=2,nWarmup=5000,nMeas=100,nSteps=20,nBins=100,seed=0,Nphi=Ne*invNu;
     outfile<<"Ne="<<Ne<<", invNu=2, nWarmup="<<nWarmup<<", nMeas="<<nMeas<<", nSteps="<<nSteps<<", nBins="<<nBins<<endl;
     bool testing=false;
     //initialize MC object
@@ -1293,6 +1306,14 @@ void onestep(int ne, string output_name){
         
         ds[0].push_back(vector<int>{-1, 0});
         ds[1].push_back(vector<int>{-1, 1});
+    }
+    if (Ne==20) {
+        LATTICE templl(21, 2, false, "CFL", 0, 0);
+        vector<vector<int> > old_ds=templl.get_ds();
+        
+        ds[0]=old_ds; ds[1]=old_ds;
+        ds[0].erase(remove(ds[0].begin(),ds[0].end(),vector<int>{0,-1}),ds[0].end());
+        ds[1].erase(remove(ds[1].begin(),ds[1].end(),vector<int>{0,-2}),ds[1].end());
     }
     
     //set cfl wfs.
