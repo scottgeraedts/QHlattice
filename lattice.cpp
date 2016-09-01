@@ -11,6 +11,10 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 	NPhi=Ne*invNu;
 	if(type=="laughlin-hole") NPhi++;
     
+    //set in_determinant_rescaling.
+    if (type=="CFL")
+        in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
+    
     //make l1, l2 through theta, alpha.
     L1=sqrt(1.*M_PI*NPhi/sin(theta))*alpha;
     L2=sqrt(1.*M_PI*NPhi/sin(theta))/alpha*polar(1.,theta);
@@ -49,6 +53,9 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
         ws0[i][0]=( (i+0.5)/(1.*invNu)-0.5);
         ws0[i][1]=gs/(1.*invNu);
     }
+//    ws0[0][0]=-0.2; ws0[0][1]=gs/(1.*invNu);//Generic COM zeros: (-0.2,0)(0.3,0.1) for gs=0, (-0.2,0.5)(0.3,0.6) for gs=1. invNu=2;
+//    ws0[1][0]= 0.3; ws0[1][1]=0.1+gs/(1.*invNu);
+    
     set_ds(ds);//set ds, and reset ws.
     
 	holes_set=false;
@@ -71,6 +78,23 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 //	sq3=vector <vector< vector< vector <complex<double> > > > >(NPhi, vector <vector <vector< complex<double> > > >(NPhi, vector <vector <complex<double> > >(NPhi, vector<complex<double> >(NPhi,0))));
     //comment out sq3, otherwise memory exceed easilly for large invNu state.
 	delete [] sl2z;
+}
+double LATTICE::get_in_det_rescaling(int Ne, int invNu){
+    double rescaling=1.;
+    if (invNu==2) {
+        if (Ne<15) rescaling=1.;
+        else if (Ne>=15 && Ne<=38) rescaling=0.28;
+        else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
+    }
+    else if (invNu==4) {
+        if (Ne<15) rescaling=0.2;
+        else if (Ne>=15 && Ne<=19) rescaling=0.12;
+        else if (Ne==20) rescaling=0.105;
+        else if (Ne==21) rescaling=0.095;
+        else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
+    }
+    else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
+    return rescaling;
 }
 void LATTICE::step(int Nsteps){
 	for(int i=0;i<Nsteps*Ne;i++){
@@ -739,6 +763,10 @@ void LATTICE::change_dbar_parameter(double dbarx, double dbary){
 	}
 }
 void LATTICE::set_ds(vector< vector<int> > tds){
+    if (tds.size()!=Ne) {
+        cout<<"cannot set ds, ds.size() wrong."<<endl;
+        exit(0);
+    }
     ds=tds; dsum=vector<int>(2,0);
 	for(int i=0;i<Ne;i++){
         dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu; //'ds' is on L/Ne lattice, 'dsum' is on L/Nphi lattice.

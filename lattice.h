@@ -13,8 +13,9 @@
 using namespace std;
 
 //this number is multiplied by every term in the determinants to ensure that they don't overflow
-const double in_determinant_rescaling=0.2;
-//const double in_determinant_rescaling=1.;
+//const double in_determinant_rescaling=0.2;
+
+double get_in_det_rescaling(int Ne, int invNu);
 
 extern"C"{
 	void z_function_(double *x, double *y, complex<double> *l1, complex<double> *l2, int * rationalize, int *denom, complex<double> *z);
@@ -44,7 +45,7 @@ public:
     
     vector<double> hole;
     bool fermions,holes_set;
-
+    
 	//stepping functions
     vector<double> dbar_parameter;
 	bool testing; // output 'running_weight' and 'get_weight()', useful in debug.
@@ -79,6 +80,8 @@ public:
     vector<int> dsum;//an integer defined on an NPhi lattice
 	
 private:
+    double get_in_det_rescaling(int Ne, int invNu);
+    double in_determinant_rescaling;
 	void sum_locs(int []);
 	void setup_coulomb();
 //	void setup_weierstrass();

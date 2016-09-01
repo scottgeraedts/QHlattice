@@ -42,32 +42,11 @@ void single_run(){
 	//initialize MC object
     
     int gs=0;
-	LATTICE ds_generator(9,2,testing,type,seed,0);
+	LATTICE ds_generator(Ne, invNu, testing, type, seed, 0);
 	vector< vector<int> > old_ds=ds_generator.get_ds();
-	vector<int> temp_ds(2);
-
-//    cout<<"ds.size = "<<old_ds.size()<<endl;
-//    cout<<"print out ds"<<endl;
-//    for (int i=0; i<old_ds.size(); i++) {
-//        for (int j=0; j<old_ds[i].size(); j++) {
-//            cout<<old_ds[i][j]<<" ";
-//        }
-//        cout<<endl;
-//    }
-    
-	//remove a d at -1,-1
-	temp_ds[0]=-1; temp_ds[1]=-1;
-	old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
-
-	temp_ds[0]=1; temp_ds[1]=1;
-	old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
-
-//	//add a d at 2,2
-	temp_ds[0]=2; temp_ds[1]=2;
-	old_ds.push_back(temp_ds);
 
 	LATTICE ll(Ne,invNu, testing, type, seed, gs);
-	ll.set_ds(old_ds);
+//	ll.set_ds(old_ds);
     ll.print_ds();
 
 	ofstream outfile("out"), eout("energy");
@@ -77,45 +56,45 @@ void single_run(){
         ll.reset();
         ll.step(nWarmup);
         double E=0,E2=0;
-        //double P=0,P2=0,three=0;
-        double e; //,p;
+        double P=0,P2=0,three=0;
+        double e ,p;
         complex<double> berry_phase(0,0);
         deque<double> e_tracker, p_tracker;
-        int Ntrack=10;
+        int Ntrack=100;
         vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
         for(int i=0;i<nMeas;i++){
             ll.step(nSteps);
             e=ll.coulomb_energy();
             E+=e;
             E2+=e*e;
-            //			p=log(ll.running_weight);
-            //			P+=p;
+            p=ll.running_weight;
+            P+=p;
             eout<<e<<endl;
-            //			//autocorrelations
-            //			e_tracker.push_front(e);
-            //			p_tracker.push_front(p);
-            //			if(i>=Ntrack){
-            //				for(int j=0;j<Ntrack;j++){
-            //					autocorr_e[j]+=e_tracker[j]*e;
-            //					autocorr_p[j]+=p_tracker[j]*p;
-            //				}
-            //				e_tracker.pop_back();
-            //				p_tracker.pop_back();
-            //			}
+            //autocorrelations
+            e_tracker.push_front(e);
+            p_tracker.push_front(p);
+            if(i>=Ntrack){
+                for(int j=0;j<Ntrack;j++){
+                    autocorr_e[j]+=e_tracker[j]*e;
+                    autocorr_p[j]+=p_tracker[j]*p;
+                }
+                e_tracker.pop_back();
+                p_tracker.pop_back();
+            }
             
 //            ll.update_structure_factors();
         }
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
         
-        //		ofstream auto_out("auto");
-        //		for(int j=0;j<Ntrack;j++){
-        //			auto_out<<j+1<<" ";
-        //			auto_out<<autocorr_e[j]/(1.*(nMeas-Ntrack))<<" "<<pow(E/(1.*nMeas),2)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))<<" ";
-        //			auto_out<<autocorr_p[j]/(1.*(nMeas-Ntrack))<<" "<<pow(P/(1.*nMeas),2)<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<" ";
-        //			auto_out<<endl;
+        ofstream auto_out("auto");
+        for(int j=0;j<Ntrack;j++){
+            auto_out<<j+1<<" ";
+            auto_out<<autocorr_e[j]/(1.*(nMeas-Ntrack))<<" "<<pow(E/(1.*nMeas),2)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))<<" ";
+            auto_out<<autocorr_p[j]/(1.*(nMeas-Ntrack))<<" "<<pow(P/(1.*nMeas),2)<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<" ";
+            auto_out<<endl;
+        }
         
-        //		}
     }
     outfile<<endl;
 //    ll.print_structure_factors(nMeas*nBins);
@@ -276,6 +255,69 @@ void coul_energy_CFL_dbar(LATTICE& edbar, double& ave_E, int nWarmup, int nMeas,
         sumE+=E/(1.*nMeas*edbar.Ne);
     }
     ave_E=sumE/(1.*nBins);
+}
+
+void CFL_energy_var(){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    string type;
+    ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    Ne=5; nMeas=1000;
+    int Nphi=Ne*invNu, gs=0; double theta=0.5*M_PI, alpha=1.0;
+    
+    int n=3;
+    vector<vector<vector<int>>> ds(n);
+    vector<LATTICE> cfls(n);
+    if (Ne==5) {
+        ds[0].push_back(vector<int>{0,0});
+        ds[0].push_back(vector<int>{0,1});
+        ds[0].push_back(vector<int>{1,0});
+        ds[0].push_back(vector<int>{-1,0});
+        ds[0].push_back(vector<int>{1,-1});
+        
+        ds[1].push_back(vector<int>{0,0});
+        ds[1].push_back(vector<int>{0,1});
+        ds[1].push_back(vector<int>{1,0});
+        ds[1].push_back(vector<int>{1,1});
+        ds[1].push_back(vector<int>{2,0});
+        
+        ds[2].push_back(vector<int>{0,0});
+        ds[2].push_back(vector<int>{0,1});
+        ds[2].push_back(vector<int>{1,0});
+        ds[2].push_back(vector<int>{0,-1});
+        ds[2].push_back(vector<int>{-1,0});
+    }
+    for (unsigned i=0; i<n; i++) {
+        cfls[i]=LATTICE(Ne, invNu, false, "CFL", seed, gs);
+        cfls[i].set_ds(ds[i]);
+    }
+    
+    ofstream outfile("cflenergy");
+    outfile<<n<<endl;
+    for (int nbin=0; nbin<nBins; nbin++) {
+        for (unsigned i=0; i<n; i++) {
+            cfls[i].reset(); cfls[i].step(nWarmup);
+        }
+        vector<double> Es(n), E2s(n), es(n);
+        for (int i=0; i<nMeas; i++) {
+            for (unsigned j=0; j<n; j++) {
+                cfls[j].step(nSteps);
+                es[j]=cfls[j].coulomb_energy();
+                Es[j]+=es[j]; E2s[j]+=es[j]*es[j];
+            }
+        }
+        for (unsigned i=0; i<n; i++) {
+            outfile<<nbin<<" "<<Es[i]/(1.*nMeas)<<" "<<E2s[i]/(1.*nMeas)<<" "<<endl;
+        }
+    }
+    outfile.close();
 }
 
 void coul_energy_laughlin(LATTICE& laughlin, double& ave_E, int nWarmup, int nMeas, int nSteps, int nBins){
@@ -641,72 +683,4 @@ void test_error(int ne, double loop, double steplength, int nMea, int ncore, str
         }
     }
     
-}
-void single_run_jie(){
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-    bool testing;
-    string type;
-    ifstream infile("params");
-    infile>>Ne>>invNu;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    //initialize MC object
-    
-    int gs=0;
-    LATTICE ll(Ne, invNu, testing, type, seed, gs);
-    ofstream outfile("out");
-    ofstream eout("energy");
-    ll.print_ds();
-    
-    ofstream auto_out("auto_jie");
-    for (int step=1; step<=10; step+=1) {
-        nSteps=step;
-//        ll.change_dbar_parameter(s*0.1,s*0.1);
-        ll.reset();
-        ll.step(nWarmup);
-        double E=0,E2=0;
-        double P=0,P2=0,three=0;
-        double e,p;
-        complex<double> berry_phase(0,0);
-        deque<double> e_tracker, p_tracker;
-        int Ntrack=10;
-        vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
-        
-        for(int i=0;i<nMeas;i++){
-            ll.step(nSteps);
-            e=ll.coulomb_energy();
-            E+=e;
-            E2+=e*e;
-            //            p=log(ll.running_weight); //this is a bug since changes are made in lattice.cpp, caus running_weight is logarithm of psi square.
-            p=ll.running_weight;
-            P+=p;
-            P2+=p*p;
-            eout<<e<<endl;
-            
-            //autocorrelations
-            e_tracker.push_front(e);
-            p_tracker.push_front(p);
-            if(i>=Ntrack){
-                for(int j=0;j<Ntrack;j++){
-                    autocorr_e[j]+=e_tracker[j]*e;
-                    autocorr_p[j]+=p_tracker[j]*p;
-                }
-                e_tracker.pop_back();
-                p_tracker.pop_back();
-            }
-            
-            //structure factor
-            //            ll.update_structure_factors();
-        }
-        
-        //output auto
-        auto_out<<step<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<endl;
-    }
-    
-    outfile<<endl;
-    //    ll.print_structure_factors(nMeas*nBins);
-    eout.close();
-    outfile.close();
 }
