@@ -1,17 +1,16 @@
 #include "lattice.h"
-
 int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 
-LATTICE::LATTICE(){
-	Ne=0;
+LATTICE::LATTICE() {
+    Ne=0;
 }
-
 LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t){
 	//various parameters from input file
 	NPhi=Ne*invNu;
 	if(type=="laughlin-hole") NPhi++;
     
     //set in_determinant_rescaling.
+    //It has been set for more Ne for invNu=2, some Ne for invNu=4.
     if (type=="CFL")
         in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
     
@@ -33,17 +32,6 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 	if(type=="CFL"){
 		if(Ne%2==0){center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
-////		print_ds();
-//		dsum=vector<int>(2,0);
-//		for(int i=0;i<Ne;i++){
-//			dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu;
-//            //dsum=NPhi * Ne dbar, i.e. it is the point on the lattice of electrons where the TOTAL d lives
-//            //'ds' is defined on L/Ne lattice, 'dsum' in this way is defined on L/Nphi lattice.
-//		}
-//		change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));
-//		//the average d should also be on a lattice point, so dividing dsum by Ne should yield an integer
-////		if(dsum[0]%Ne || dsum[1]%Ne) cout<<"Warning! The average of the ds is not on a lattice point! "<<dsum[0]<<" "<<dsum[1]<<endl;
-////		cout<<"dsum: "<<dsum[0]<<" "<<dsum[1]<<endl;
 	}
     
     //setting the ws. Note that the sum of these is ALWAYS zero, adding things like composite fermion momenta or holes doesn't change this.
@@ -53,12 +41,15 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
         ws0[i][0]=( (i+0.5)/(1.*invNu)-0.5);
         ws0[i][1]=gs/(1.*invNu);
     }
-//    ws0[0][0]=-0.2; ws0[0][1]=gs/(1.*invNu);//Generic COM zeros: (-0.2,0)(0.3,0.1) for gs=0, (-0.2,0.5)(0.3,0.6) for gs=1. invNu=2;
-//    ws0[1][0]= 0.3; ws0[1][1]=0.1+gs/(1.*invNu);
-    
-    set_ds(ds);//set ds, and reset ws.
-    
+    if (type=="CFL") {
+        set_ds(ds);//set ds, and reset ws.
+    }
+    else {
+        ws=ws0;
+    }
 	holes_set=false;
+    //*********************
+    //To Avoid Bugs, 'set_ws' must be followed by 'set_ds', 'change_dbar_parameter' must following 'set_ds'.
 
 	//********calls to duncan's functions
 	set_l_(&NPhi, &L1, &L2);
@@ -154,16 +145,8 @@ int LATTICE::simple_update(){
 	}
 
 	//***************COM PART
-	//figure out the probability difference from the COM part
-
-
 	int oldCOM[2], newCOM[2];
-	sum_locs(oldCOM);// 'locs' is defined on L/Nphi lattice. So does COM.
-//	if(type=="CFL"){
-//		oldCOM[0]-=dsum[0]/invNu;
-//		oldCOM[1]-=dsum[1]/invNu;
-//	    //The reason for dividing invNu is: sum_{i=1}^{invNu}w_i = sum_{j=1}^{Ne}d_j, so dsum/invNu Actually means average of w_i. The w_i in this code sums to 0.
-//	}
+	sum_locs(oldCOM);
 	newCOM[0]=oldCOM[0]-locs[electron][0]+newloc[0];
 	newCOM[1]=oldCOM[1]-locs[electron][1]+newloc[1];
 
@@ -267,8 +250,7 @@ vector<int> LATTICE::random_move( const vector<int> &in){
 	}
 	cout<<"never found a move!"<<endl;
 	return newloc;
-}	
-
+}
 int LATTICE::p(int site){
 	if(site==NPhi-1) return 0;
 	else return site+1;
@@ -300,7 +282,6 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 			x=(zs[i][0]-zs[j][0])/(1.*NPhi);
 			y=(zs[i][1]-zs[j][1])/(1.*NPhi);
 			z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);
-//			temp=jies_weierstrass(x,y);
 			out+=log(norm( pow(temp,vandermonde_exponent) ));
 		}
 	}
@@ -321,6 +302,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 		z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
 		out+=log(norm(temp));
 	}
+    
 	//determinant part
 	double oldDivisor;
 	if(type=="CFL"){
@@ -350,7 +332,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 		out+=log(norm(temp/oldDivisor))+2*log(oldDivisor);
 	}
     
-    //phase previously missing. for laughlin/laughin-hole. CFL has no additional phase.
+    //phase previously missing.
     vector<double> wsum(2);
     for (int i=0; i<invNu; i++) {
         wsum[0]+=ws[i][0];
@@ -368,7 +350,6 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 	return out;
 } 
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
-//also different compared to get_weight: this function uses the precomputed lattice_z data
 complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 	complex<double> out=1,temp;
 	int ix,iy;
@@ -391,10 +372,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 			for( int j=i+1;j<Ne;j++){
 				ix=(zs[i][0]-zs[j][0]);
 				iy=(zs[i][1]-zs[j][1]);
-//                complex<double> z=1.*ix/(1.*NPhi)*L1+1.*iy/(1.*NPhi)*L2;
-//                complex<double> tmp =lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one)*exp(0.5*norm(z)/(1.*NPhi));
-                out*=pow(lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one),vandermonde_exponent);//lattice_z_ function is sigma-gaussian.
-//                out*=pow(tmp, vandermonde_exponent);
+                out*=pow(lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one),vandermonde_exponent);
 			}
 		}
 	}
@@ -425,7 +403,6 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 		}
 	}
 //    cout<<" com piece = "<<out/assist<<endl; assist=out;
-    
 
     //Determinant piece
 	if(type=="CFL"){
@@ -444,13 +421,12 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
 				M(i,j)=product*polar(pow(in_determinant_rescaling, Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
 			}
 		}
-//        det_M=Eigen::MatrixXcd(Ne, Ne); det_M=M;
 		detSolver.compute(M);
 		out=out*detSolver.determinant();
+//        cout<<"det piece = "<<detSolver.determinant()<<endl;
 	}
-//    cout<<" det part = "<<detSolver.determinant()<<endl;
-//    cout<<"value = "<<out<<endl;
-    //phase previously missing. for laughlin/laughlin-hole/CFL.
+
+    //phase previously missing.
     vector<double> wsum(2);
     for (int i=0; i<invNu; i++) {
         wsum[0]+=ws[i][0];
@@ -463,14 +439,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
     else if(type=="CFL") {
         complex<double> dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L2;
         out*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
-//        cout<<"wcomp = "<<w_comp<<" dsum_comp = "<<dsum_comp<<" zcom_comp = "<<zcom_comp<<endl;
-//        cout<<" phase = "<<exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ))<<endl;
-//        for (int i=0; i<ds.size(); i++) {
-//            cout<<ds[i][0]<<" "<<ds[i][1]<<endl;
-//        }
-//        cout<<"dsum = "<<dsum[0]<<" "<<dsum[1]<<endl;
     }
-//	return conj(out);//why conj(out)??????
     return out;
 }
 
@@ -582,6 +551,13 @@ void LATTICE::print_ds(){
 	for (unsigned int i = 0; i < ds.size(); i += 1)
 		dout<<ds[i][0]<<" "<<ds[i][1]<<endl;
 	dout.close();
+}
+void LATTICE::print_ws(){
+    ofstream wsout("ws");
+    for (unsigned i=0; i<ws.size(); i++) {
+        wsout<<ws[i][0]<<" "<<ws[i][1]<<endl;
+    }
+    wsout.close();
 }
 double LATTICE::threebody(){
 	int has_right,has_top,has_diag;
@@ -776,6 +752,24 @@ void LATTICE::set_ds(vector< vector<int> > tds){
     
     //reset ws, according to ds.
     ws.clear(); ws=ws0;
+    if (type=="CFL") {
+        for (int i=0; i<ws.size(); i++) {
+            ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.
+        }
+    }
+}
+void LATTICE::set_ws(vector<vector<double>> ws_t){
+    if (ws_t.size()!=invNu) {
+        cout<<"cannot set ws, ws.size() wrong."<<endl;
+        exit(0);
+    }
+    for (unsigned i=0; i<invNu; i++) {
+        if (ws_t[i].size()!=2) {
+            cout<<"cannot set ws, ws[i].size() wrong."<<endl;
+            exit(0);
+        }
+    }
+    ws0=ws_t; ws=ws0;
     if (type=="CFL") {
         for (int i=0; i<ws.size(); i++) {
             ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.

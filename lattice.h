@@ -8,7 +8,6 @@
 #include "MersenneTwister.h"
 #include <numeric>
 #include <deque>
-//#include "weierstrass.h"
 
 using namespace std;
 
@@ -21,7 +20,7 @@ extern"C"{
 	void z_function_(double *x, double *y, complex<double> *l1, complex<double> *l2, int * rationalize, int *denom, complex<double> *z);
 	void z_function_with_modular_transform_(double *x, double *y, complex<double> *l1, complex<double> *l2, int * rationalize, int *denom, complex<double> *z, int *sl2z);
 	complex<double> lattice_z_(int *NPhi, int *x, int *y, complex<double> *l1, complex<double> *l2, int * use_table);
-	double v_coulomb_(int *NPhi, int *m, int *n, complex<double> *l1, complex <double> *l2); //coulomb2_m.f90
+//	double v_coulomb_(int *NPhi, int *m, int *n, complex<double> *l1, complex <double> *l2); //coulomb2_m.f90
 	double new_v_coulomb_(int *NPhi, int *m, int *n, complex<double> *l1, complex <double> *l2); //coulomb2_m.f90
 	void setup_z_function_table_();
 	void set_l_(int *NPhi, complex<double> *l1, complex <double> *l2);
@@ -34,30 +33,27 @@ class LATTICE{
 public:
 	LATTICE();
     LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0, double theta=0.5*M_PI, double alpha=1.0);
-//    LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t) : LATTICE(Ne_t, invNu_t, testing_t, type_t, 0.5*M_PI, 1.0, seed, gs_t){};
-//    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0);
 	~LATTICE();
 
 	int Ne;
 	double running_weight;//running_weight is a global variable. need reset in every run.
     int tries,accepts;
-//    Eigen::MatrixXcd det_M;
     
     vector<double> hole;
     bool fermions,holes_set;
     
 	//stepping functions
     vector<double> dbar_parameter;
-	bool testing; // output 'running_weight' and 'get_weight()', useful in debug.
+	bool testing;
 	void step(int);// step(int Nsteps); Nsetps = total MC steps. tries:steps, accepts:updated steps.
 	double get_weight(const vector< vector<int> > &zs);  
 	complex<double> get_wf(const vector< vector<int> > &zs);
-//    void make_CFL_COM(complex<double>& value);
     void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value);
 
 	//utility functions
 	complex<double> modded_lattice_z(int x, int y);
-	void print_ds();//.
+	void print_ds();
+    void print_ws();
 
 	//initialization related functions
 	void make_fermi_surface(double* center_frac, int N);
@@ -65,8 +61,14 @@ public:
 	vector <vector<int> > get_ds();
 	void change_dbar_parameter(double dbarx, double dbary);
 	vector<double> get_dbar_parameter();
-	void set_ds(vector< vector<int> > ds);//sets a custom set of composite fermion dipole moments
+    
+    //initialization or reset related functions
+	void set_ds(vector< vector<int> > ds);
+    void set_ws(vector<vector<double>> ws);
 	void set_hole(vector<double> temphole);
+    //*********************
+    //To Avoid Bugs, 'set_ws' must be followed by 'set_ds', 'change_dbar_parameter' must following 'set_ds'.
+    
 	vector<double> get_hole();
 
 	//measurement related functions
@@ -84,7 +86,6 @@ private:
     double in_determinant_rescaling;
 	void sum_locs(int []);
 	void setup_coulomb();
-//	void setup_weierstrass();
 	int simple_update();// returns '1' if updated, '0' if not updated.
 	vector<int> random_move(const vector<int> &oldsite);
 	int p(int); int m(int);
@@ -92,7 +93,6 @@ private:
 	void hotter_start();
 	void det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z);
     double det_helper(int z1, int z2, int d, double dbar_parameter);
-//    complex<double> jies_weierstrass(double x, double y);
     void check_sanity();
 
     complex<double> L1,L2;
