@@ -80,6 +80,9 @@ public:
 	complex<double> formfactor(int qx, int qy);
 	complex<double> rhoq(int qx ,int qy, const vector< vector<int> > &zs);
     vector<int> dsum;//an integer defined on an NPhi lattice
+    
+    //Filled Landau Level Wavefunction (not IQH wf)
+    complex<double> FilledLL(vector<vector<int>> zs);
 	
 private:
     double get_in_det_rescaling(int Ne, int invNu);
@@ -107,10 +110,12 @@ private:
 	vector <vector <complex<double> > > shifted_ztable;
 	Eigen::MatrixXcd oldMatrix;
 	complex<double> oldDeterminant;
-	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;	
+	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;
+//    Eigen::FullPivLU<Eigen::MatrixXcd> detSolver_FLL;
 	MTRand ran;
-	vector< vector<int> > locs;//an integer defined on an NPhi lattice
-	vector< vector<double> > ws, ws0;
+	vector<vector<int>> locs;//an integer defined on an NPhi lattice
+	vector<vector<double>> ws, ws0;
+    vector<vector<vector<double>>> zeros;//a parameter for 'FilledLL' state.
 	int one,zero;
 	vector< complex<double> > omega;
     vector<vector<int> > ds;//an integer defined on an Ne lattice

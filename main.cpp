@@ -1,7 +1,8 @@
 using namespace std;
+#include <iomanip>
 #include "lattice.h"
 #include "berry_tests.h"
-#include <iomanip>
+
 bool IsOdd (int i) {
     return ((i%2)==1);
 }
@@ -13,18 +14,12 @@ int main(){
 //    CFL_ne5_energy_var(5000, 100, 6);//nMeas, nBins.
 //    CFL_ne5_energy_var(50, 10, 6);//nMeas, nBins.
     
+//    ParticleHoleSym();
+//    testIQHwf();
     
-//    
-//    int Ne1=3, Ne2=4, invNu=2;
-//    vector<vector<int>> z(Ne1+Ne2, vector<int>(2));
-//    for (unsigned i=0; i<Ne1+Ne2; i++) {
-//        z[i][0]=i; z[i][1]=i;
-//    }
-//    LATTICE cfl1(Ne1, invNu, false, "CFL", 0, 0), cfl2(Ne2, invNu, false, "CFL", 0, 0);
-//    complex<double> ret=asymwf(cfl1, cfl2, z);
-//    cout<<ret<<endl;
-    
-    ParticleHoleSym();
+    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "fermisurface");
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "lowe_21");
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "lowe2_21");
     
 }
 void phase_variance(){

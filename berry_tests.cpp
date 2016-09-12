@@ -18,7 +18,7 @@ double phasemod(complex<double> in){
 
 //test ortho laughlin states via monte carlo.
 void check_orthogonality(string type){
-    int Ne=2, invNu, nWarmup=5000, nMeas=5000, nSteps=20, seed=0;
+    int Ne=8, invNu, nWarmup=5000, nMeas=5000, nSteps=20, seed=0;
     cout<<"--->type = "<<type<<", nMeas="<<nMeas<<", nSteps="<<nSteps<<", Ne="<<Ne;
     
     if (type=="CFL") cout<<". General d, sum of d neq 0."<<endl;
@@ -91,17 +91,15 @@ void single_run(){
     //initialize MC object
     
     int gs=0;
-    LATTICE ds_generator(Ne, invNu, testing, type, seed, 0);
-    vector< vector<int> > old_ds=ds_generator.get_ds();
-    
+//    LATTICE ds_generator(Ne, invNu, testing, type, seed, 0);
+//    vector< vector<int> > old_ds=ds_generator.get_ds();
     LATTICE ll(Ne,invNu, testing, type, seed, gs);
-    //	ll.set_ds(old_ds);
-    ll.print_ds();
+//    ll.set_ds(old_ds);
+//    ll.print_ds();
     
     ofstream outfile("out"), eout("energy");
     for(int s=0;s<nBins;s++){
-        
-        //		ll.change_dbar_parameter(s*0.1,s*0.1);
+//        ll.change_dbar_parameter(s*0.1,s*0.1);
         ll.reset();
         ll.step(nWarmup);
         double E=0,E2=0;
@@ -109,7 +107,7 @@ void single_run(){
         double e ,p;
         complex<double> berry_phase(0,0);
         deque<double> e_tracker, p_tracker;
-        int Ntrack=100;
+        int Ntrack=50;
         vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
         for(int i=0;i<nMeas;i++){
             ll.step(nSteps);
@@ -130,8 +128,7 @@ void single_run(){
                 e_tracker.pop_back();
                 p_tracker.pop_back();
             }
-            
-            //            ll.update_structure_factors();
+//            ll.update_structure_factors();
         }
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
@@ -140,10 +137,9 @@ void single_run(){
         for(int j=0;j<Ntrack;j++){
             auto_out<<j+1<<" ";
             auto_out<<autocorr_e[j]/(1.*(nMeas-Ntrack))<<" "<<pow(E/(1.*nMeas),2)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))<<" ";
-            auto_out<<autocorr_p[j]/(1.*(nMeas-Ntrack))<<" "<<pow(P/(1.*nMeas),2)<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<" ";
+//            auto_out<<autocorr_p[j]/(1.*(nMeas-Ntrack))<<" "<<pow(P/(1.*nMeas),2)<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<" ";
             auto_out<<endl;
         }
-        
     }
     outfile<<endl;
     //    ll.print_structure_factors(nMeas*nBins);
@@ -788,22 +784,48 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
             extra_ds.push_back(vector<int>{1,-2});
             extra_ds.push_back(vector<int>{2,-1});
         }else if(tempNe==21){
-            extra_ds.push_back(vector<int>{3,0});
-            extra_ds.push_back(vector<int>{3,1});
-            extra_ds.push_back(vector<int>{2,2});
-            extra_ds.push_back(vector<int>{1,3});
-            extra_ds.push_back(vector<int>{0,3});
-            extra_ds.push_back(vector<int>{-1,3});
-            extra_ds.push_back(vector<int>{-2,2});
-            extra_ds.push_back(vector<int>{-3,1});
-            extra_ds.push_back(vector<int>{-3,0});
-            extra_ds.push_back(vector<int>{-3,-1});
-            extra_ds.push_back(vector<int>{-2,-2});
-            extra_ds.push_back(vector<int>{-1,-3});
-            extra_ds.push_back(vector<int>{0,-3});
-            extra_ds.push_back(vector<int>{1,-3});
-            extra_ds.push_back(vector<int>{2,-2});
-            extra_ds.push_back(vector<int>{3,-1});
+            if (kind=="fermisurface") {
+                extra_ds.push_back(vector<int>{3,0});
+                extra_ds.push_back(vector<int>{3,1});
+                extra_ds.push_back(vector<int>{2,2});
+                extra_ds.push_back(vector<int>{1,3});
+                extra_ds.push_back(vector<int>{0,3});
+                extra_ds.push_back(vector<int>{-1,3});
+                extra_ds.push_back(vector<int>{-2,2});
+                extra_ds.push_back(vector<int>{-3,1});
+                extra_ds.push_back(vector<int>{-3,0});
+                extra_ds.push_back(vector<int>{-3,-1});
+                extra_ds.push_back(vector<int>{-2,-2});
+                extra_ds.push_back(vector<int>{-1,-3});
+                extra_ds.push_back(vector<int>{0,-3});
+                extra_ds.push_back(vector<int>{1,-3});
+                extra_ds.push_back(vector<int>{2,-2});
+                extra_ds.push_back(vector<int>{3,-1});
+            }
+            else if (kind=="lowe_21") {
+                extra_ds.push_back(vector<int>{2,2});
+                extra_ds.push_back(vector<int>{-2,2});
+                extra_ds.push_back(vector<int>{-2,-2});
+                extra_ds.push_back(vector<int>{2,-2});
+            }
+            else if (kind=="lowe2_21") {
+                extra_ds.push_back(vector<int>{3,0});
+//                extra_ds.push_back(vector<int>{3,1});
+                extra_ds.push_back(vector<int>{2,2});
+//                extra_ds.push_back(vector<int>{1,3});
+                extra_ds.push_back(vector<int>{0,3});
+//                extra_ds.push_back(vector<int>{-1,3});
+                extra_ds.push_back(vector<int>{-2,2});
+//                extra_ds.push_back(vector<int>{-3,1});
+                extra_ds.push_back(vector<int>{-3,0});
+//                extra_ds.push_back(vector<int>{-3,-1});
+                extra_ds.push_back(vector<int>{-2,-2});
+//                extra_ds.push_back(vector<int>{-1,-3});
+                extra_ds.push_back(vector<int>{0,-3});
+//                extra_ds.push_back(vector<int>{1,-3});
+                extra_ds.push_back(vector<int>{2,-2});
+//                extra_ds.push_back(vector<int>{3,-1});
+            }
         }else if(tempNe==32){
             extra_ds.push_back(vector<int>{4,0});
             extra_ds.push_back(vector<int>{4,1});
@@ -1213,8 +1235,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
     outfile3.close();
 }
 
-//Particle Hole Symmetry.
-//This test particle hole symmetry for Ne=8, d being maximal symmetric example.
+//Particle Hole Symmetry (Ne9, maximal symmetric ds).
 void ParticleHoleSym(){
     int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
     ifstream infile("params");
@@ -1225,8 +1246,8 @@ void ParticleHoleSym(){
     infile>>type;
     //initialize MC object
     
-    Ne=16;
-    int Ne1=8, Ne2=Ne-Ne1;
+    Ne=18; invNu=2;
+    int Ne1=9, Ne2=Ne-Ne1;
     
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
@@ -1235,7 +1256,9 @@ void ParticleHoleSym(){
         cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
         cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
     }
-    LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);//Filled LL Wavefunction.
+    LATTICE FLL(Ne, 1, testing, "FilledLL", seed, 0);//Filled LL Wavefunction.
+//    cout<<"testing = "<<testing<<endl;
+//    cfl1[1].print_ws();
     
     //monte carlo.
     for (unsigned nbin=0; nbin<nBins; nbin++) {
@@ -1246,13 +1269,18 @@ void ParticleHoleSym(){
         FLL.step(nWarmup);
         for (int nmea=0; nmea<nMeas; nmea++) {
             FLL.step(nSteps);
+            vector<vector<int>> z=FLL.get_locs(), z1=z, z2=z;
+            z1.resize(Ne1);
+            z2.erase(z2.begin(), z2.begin()+Ne1);
+            
             for (int m=0; m<invNu; m++) {
                 for (int n=0; n<invNu; n++) {
-                    complex<double> tmp=cfl1[m].get_wf(FLL.get_locs())*cfl2[n].get_wf(FLL.get_locs())/FLL.get_wf(FLL.get_locs());
+                    complex<double> tmp=cfl1[m].get_wf(z1)*cfl2[n].get_wf(z2)/FLL.get_wf(z);
                     overlaps[0](m,n)+=tmp;
                     overlaps[1](m,n)+=norm(tmp);
                 }
             }
+            
         }
         
         for (int l=0; l<2; l++) overlaps[l]/=(1.*nMeas);
@@ -1261,8 +1289,38 @@ void ParticleHoleSym(){
         for (int m=0; m<invNu; m++) {
             for (int n=0; n<invNu; n++) {
                 cout<<"m="<<m<<" ,n="<<n<<" ,overlap="<<overlaps[0](m,n)<<endl;
+                cout<<"m="<<m<<" ,n="<<n<<" ,1-|overlap|="<<1-sqrt(norm(overlaps[0](m,n)))<<endl;
+                cout<<endl;
             }
         }
         cout<<endl;
     }
+}
+
+void testIQHwf(){
+    int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
+    ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    Ne=4, invNu=1;
+    LATTICE lat1(Ne, invNu, testing, "laughlin", seed, 0);
+    LATTICE lat2(Ne, invNu, testing, "FilledLL", seed, 0);
+    lat1.print_ws();
+    
+    lat1.reset(); lat1.step(nWarmup); complex<double> value=0., value2=0.;;
+    for (int nmeas=0; nmeas<nMeas; nmeas++) {
+        lat1.step(nSteps);
+        complex<double> tmp=lat2.get_wf(lat1.get_locs())/lat1.get_wf(lat1.get_locs());
+        value+=tmp;
+        value2+=norm(tmp);
+    }
+    value/=(1.*nMeas); value2/=(1.*nMeas);
+    value/=sqrt(value2);
+    cout<<"overlap="<<value<<endl;
+    
 }

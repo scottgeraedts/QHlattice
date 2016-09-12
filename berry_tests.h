@@ -46,5 +46,6 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
 
 //Particle-Hole Symmetry
 void ParticleHoleSym();
+void testIQHwf();
 
 #endif
