@@ -42,10 +42,15 @@ void two_holes(string str, int nmeasurement, data& test);
 void test_error(int ne, double loop, double steplength, int nMea, int ncore, string test, int num_core);
 
 //CFL Berry Phase
-void CFL_berry_phases_parallel(string params_name, string output_name, int num_core, string kind);
+void CFL_berry_phases_parallel(string params_name, string output_name, int num_core, string kind, double theta=0.5*M_PI, double alpha=1.0);
 
 //Particle-Hole Symmetry
 void ParticleHoleSym();
+void ParticleHoleSym2();
 void testIQHwf();
+complex<double> landauwf(int Nphi, int n, vector<double> latticeshift, vector<int> z, double theta=0.5*M_PI, double alpha=1.0);
+
+//...
+void GetCoefficient(vector<int> input);
 
 #endif

@@ -35,7 +35,7 @@ public:
     LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0, double theta=0.5*M_PI, double alpha=1.0);
 	~LATTICE();
 
-	int Ne;
+	int Ne, NPhi;
 	double running_weight;//running_weight is a global variable. need reset in every run.
     int tries,accepts;
     
@@ -65,6 +65,7 @@ public:
     //initialization or reset related functions
 	void set_ds(vector< vector<int> > ds);
     void set_ws(vector<vector<double>> ws);
+    void set_zeros(vector<double> zeros0);//for "FilledLL" state only, set zeros[0][0][0], zeros[0][0][1];
 	void set_hole(vector<double> temphole);
     //*********************
     //To Avoid Bugs, 'set_ws' must be followed by 'set_ds', 'change_dbar_parameter' must following 'set_ds'.
@@ -99,7 +100,7 @@ private:
     void check_sanity();
 
     complex<double> L1,L2;
-	int NPhi, invNu;
+	int invNu;
 	string type;
     int gs;
     double theta, alpha;

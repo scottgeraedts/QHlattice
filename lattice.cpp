@@ -38,6 +38,10 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 		make_fermi_surface(center_frac, Ne);
         print_ds();
 	}
+    else if (type=="laughlin" || type=="laughlin-hole" || type=="FilledLL") {
+        ds.clear();
+    }
+    else {cout<<"recognized type."<<endl; exit(0);}
     
     //setting the ws. Note that the sum of these is ALWAYS zero, adding things like composite fermion momenta or holes doesn't change this.
     //in the y direction these take the values gs*L/invNu, where gs in (0,invNu-1) is an integer which labels the ground state
@@ -47,31 +51,10 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
         ws0[i][1]=gs/(1.*invNu);
     }
     
-    if (type=="CFL") {
-        set_ds(ds);//set ds, and reset ws.
-    }
-    else if (type=="FilledLL"){
-        zeros=vector<vector<vector<double>>> (NPhi, vector<vector<double>>(NPhi, vector<double>(2)));
-        
-        for (int gs=0; gs<NPhi; gs++) {
-            for( int i=0;i<NPhi;i++){
-                zeros[gs][i][0]=i/(1.*NPhi)+(NPhi-1)/(2.*NPhi);
-                zeros[gs][i][1]=gs/(1.*NPhi)+(NPhi-1)/(2.*NPhi);
-            }
-        }
-//        vector<double> zerossum(2);
-//        for (int i=0; i<NPhi; i++) {
-//            for (int j=0; j<NPhi; j++) {
-//                zerossum[0]+=zeros[i][j][0];
-//                zerossum[1]+=zeros[i][j][1];
-//            }
-//        }
-//        cout<<"zerossum="<<zerossum[0]<<" "<<zerossum[1]<<endl;
-        change_dbar_parameter(-zeros[0][0][0]*NPhi, -zeros[0][0][1]*NPhi);//the aim to do this is to initialize 'shifted_ztable', and 'modded_lattice_z'.
-    }
-    else {
-        ws=ws0;
-    }
+    if (type=="CFL") set_ds(ds);//set ds, and reset ws.
+    else if (type=="FilledLL") set_zeros(vector<double>{0., 0.});
+    else ws=ws0;
+    
 	holes_set=false;
     //*********************
     //To Avoid Bugs, 'set_ws' must be followed by 'set_ds', 'change_dbar_parameter' must following 'set_ds'.
@@ -698,7 +681,7 @@ complex<double> LATTICE::formfactor(int qx, int qy){
 		}
 	}
 	return out;
-}
+}//need to change if want to do non-square case.
 
 complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 	complex<double> out=0;
@@ -706,8 +689,8 @@ complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 //		out+=omega[supermod((2*qx*locs[i][0]+2*qy*locs[i][1]), 2*NPhi)];//need to be checked.
         out+=omega[supermod((2*qx*locs[i][1]-2*qy*locs[i][0]), 2*NPhi)];//temportarily modify.
 	}
-	return out/(formfactor(qx,qy)*(1.*NPhi));
-//    return out;
+//	return out/(formfactor(qx,qy)*(1.*NPhi));
+    return out;
 }
 void LATTICE::reset(){
 	tries=0; accepts=0;
@@ -849,6 +832,20 @@ void LATTICE::set_ws(vector<vector<double>> ws_t){
             ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.
         }
     }
+}
+void LATTICE::set_zeros(vector<double> zeros0){
+    if (zeros0.size()!=2) {
+        cout<<"cannot set zeros, since its dim != 2."<<endl;
+        exit(0);
+    }
+    zeros=vector<vector<vector<double>>> (NPhi, vector<vector<double>>(NPhi, vector<double>(2)));
+    for (int gs=0; gs<NPhi; gs++) {
+        for( int i=0;i<NPhi;i++){
+            zeros[gs][i][0]=i/(1.*NPhi)+zeros0[0];
+            zeros[gs][i][1]=gs/(1.*NPhi)+zeros0[1];
+        }
+    }
+    change_dbar_parameter(-zeros[0][0][0]*NPhi, -zeros[0][0][1]*NPhi);//the aim to do this is to initialize 'shifted_ztable', and 'modded_lattice_z'.
 }
 void LATTICE::set_hole(vector<double> temphole){
 	hole=temphole;

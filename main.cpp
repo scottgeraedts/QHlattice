@@ -7,21 +7,188 @@ bool IsOdd (int i) {
     return ((i%2)==1);
 }
 int main(){
-    int num_core=2;
-//    CFL_berry_phases_parallel("params_ne8", "ne8bp", num_core, "loop1");//params_name, output_name, num_core, kind.
+    int num_core=4;
+//    CFL_berry_phases_parallel("params_ne8", "ne8bp", num_core, "fullloop");//params_name, output_name, num_core, kind.
+    
+    double theta=0.5*M_PI, alpha=1.0;
+    
+//    CFL_berry_phases_parallel("params_ne5", "ne5bp", num_core, "", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "loop4test", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne17", "ne17bp", num_core, "disconnected_test", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne8", "ne8bp", num_core, "forbidline", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "flatten1", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "flatten2", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "flatten3", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "flatten4", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "cornerloop1", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "cornerloop2", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "cornerloop3", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "loop4", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "loop5", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "loop6", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "loop7", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "loop8", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "loop9", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "notsurround0", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_ne14", "ne14bp", num_core, "loop2_1", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne14", "ne14bp", num_core, "loop4", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne14", "ne14bp", num_core, "loop3", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne14", "ne14bp", num_core, "loop2", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne14", "ne14bp", num_core, "loop1", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_ne8", "ne8bp", num_core, "loop1", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_ne18", "ne18bp", num_core, "disconnected", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_ne17_2", "ne17bp", num_core, "disconnected2", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne14", "ne14bp", num_core, "forbidline", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_ne32", "ne32bp", num_core, "loop1", theta, alpha);
+//    CFL_berry_phases_parallel("params_ne32", "ne32bp", num_core, "loop2", theta, alpha);
+    
+    CFL_berry_phases_parallel("params_ne13", "ne13bp", num_core, "Scott1", theta, alpha);
+    CFL_berry_phases_parallel("params_ne13", "ne13bp", num_core, "Scott2", theta, alpha);
+    CFL_berry_phases_parallel("params_ne13", "ne13bp", num_core, "Scott3", theta, alpha);
+    CFL_berry_phases_parallel("params_ne13", "ne13bp", num_core, "Scott4", theta, alpha);
+    CFL_berry_phases_parallel("params_ne13", "ne13bp", num_core, "Scott5", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_ne32", "ne32bp", num_core, "test_amplitude", theta, alpha);
+    
 //    plot_CFL_coule_vsdbar(2, 21, 5000, 10);//grid, Ne, nMeas, nBins.
 //    CFL_ne5_energy_var(5000, 100);//nMeas, nBins, num_core.
 //    CFL_ne5_energy_var(5000, 100, 6);//nMeas, nBins.
 //    CFL_ne5_energy_var(50, 10, 6);//nMeas, nBins.
     
 //    ParticleHoleSym();
+//    ParticleHoleSym2();
 //    testIQHwf();
     
-    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "fermisurface");
-//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "lowe_21");
-//    CFL_berry_phases_parallel("params_ne21", "ne21bp", num_core, "lowe2_21");
+//    vector<int> landauwfindex{0,4,5,7,8};
+//    GetCoefficient(landauwfindex);
     
+//    int Ne=3, invNu=2, seed=0; double theta=0.7*M_PI, alpha=3.0;
+//    LATTICE lat(Ne, invNu, false, "CFL", seed, 0, theta, alpha);
+//    vector<vector<int>> zs(Ne, vector<int>(2)), ds(Ne, vector<int>(2));
+//    for (int i=0; i<Ne; i++) {zs[i][0]=i; zs[i][1]=i; ds[i][0]=i; ds[i][1]=i;}
+//    lat.set_ds(ds);
+//    cout<<"wf="<<lat.get_wf(zs)<<endl;
+    
+//    void test_Scott_finding8(), test_Scott_finding4();
+//    test_Scott_finding8();
 }
+
+void test_Scott_finding8(){
+    int Ne=8, invNu=2, Nphi=Ne*invNu;
+    int nMeas=5000, nWarmup=1000000, nSteps=20, seed=0;
+    vector<vector<int>> ds_tmp(Ne+1, vector<int>(2));
+    vector<vector<vector<int>>> ds(3);
+    
+    for (int i=-1; i<2; i++) {
+        for (int j=-1; j<2; j++) {
+            ds_tmp[(i+1)*3+j+1][0]=i; ds_tmp[(i+1)*3+j+1][1]=j;
+        }
+    }
+    for (int i=0; i<3; i++) ds[i]=ds_tmp;
+    ds[0].erase(remove(ds[0].begin(),ds[0].end(),vector<int>{1,1}),ds[0].end());
+    ds[0].erase(remove(ds[0].begin(),ds[0].end(),vector<int>{1,-1}),ds[0].end());
+    ds[0].push_back(vector<int>{2, 1});
+    ds[1].erase(remove(ds[1].begin(),ds[1].end(),vector<int>{1,0}),ds[1].end());
+    ds[1].erase(remove(ds[1].begin(),ds[1].end(),vector<int>{1,-1}),ds[1].end());
+    ds[1].push_back(vector<int>{2,0});
+    ds[2].erase(remove(ds[2].begin(),ds[2].end(),vector<int>{0,-1}),ds[2].end());
+    
+    //    for (int i=0; i<3; i++) {
+    //        cout<<"i="<<i<<endl;
+    //        for (int j=0; j<ds[i].size(); j++) {
+    //            cout<<ds[i][j][0]<<" "<<ds[i][j][1]<<endl;
+    //        }
+    //        cout<<endl;
+    //    }
+    
+    vector<LATTICE> psi(3);
+    for (int i=0; i<3; i++) {
+        psi[i]=LATTICE(Ne, invNu, false, "CFL", seed, 0); psi[i].set_ds(ds[i]);
+    }
+    
+    Eigen::Matrix3cd overlap, overlap2;
+    for (int m=0; m<3; m++) {
+        psi[m].reset();
+        psi[m].step(nWarmup);
+        for (int nmea=0; nmea<nMeas; nmea++) {
+            psi[m].step(nSteps);
+            for (int n=0; n<=m; n++) {
+                complex<double> tmp=psi[n].get_wf(psi[m].get_locs())/psi[m].get_wf(psi[m].get_locs());
+                overlap(n,m)+=tmp;
+                overlap2(n,m)+=norm(tmp);
+            }
+        }
+    }
+    overlap.array()/=(1.*nMeas); overlap2.array()/=(1.*nMeas); overlap.array()/=overlap2.array().sqrt();
+    
+    for (int m=0; m<3; m++) {
+        for (int n=m; n<3; n++) {
+            overlap(n,m)=conj(overlap(m,n));
+        }
+    }
+    Eigen::ComplexEigenSolver<Eigen::Matrix3cd> es(overlap);
+    cout<<"overlap=\n"<<overlap<<endl;
+    cout<<"det="<<overlap.determinant()<<endl;
+    cout<<endl<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<abs(es.eigenvalues()[2])<<endl;
+}
+void test_Scott_finding4(){
+    int Ne=4, invNu=2, Nphi=Ne*invNu;
+    int nMeas=5000, nWarmup=1000000, nSteps=20, seed=0;
+    vector<vector<int>> ds_tmp(4, vector<int>(2));
+    for (int i=0; i<2; i++) for (int j=0; j<2; j++) {ds_tmp[i*2+j][0]=i; ds_tmp[i*2+j][1]=j;}
+    
+    vector<vector<vector<int>>> ds(2, ds_tmp);
+
+    ds[1].erase(remove(ds[1].begin(),ds[1].end(),vector<int>{1,1}),ds[1].end());
+    ds[1].erase(remove(ds[1].begin(),ds[1].end(),vector<int>{0,0}),ds[1].end());
+    ds[1].push_back(vector<int>{2,1}); ds[1].push_back(vector<int>{-1,0});
+
+//    for (int i=0; i<2; i++) {
+//        cout<<"i="<<i<<endl;
+//        for (int j=0; j<ds[i].size(); j++) {
+//            cout<<ds[i][j][0]<<" "<<ds[i][j][1]<<endl;
+//        }
+//        cout<<endl;
+//    }
+    
+    vector<LATTICE> psi(2);
+    for (int i=0; i<2; i++) {
+        psi[i]=LATTICE(Ne, invNu, false, "CFL", seed, 0); psi[i].set_ds(ds[i]);
+    }
+
+    Eigen::Matrix2cd overlap, overlap2;
+    for (int m=0; m<2; m++) {
+        psi[m].reset();
+        psi[m].step(nWarmup);
+        for (int nmea=0; nmea<nMeas; nmea++) {
+            psi[m].step(nSteps);
+            for (int n=0; n<2; n++) {
+                complex<double> tmp=psi[n].get_wf(psi[m].get_locs())/psi[m].get_wf(psi[m].get_locs());
+                overlap(n,m)+=tmp;
+                overlap2(n,m)+=norm(tmp);
+            }
+        }
+    }
+    overlap.array()/=(1.*nMeas); overlap2.array()/=(1.*nMeas); overlap.array()/=overlap2.array().sqrt();
+    
+    complex<double> tmp=(overlap(0,1)+conj(overlap(1,0)))/2.;
+    overlap(0,1)=tmp; overlap(1,0)=conj(tmp);
+    overlap(0,0)=1.; overlap(1,1)=1.;
+    
+    cout<<"overlap=\n"<<overlap<<endl;
+//    cout<<"det="<<overlap.determinant()<<endl;
+}
+
 void phase_variance(){
     ofstream outfile("M");
     int Ne=8,invNu=2,nWarmup=5000,nMeas=100,nSteps=20,nBins=1000,seed=0;
