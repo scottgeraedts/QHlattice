@@ -66,17 +66,17 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 	sl2z[0]=1; sl2z[1]=0; sl2z[2]=0; sl2z[3]=1;
 	if(type!="laughlin-hole") setup_laughlin_state_(&Ne,&invNu,sl2z,&gs);
 //	cout<<"starting weight "<<running_weight<<endl;
+    delete [] sl2z;
 
 	//*****some counters
 	setup_coulomb();
-	omega=vector <complex<double> >(2*NPhi);
-	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi)); //note that spacings of these is pi/N, not 2pi/N
+    omega=vector<complex<double>>(2*NPhi);
+	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi));
 
-//	sq=vector<vector<complex<double> > > (NPhi, vector<complex<double> >(NPhi,0));
-//	sq2=vector<vector<double> > (NPhi, vector<double>(NPhi,0));
-//	sq3=vector <vector< vector< vector <complex<double> > > > >(NPhi, vector <vector <vector< complex<double> > > >(NPhi, vector <vector <complex<double> > >(NPhi, vector<complex<double> >(NPhi,0))));
+	sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi, 0));
+	sq2=vector<vector<double>>(NPhi, vector<double>(NPhi, 0));
+//	sq3=vector<vector<vector<vector<complex<double>>>>>(NPhi, vector<vector<vector<complex<double>>>>(NPhi, vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0))));
     //comment out sq3, otherwise memory exceed easilly for large invNu state.
-	delete [] sl2z;
 }
 double LATTICE::get_in_det_rescaling(int Ne, int invNu){
     double rescaling=1.;
@@ -86,7 +86,7 @@ double LATTICE::get_in_det_rescaling(int Ne, int invNu){
     else if (invNu==2) {
         if (Ne<15) rescaling=1.;
         else if (Ne>=15 && Ne<=38) rescaling=0.28;
-        else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
+        else {rescaling=0.28; cout<<"Please set in_determinant_rescaling if doing berry phase."<<endl;}
     }
     else if (invNu==4) {
         if (Ne<15) rescaling=0.2;
@@ -619,19 +619,22 @@ double LATTICE::threebody(){
 	out=(three_counter-0.5*(two_counter)+0.5*Ne/(1.*NPhi))/(1.*NPhi);
 	return out;
 }
-
 void LATTICE::update_structure_factors(){
-	vector< vector<complex<double> > >temp(NPhi,vector<complex<double> >(NPhi,0));
+	vector<vector<complex<double>>>temp(NPhi,vector<complex<double>>(NPhi,0.));
 	for(int qx=0;qx<NPhi;qx++){
 		for(int qy=0; qy<NPhi; qy++){
 			for(int i=0;i<Ne;i++){
-				temp[qx][qy]+=omega[supermod(2*(qx*locs[i][0]+qy*locs[i][1]),2*NPhi)];
+//				temp[qx][qy]+=omega[supermod(2*(qx*locs[i][0]+qy*locs[i][1]),2*NPhi)];
 				//polar(1.,qx*kappa*locs[i][0]+qy*kappa*locs[i][1]);
+          
+                temp[qx][qy]+=omega[supermod(2*(qx*locs[i][1]-qy*locs[i][0]),2*NPhi)];
+                //Using this definition, 'rho(q)' is taken as e^{iq\times z} where q has spatial index.
 			}
 			sq[qx][qy]+=temp[qx][qy];
 			sq2[qx][qy]+=norm(temp[qx][qy]);
 		}
 	}
+//    cout<<sq[0][0]<<endl;
 //	int qx3,qy3;
 //	for(int qx1=0;qx1<NPhi;qx1++){
 //		for(int qx2=0;qx2<NPhi;qx2++){
@@ -645,11 +648,15 @@ void LATTICE::update_structure_factors(){
 //		}
 //	}
 }
-			
-void LATTICE::print_structure_factors(int nMeas){
-	ofstream sqout("sq"), sqout2("sq2"),sqout3("sq3");
+void LATTICE::print_structure_factors(int nMeas, string filename){
+	ofstream sqout(type+"sq/sq"+filename), sqout2(type+"sq/sq2"+filename), sqout3(type+"sq/sq3"+filename);
+    ofstream sqoutfl(type+"sq/sqfl"+filename), sqout2fl(type+"sq/sq2fl"+filename);//'fl'=first line.
 	for(int qx=0;qx<NPhi;qx++){
 		for(int qy=0; qy<NPhi; qy++){
+            if (qx==0) {
+                sqout2fl<<sq2[qx][qy]/(1.*nMeas)<<" ";
+                sqoutfl<<abs(sq[qx][qy]/(1.*nMeas))<<" ";
+            }
 			sqout2<<sq2[qx][qy]/(1.*nMeas)<<" ";
 			sqout<<abs(sq[qx][qy]/(1.*nMeas))<<" ";
 		}
@@ -665,29 +672,31 @@ void LATTICE::print_structure_factors(int nMeas){
 //			}
 //		}
 //	}
+    sqoutfl.close();
+    sqout2fl.close();
 	sqout3.close();
 	sqout.close();
 	sqout2.close();
 }
 
 complex<double> LATTICE::formfactor(int qx, int qy){
-	complex<double> out=0;
-	complex<double> temp;
-	double kappa=2*M_PI/real(L1);
-	for(int px=-4;px<5;px++){
-		temp=exp(-0.25*pow(kappa*(px*NPhi-qx),2));
-		for(int py=-4;py<5;py++){
-			out+=temp*exp(-0.25*pow(kappa*(py*NPhi-qy),2));
-		}
-	}
-	return out;
+    complex<double> out=0;
+    complex<double> temp;
+    double kappa=2*M_PI/real(L1);
+    for(int px=-9;px<10;px++){
+        temp=exp(-0.25*pow(kappa*(px*NPhi-qx),2));
+        for(int py=-9;py<10;py++){
+            out+=temp*exp(-0.25*pow(kappa*(py*NPhi-qy),2));
+        }
+    }
+    return out;
 }//need to change if want to do non-square case.
 
 complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 	complex<double> out=0;
 	for(int i=0;i<Ne;i++){
 //		out+=omega[supermod((2*qx*locs[i][0]+2*qy*locs[i][1]), 2*NPhi)];//need to be checked.
-        out+=omega[supermod((2*qx*locs[i][1]-2*qy*locs[i][0]), 2*NPhi)];//temportarily modify.
+        out+=omega[supermod((2*qx*locs[i][1]-2*qy*locs[i][0]), 2*NPhi)];
 	}
 //	return out/(formfactor(qx,qy)*(1.*NPhi));
     return out;
@@ -751,6 +760,10 @@ void LATTICE::reset(){
 			exit(0);
 		}
 	}
+    
+    sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
+    sq2=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
+    
     check_sanity();
 }
 //checks a few different things to make sure that they make sense

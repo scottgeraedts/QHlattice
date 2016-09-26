@@ -93,7 +93,11 @@ void single_run(){
     int gs=0;
 //    LATTICE ds_generator(Ne, invNu, testing, type, seed, 0);
 //    vector< vector<int> > old_ds=ds_generator.get_ds();
-    LATTICE ll(Ne,invNu, testing, type, seed, gs);
+    double theta, alpha;
+    alpha=1.;
+    theta=M_PI/2;
+    
+    LATTICE ll(Ne,invNu, testing, type, seed, gs, theta, alpha);
 //    ll.set_ds(old_ds);
 //    ll.print_ds();
     
@@ -128,8 +132,10 @@ void single_run(){
                 e_tracker.pop_back();
                 p_tracker.pop_back();
             }
-//            ll.update_structure_factors();
+            ll.update_structure_factors();
         }
+        ll.print_structure_factors(nMeas, "_"+to_string(s));
+        
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
         
@@ -142,7 +148,76 @@ void single_run(){
         }
     }
     outfile<<endl;
-    //    ll.print_structure_factors(nMeas*nBins);
+    eout.close();
+    outfile.close();
+}
+
+void structurefactor(){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    double theta, alpha;
+    string type;
+    ifstream infile("params_sq");
+    infile>>Ne>>invNu>>theta>>alpha;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    int gs=0;
+    
+    LATTICE ll(Ne,invNu, testing, type, seed, gs, theta, alpha);
+    //    ll.set_ds(old_ds);
+    //    ll.print_ds();
+    
+    ofstream outfile("out"), eout("energy");
+    for(int s=0;s<nBins;s++){
+        //        ll.change_dbar_parameter(s*0.1,s*0.1);
+        ll.reset();
+        ll.step(nWarmup);
+        double E=0,E2=0;
+        double P=0,P2=0,three=0;
+        double e ,p;
+        complex<double> berry_phase(0,0);
+        deque<double> e_tracker, p_tracker;
+        int Ntrack=50;
+        vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
+        for(int i=0;i<nMeas;i++){
+            ll.step(nSteps);
+            e=ll.coulomb_energy();
+            E+=e;
+            E2+=e*e;
+            p=ll.running_weight;
+            P+=p;
+            eout<<e<<endl;
+            //autocorrelations
+            e_tracker.push_front(e);
+            p_tracker.push_front(p);
+            if(i>=Ntrack){
+                for(int j=0;j<Ntrack;j++){
+                    autocorr_e[j]+=e_tracker[j]*e;
+                    autocorr_p[j]+=p_tracker[j]*p;
+                }
+                e_tracker.pop_back();
+                p_tracker.pop_back();
+            }
+            ll.update_structure_factors();
+        }
+        ll.print_structure_factors(nMeas, "_"+to_string(s));
+        
+        outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
+        cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
+        
+        ofstream auto_out("auto");
+        for(int j=0;j<Ntrack;j++){
+            auto_out<<j+1<<" ";
+            auto_out<<autocorr_e[j]/(1.*(nMeas-Ntrack))<<" "<<pow(E/(1.*nMeas),2)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))<<" ";
+            //            auto_out<<autocorr_p[j]/(1.*(nMeas-Ntrack))<<" "<<pow(P/(1.*nMeas),2)<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<" ";
+            auto_out<<endl;
+        }
+    }
+    outfile<<endl;
     eout.close();
     outfile.close();
 }
@@ -763,7 +838,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
     vector<vector<int> > old_ds=templl.get_ds(), extra_ds;
     //old_dbar is the center of the circular fermi surface
     vector<double> old_dbar=templl.get_dbar_parameter();
-    templl.print_ds();
+    templl.print_ds();// exit(0);
     
     //this part of the code specifies all the grid points just outside the circle made up of tempNe electrons
     //we will loop through all these positions and add electrons to them
@@ -790,6 +865,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
             old_ds.push_back(vector<int>{0,1});
             old_ds.push_back(vector<int>{1,0});
             old_ds.push_back(vector<int>{1,1});
+            
             extra_ds.push_back(vector<int>{2,0});
             extra_ds.push_back(vector<int>{0,-1});
             extra_ds.push_back(vector<int>{-1,1});
@@ -1567,6 +1643,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
         }
     }
 //    templl.set_ds(old_ds); templl.print_ds(); exit(0);
+//    exit(0);
     
     int nds=extra_ds.size();
     int dsteps=nds; //nds
@@ -1662,14 +1739,11 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
 //                        for (int gs=0; gs<invNu; gs++) density_matrix+=ll[coren][i].rhoq(dKx,dKy+gs*Ne,locs);//**********this is where i want to make change.
 //                        density_matrix/=ll[coren][i].formfactor(dKx,dKy);//**********for the time being, I get rid of form factor.
                         
-                        if (i==j) density_matrix=ll[coren][i].rhoq(dKx,dKy,locs);
-                        else density_matrix=ll[coren][i].rhoq(dKx,dKy+Ne,locs);
-                        
 //                        if (i==j) density_matrix=ll[coren][i].rhoq(dKx,dKy,locs);
-//                        else density_matrix=0.;
+//                        else density_matrix=ll[coren][i].rhoq(dKx,dKy+Ne,locs);
                         
-//                        if (i==j) density_matrix=0.;
-//                        else density_matrix=ll[coren][i].rhoq(dKx,(dKy+Ne)%NPhi,locs);
+                        if (i==j) density_matrix=ll[coren][i].rhoq(dKx,dKy,locs);
+                        else density_matrix=0.;
                         
 //                        density_matrix=ll[coren][i].rhoq(dKx,dKy,locs);
                         

@@ -76,9 +76,10 @@ public:
 	double coulomb_energy();
 	double threebody();
 	void update_structure_factors();
-	void print_structure_factors(int nMeas);
+	void print_structure_factors(int nMeas, string filename="");
 	vector <vector<int> > get_locs();
 	complex<double> formfactor(int qx, int qy);
+//    double formfactor(double qx, double qy);
 	complex<double> rhoq(int qx ,int qy, const vector< vector<int> > &zs);
     vector<int> dsum;//an integer defined on an NPhi lattice
     
@@ -104,7 +105,7 @@ private:
 	string type;
     int gs;
     double theta, alpha;
-	vector <vector <double> > coulomb_table,sq2;
+	vector <vector <double> > coulomb_table, sq2;
 	vector <vector <complex<double> > > sq;
 	vector <vector <vector <vector< complex<double> > > > > sq3;
 	vector <vector<int> > sx,sx2;
@@ -119,6 +120,9 @@ private:
     vector<vector<vector<double>>> zeros;//a parameter for 'FilledLL' state.
 	int one,zero;
 	vector< complex<double> > omega;
+//    int sqgrid=1;//the q in structure factor can be finer than Nphi*Nphi lattice.
+//    vector< complex<double> > omegasq;
+    
     vector<vector<int> > ds;//an integer defined on an Ne lattice
 };
 
