@@ -105,9 +105,10 @@ private:
 	string type;
     int gs;
     double theta, alpha;
-	vector <vector <double> > coulomb_table, sq2;
-	vector <vector <complex<double> > > sq;
+	vector <vector <double> > coulomb_table, sq2, sq2_mqy;
+	vector <vector <complex<double> > > sq, sq_mqy;//'minus qy', qy<=0.
 	vector <vector <vector <vector< complex<double> > > > > sq3;
+    vector <vector <double> > SMAq;
 	vector <vector<int> > sx,sx2;
 	vector <vector <complex<double> > > shifted_ztable;
 	Eigen::MatrixXcd oldMatrix;

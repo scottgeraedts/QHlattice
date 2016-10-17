@@ -73,8 +73,11 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
     omega=vector<complex<double>>(2*NPhi);
 	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi));
 
-	sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi, 0));
-	sq2=vector<vector<double>>(NPhi, vector<double>(NPhi, 0));
+    sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi, 0));
+    sq2=vector<vector<double>>(NPhi, vector<double>(NPhi, 0));
+    sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi, 0));
+    sq2_mqy=vector<vector<double>>(NPhi, vector<double>(NPhi, 0));
+    SMAq=vector<vector<double>>(NPhi, vector<double>(NPhi, 0.));
 //	sq3=vector<vector<vector<vector<complex<double>>>>>(NPhi, vector<vector<vector<complex<double>>>>(NPhi, vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0))));
     //comment out sq3, otherwise memory exceed easilly for large invNu state.
 }
@@ -621,17 +624,20 @@ double LATTICE::threebody(){
 }
 void LATTICE::update_structure_factors(){
 	vector<vector<complex<double>>>temp(NPhi,vector<complex<double>>(NPhi,0.));
+    vector<vector<complex<double>>>temp2(NPhi,vector<complex<double>>(NPhi,0.));
 	for(int qx=0;qx<NPhi;qx++){
 		for(int qy=0; qy<NPhi; qy++){
 			for(int i=0;i<Ne;i++){
-//				temp[qx][qy]+=omega[supermod(2*(qx*locs[i][0]+qy*locs[i][1]),2*NPhi)];
-				//polar(1.,qx*kappa*locs[i][0]+qy*kappa*locs[i][1]);
-          
                 temp[qx][qy]+=omega[supermod(2*(qx*locs[i][1]-qy*locs[i][0]),2*NPhi)];
                 //Using this definition, 'rho(q)' is taken as e^{iq\times z} where q has spatial index.
+                temp2[qx][qy]+=omega[supermod(2*(qx*locs[i][1]+qy*locs[i][0]),2*NPhi)];
+                //temp2 restore qy<=0 components.
 			}
-			sq[qx][qy]+=temp[qx][qy];
-			sq2[qx][qy]+=norm(temp[qx][qy]);
+            sq[qx][qy]+=temp[qx][qy];
+            sq2[qx][qy]+=norm(temp[qx][qy]);
+            sq_mqy[qx][qy]+=temp2[qx][qy];
+            sq2_mqy[qx][qy]+=norm(temp2[qx][qy]);
+            SMAq[qx][qy]+=coulomb_energy()*norm(temp[qx][qy]);
 		}
 	}
 //    cout<<sq[0][0]<<endl;
@@ -650,19 +656,32 @@ void LATTICE::update_structure_factors(){
 }
 void LATTICE::print_structure_factors(int nMeas, string filename){
 	ofstream sqout(type+"sq/sq"+filename), sqout2(type+"sq/sq2"+filename), sqout3(type+"sq/sq3"+filename);
-    ofstream sqoutfl(type+"sq/sqfl"+filename), sqout2fl(type+"sq/sq2fl"+filename);//'fl'=first line.
+//    ofstream sqoutfl(type+"sq/sqfl"+filename), sqout2fl(type+"sq/sq2fl"+filename);//'fl'=first line.
 	for(int qx=0;qx<NPhi;qx++){
 		for(int qy=0; qy<NPhi; qy++){
-            if (qx==0) {
-                sqout2fl<<sq2[qx][qy]/(1.*nMeas)<<" ";
-                sqoutfl<<abs(sq[qx][qy]/(1.*nMeas))<<" ";
-            }
 			sqout2<<sq2[qx][qy]/(1.*nMeas)<<" ";
 			sqout<<abs(sq[qx][qy]/(1.*nMeas))<<" ";
 		}
 		sqout<<endl;
 		sqout2<<endl;
 	}
+    ofstream sqout_mqy(type+"sq/sq_mqy"+filename), sqout2_mqy(type+"sq/sq2_mqy"+filename), sqout3_mqy(type+"sq/sq3_mqy"+filename);
+    for(int qx=0;qx<NPhi;qx++){
+        for(int qy=0; qy<NPhi; qy++){
+            sqout2_mqy<<sq2_mqy[qx][qy]/(1.*nMeas)<<" ";
+            sqout_mqy<<abs(sq_mqy[qx][qy]/(1.*nMeas))<<" ";
+        }
+        sqout_mqy<<endl;
+        sqout2_mqy<<endl;
+    }
+    ofstream smaout(type+"sq/sma"+filename);
+    for (int qx=0; qx<NPhi; qx++) {
+        for (int qy=0; qy<NPhi; qy++) {
+            smaout<<SMAq[qx][qy]/(1.*nMeas)<<" ";
+        }
+        smaout<<endl;
+    }    
+    
 //	for(int qx1=0;qx1<NPhi;qx1++){
 //		for(int qy1=0;qy1<NPhi;qy1++){
 //			for(int qx2=0;qx2<NPhi;qx2++){
@@ -672,11 +691,15 @@ void LATTICE::print_structure_factors(int nMeas, string filename){
 //			}
 //		}
 //	}
-    sqoutfl.close();
-    sqout2fl.close();
+//    sqoutfl.close();
+//    sqout2fl.close();
 	sqout3.close();
+    sqout3_mqy.close();
 	sqout.close();
 	sqout2.close();
+    sqout_mqy.close();
+    sqout2_mqy.close();
+    smaout.close();
 }
 
 complex<double> LATTICE::formfactor(int qx, int qy){
@@ -763,6 +786,9 @@ void LATTICE::reset(){
     
     sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
     sq2=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
+    sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
+    sq2_mqy=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
+    SMAq=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
     
     check_sanity();
 }

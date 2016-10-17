@@ -127,7 +127,7 @@ void single_run(){
 //    vector< vector<int> > old_ds=ds_generator.get_ds();
     double theta, alpha;
     alpha=1.;
-    theta=M_PI/2;
+    theta=2.0*M_PI/3;
     
     LATTICE ll(Ne,invNu, testing, type, seed, gs, theta, alpha);
 //    ll.set_ds(old_ds);
@@ -171,6 +171,9 @@ void single_run(){
         
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
+//        cout<<"E="<<E/(1.*nMeas*ll.Ne)<<" var="<<sqrt(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<sqrt(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<endl;
+        //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
+        cout<<"E="<<E/(1.*nMeas*ll.Ne)<<" var="<<sqrt(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*ll.Ne)<<endl;
         
         ofstream auto_out("auto");
         for(int j=0;j<Ntrack;j++){
@@ -188,21 +191,36 @@ void single_run(){
 void structurefactor(){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
-    double theta, alpha;
+    double theta_t, theta, alpha;
     string type;
     ifstream infile("params_sq");
-    infile>>Ne>>invNu>>theta>>alpha;
+    infile>>Ne>>invNu>>theta_t>>alpha;
     infile>>nWarmup>>nMeas>>nSteps>>nBins;
     infile>>seed;
     infile>>testing;
     infile>>type;
     //initialize MC object
+    theta=theta_t*M_PI;
     
     int gs=0;
     
-    LATTICE ll(Ne,invNu, testing, type, seed, gs, theta, alpha);
-    //    ll.set_ds(old_ds);
-    //    ll.print_ds();
+    vector<vector<int>> strangeds;
+    if (Ne==36) {
+        for (int y=0; y<6; y++) {
+            for (int x=-5+y; x<=5-y; x++) {
+                strangeds.push_back(vector<int>{x, y});
+            }
+        }
+        cout<<"strangeds.size="<<strangeds.size()<<endl;
+    }
+    
+//    LATTICE ll0(Ne, invNu, testing, type, seed, gs, 0.5*M_PI, 1.0);
+    LATTICE ll(Ne, invNu, testing, type, seed, gs, theta, alpha);
+    if (type=="CFL") {
+//        ll.set_ds(ll0.get_ds());
+        ll.set_ds(strangeds);
+        ll.print_ds();
+    }
     
     ofstream outfile("out"), eout("energy");
     for(int s=0;s<nBins;s++){
@@ -2077,9 +2095,9 @@ void testIQHwf(){
     infile>>type;
     //initialize MC object
     
-    Ne=5, invNu=1;
+    Ne=10, invNu=1;
     vector<vector<double>> ws(1, vector<double>(2));
-    vector<double> zeros0{0.3, 0.};
+    vector<double> zeros0{0.3, 0.6};
     for (int i=0; i<2; i++) {
         ws[0][0]=zeros0[0]*Ne+0.5*(Ne-1);
         ws[0][1]=zeros0[1]*Ne;

@@ -12,6 +12,9 @@ int main(){
 //    CFL_berry_phases_parallel("params_ne8", "ne8bp", num_core, "fullloop");//params_name, output_name, num_core, kind.
     
     structurefactor();
+//    single_run();
+    
+//    testIQHwf();
     
 }
 
