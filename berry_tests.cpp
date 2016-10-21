@@ -1803,6 +1803,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
                         
                         complex<double> temp=pp[coren][j].get_wf(locs)/ll[coren][i].get_wf(locs);
                         overlaps[b][0](i,j)+=temp*density_matrix;// <ll|rhoq|pp>
+                        if(i==j) cout<<norm(temp*density_matrix)<<" "<<sqrt(norm(temp))<<endl;
                         overlaps[b][1](i,j)+=norm(temp);
                         //                        temp=ll[coren][j].get_wf(ll[coren][i].get_locs())/ll[coren][i].get_wf(ll[coren][i].get_locs());
                         //                        overlaps[b][2](i,j)+=temp;// <ll|ll>
@@ -1927,7 +1928,7 @@ void ParticleHoleSym(){
         cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
         cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
     }
-    LATTICE FLL(Ne, 1, testing, "FilledLL", seed, 0);//Filled LL Wavefunction.
+    LATTICE FLL(Ne, 1, testing, "FilledLL2", seed, 0);//Filled LL Wavefunction.
 //    cout<<"testing = "<<testing<<endl;
 //    cfl1[1].print_ws();
     
@@ -1943,12 +1944,18 @@ void ParticleHoleSym(){
             vector<vector<int>> z=FLL.get_locs(), z1=z, z2=z;
             z1.resize(Ne1);
             z2.erase(z2.begin(), z2.begin()+Ne1);
+			//inversion symmetry
+            for(int j=0;j<(signed)z2.size();j++){
+            	z2[j][0]=-z2[j][0];
+            	z2[j][1]=-z2[j][1];
+            }
             
             for (int m=0; m<invNu; m++) {
                 for (int n=0; n<invNu; n++) {
                     complex<double> tmp=cfl1[m].get_wf(z1)*cfl2[n].get_wf(z2)/FLL.get_wf(z);
                     overlaps[0](m,n)+=tmp;
                     overlaps[1](m,n)+=norm(tmp);
+                	cout<<norm(tmp)<<endl;
                 }
             }
             
@@ -1964,6 +1971,61 @@ void ParticleHoleSym(){
                 cout<<endl;
             }
         }
+        cout<<endl;
+    }
+}
+//Particle Hole Symmetry (Ne9, maximal symmetric ds).
+//same as above but uses the product of 2 cfls as the weight
+void ParticleHoleSymBackwards(){
+    int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
+    ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    Ne=18; invNu=2;
+    int Ne1=Ne/2, Ne2=Ne-Ne1;
+
+    LATTICE cfl=LATTICE(Ne1, invNu, testing, "CFL", seed, 0);
+    LATTICE FLL(Ne, 1, testing, "FilledLL2", seed, 0);//Filled LL Wavefunction.
+    LATTICE doubledcfl(Ne1,invNu,testing,"doubledCFL",seed,0);
+//    cout<<"testing = "<<testing<<endl;
+//    cfl1[1].print_ws();
+    
+    //monte carlo.
+    for (unsigned nbin=0; nbin<nBins; nbin++) {
+        vector<complex<double> > overlaps(2, 0);
+        //overlaps[0][m][n]=<FLL|cfl1[m]*cfl2[n]>, overlaps[1][m][n]=<|FLL|cfl1[m]*cfl2[n]|^2>.
+        
+        doubledcfl.reset();
+        doubledcfl.step(nWarmup);
+        for (int nmea=0; nmea<nMeas; nmea++) {
+            doubledcfl.step(nSteps);
+            vector<vector<int>> z=doubledcfl.get_locs(), z1=z, z2=z;
+            z1.resize(Ne1);
+            z2.erase(z2.begin(), z2.begin()+Ne1);
+			//inversion symmetry
+            for(int j=0;j<(signed)z2.size();j++){
+            	z2[j][0]=-z2[j][0];
+            	z2[j][1]=-z2[j][1];
+            }
+            
+            complex<double> tmp=FLL.get_wf(z)/doubledcfl.get_wf(z);
+            overlaps[0]+=tmp;
+            overlaps[1]+=norm(tmp);
+        	cout<<norm(tmp)<<endl;
+            
+        }
+        
+        for (int l=0; l<2; l++) overlaps[l]/=(1.*nMeas);
+        overlaps[0]/=sqrt(overlaps[1]);
+        cout<<"nbin="<<nbin<<endl;
+        cout<<"overlap="<<overlaps[0]<<endl;
+        cout<<"1-|overlap|="<<1-sqrt(norm(overlaps[0]))<<endl;
+        cout<<endl;
         cout<<endl;
     }
 }

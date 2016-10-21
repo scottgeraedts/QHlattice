@@ -1,9 +1,8 @@
 # ARPACK++ v1.2 2/18/2000
 # c++ interface to ARPACK code.
 # examples/product/simple directory makefile.
-
 # including other makefiles.
-CC=g++ -fopenmp -g -std=c++11
+CC=g++ -fopenmp -std=c++11
 HERE = /home/sgeraedt/QHlattice
 MYDIR = /home/sgeraedt/myClibrary/
 CFLAGS= -I$(HERE) -I$(MYDIR)

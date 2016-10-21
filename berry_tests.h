@@ -47,6 +47,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
 
 //Particle-Hole Symmetry
 void ParticleHoleSym();
+void ParticleHoleSymBackwards();
 void ParticleHoleSym2();
 void testIQHwf();
 complex<double> landauwf(int Nphi, int n, vector<double> latticeshift, vector<int> z, double theta=0.5*M_PI, double alpha=1.0);

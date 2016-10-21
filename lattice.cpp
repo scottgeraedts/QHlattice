@@ -15,7 +15,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
     
     //set in_determinant_rescaling.
     //It has been set for more Ne for invNu=2, some Ne for invNu=4.
-    if (type=="CFL")
+    if (type=="CFL" or type=="doubledCFL")
         in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
     
     //make l1, l2 through theta, alpha.
@@ -28,17 +28,18 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 	one=1; zero=0; //useful for fortran calls
 
 	//****initialize z's, w's, d's
-	locs=vector< vector<int> >(Ne, vector<int>(2,0)); //initalize locations of all electrons
+	if(type=="doubledCFL") locs=vector< vector<int> >(2*Ne, vector<int>(2,0)); //initalize locations of all electrons
+	else locs=vector< vector<int> >(Ne, vector<int>(2,0)); //initalize locations of all electrons
 
 	double center_frac[2]={0., 0.};
-    dbar_parameter=vector<double>(2);
+    dbar_parameter=vector<double>(2,0);
     
-	if(type=="CFL"){
+	if(type=="CFL" or type=="doubledCFL"){
 		if(Ne%2==0){center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
         print_ds();
 	}
-    else if (type=="laughlin" || type=="laughlin-hole" || type=="FilledLL") {
+    else if (type=="laughlin" || type=="laughlin-hole" || type=="FilledLL" || type=="FilledLL2") {
         ds.clear();
     }
     else {cout<<"recognized type."<<endl; exit(0);}
@@ -51,7 +52,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
         ws0[i][1]=gs/(1.*invNu);
     }
     
-    if (type=="CFL") set_ds(ds);//set ds, and reset ws.
+    if (type=="CFL" or type=="doubledCFL") set_ds(ds);//set ds, and reset ws.
     else if (type=="FilledLL") set_zeros(vector<double>{0., 0.});
     else ws=ws0;
     
@@ -110,10 +111,13 @@ void LATTICE::step(int Nsteps){
 }
 int LATTICE::simple_update(){
 	//find a new position for a randomly chosen electron
-	int electron=ran.randInt(Ne-1);
-	vector<int> newloc=random_move(locs[electron]);
+	int electron;
+	if(type=="doubledCFL") electron=ran.randInt(2*Ne-1);
+	else electron=ran.randInt(Ne-1);
+	vector<int> oldloc, newloc=random_move(locs[electron]);
 	vector< vector<int> >::iterator it=find(locs.begin(),locs.end(),newloc);
 	if(it!=locs.end()) return 0;
+
 	double prob=0;
 	complex<double> temp;
     //move the declaration of 'newDeterminant' and 'newMatrix' from ''***Determinant Part'' to Here.
@@ -131,8 +135,12 @@ int LATTICE::simple_update(){
         detSolver.compute(newMatrix);
         newDeterminant=detSolver.determinant();
         prob+=log(norm(newDeterminant/oldDeterminant));
-    }
-    else {
+    }else if(type=="doubledCFL"){
+    	oldloc=locs[electron];
+    	locs[electron]=newloc;
+    	newDeterminant=get_wf(locs);
+    	prob+=log(norm(newDeterminant/oldDeterminant));
+    }else {
         //***************hole part
         double dx,dy; //TODO: this calls z_function every time, should speed that up
         if(type=="laughlin-hole"){
@@ -233,7 +241,10 @@ int LATTICE::simple_update(){
         oldMatrix=newMatrix;
 		return 1;
 	}
-	else return 0;
+	else{
+		return 0;
+		if(type=="doubledCFL") locs[electron]=oldloc;
+	}
 }
 //chooses a new site, given an old site
 vector<int> LATTICE::random_move( const vector<int> &in){
@@ -294,8 +305,11 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
     
     if (type=="FilledLL") {
         out=log(norm(FilledLL(zs)));
-    }
-    else {
+    }else if(type=="FilledLL2"){
+    	out=log(norm(FilledLL2(zs)));
+    }else if(type=="doubledCFL"){
+    	out=log(norm(doubled_CFL(zs)));
+    }else {
         //hole piece
         if(type=="laughlin-hole"){
             for(int i=0;i<Ne;i++){
@@ -386,8 +400,8 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 } 
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
 complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
-    if (zs.size()!=Ne) {
-        cout<<"cannot get_wf because zs.size()!=Ne"<<endl;
+    if (type!="doubledCFL" and zs.size()!=Ne) {
+        cout<<"cannot get_wf because zs.size()!=Ne "<<zs.size()<<" "<<Ne<<endl;
         exit(0);
     }
 	complex<double> out=1,temp;
@@ -396,7 +410,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
     
     if (type=="FilledLL") {
         out=FilledLL(zs);
-    }
+    }else if(type=="doubledCFL") out=doubled_CFL(zs);
     else {
         //hole part
         if(type=="laughlin-hole"){
@@ -726,14 +740,14 @@ complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 }
 void LATTICE::reset(){
 	tries=0; accepts=0;
-	cold_start();
+	hot_start();
     
 	//**** setting up the initial determinant matrix
-	running_weight=0;
+	running_weight=-1e11;
 	int site=0;
 	int initial_state_counter=0;
 	
-    while(running_weight==0){
+    while(running_weight<-1e10){
 	//for some sizes the configuration specified by cold_start has zero weight
 	//if that happens fiddle around until you find a better configuration, thats why theres a while loop
 		locs[site][0]=locs[p(site)][0];
@@ -775,6 +789,8 @@ void LATTICE::reset(){
                     }
                 }
             }
+        }else if(type=="doubledCFL"){
+        	oldDeterminant=get_wf(locs);
         }
         
 		initial_state_counter++;
@@ -783,7 +799,7 @@ void LATTICE::reset(){
 			exit(0);
 		}
 	}
-    
+
     sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
     sq2=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
     sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
@@ -794,7 +810,7 @@ void LATTICE::reset(){
 }
 //checks a few different things to make sure that they make sense
 void LATTICE::check_sanity(){
-	if(type!="CFL" && type!="laughlin" && type!= "laughlin-hole" && type!="FilledLL"){
+	if(type!="CFL" && type!="laughlin" && type!= "laughlin-hole" && type!="FilledLL" && type!="FilledLL2" &&  type!="doubledCFL"){
 		cout<<"type not recognized: "<<type<<endl;
 		exit(0);
 	}
@@ -813,7 +829,7 @@ void LATTICE::check_sanity(){
 }
 //changes the dbar (which ordinarily is the sum of d's) to whatever we want
 void LATTICE::change_dbar_parameter(double dbarx, double dbary){
-	if(type!="CFL" && type!="FilledLL"){
+	if(type!="CFL" && type!="FilledLL" && type!="doubledCFL"){
 		cout<<"changing dbar, but not CFL nor FilledLL."<<endl;
 		//exit(0);
 	}
@@ -904,12 +920,27 @@ complex<double> LATTICE::getL(int dir){
 	else return L2;
 }
 void LATTICE::cold_start(){
-	for(int i=0;i<Ne;i++){
+	for(int i=0;i<(signed)locs.size();i++){
 		locs[i][0]=i;
 		locs[i][1]=i;
 	}
 }
-
+void LATTICE::hot_start(){
+	unordered_set<int> locs_table;
+	bool found;
+	int x,y;
+	for(int i=0;i<(signed)locs.size();i++){
+		found=true;
+		while(found){
+			x=ran.randInt(NPhi-1);
+			y=ran.randInt(NPhi-1);
+			if(locs_table.count(NPhi*x+y)==0) found=false;
+		}
+		locs_table.insert(NPhi*x+y);
+		locs[i][0]=x;
+		locs[i][1]=y;
+	}
+}
 //call's duncan's lattice_z function, if the arguments x or y are outside of the range (0,NPhi) it shifts them into that range
 //and multiplies by the appropriate phase
 //only works for a square torus
@@ -996,4 +1027,92 @@ complex<double> LATTICE::FilledLL(vector<vector<int>> z){
     return detSolver.determinant();
 }
 
+complex<double> LATTICE::FilledLL2(vector< vector<int> > z){
+	complex<double> out=1,temp;
+	double x,y;
+	vector<int> COM(2,0);
+	for(int i=0;i<Ne;i++){
+		for(int j=i+1;j<Ne;j++){
+			x=(z[i][0]-z[j][0])/(1.*NPhi);
+			y=(z[i][1]-z[j][1])/(1.*NPhi);
+			z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+			out*=temp;
+		}
+		COM[0]+=z[i][0];
+		COM[1]+=z[i][1];
+	}
+	x=COM[0]/(1.*NPhi);
+	y=COM[1]/(1.*NPhi);
+	z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+	out*=temp;
+	return out;
+}
+//given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
+complex<double> LATTICE::doubled_CFL(const vector< vector<int> > &bothzs){
+    if (bothzs.size()!=Ne*2) {
+        cout<<"cannot get_wf because zs.size()!=Ne"<<endl;
+        exit(0);
+    }
+	complex<double> out=1,temp;
+	int ix,iy;
+	double x,y;
+    
+	vector<vector<vector<int> > > onezs(2,bothzs);
+	
+	vector<vector<int> > zs;
+	onezs[0].resize(Ne);
+	onezs[1].erase(onezs[1].begin(),onezs[1].begin()+Ne);
+	for(int i=0;i<Ne;i++){
+		onezs[1][i][0]*=-1;
+		onezs[1][i][1]*=-1;
+	}
+	for(int copy=0;copy<2;copy++){
+		zs=onezs[copy];
+//		for(int i=0;i<Ne;i++) cout<<"("<<zs[i][0]<<","<<zs[i][1]<<") ";
+//		cout<<endl;
+        //COM piece
+        int COM[2]={0,0};
+        for( int i=0;i<Ne;i++){
+            COM[0]+=zs[i][0];
+            COM[1]+=zs[i][1];
+        }
+        double dx,dy;
+        for( int i=0;i<invNu;i++){
+            dx=COM[0]/(1.*NPhi)-ws[i][0];
+            dy=COM[1]/(1.*NPhi)-ws[i][1];
+            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+            out*=temp;
+        }
+        //    cout<<" com piece = "<<out/assist<<endl; assist=out;
+        complex<double> product;
+        vector<int> z(2);
+        Eigen::MatrixXcd M(Ne,Ne);
+        for(int i=0;i<Ne;i++){
+            for(int j=0;j<Ne;j++){
+                product=1;
+                for(int k=0;k<Ne;k++){
+                    if(k==i) continue;
+                    det_helper(zs[i],zs[k],ds[j],z);
+                    temp=modded_lattice_z(z[0],z[1]);
+                    product*=temp;
+                }
+                M(i,j)=product*polar(pow(in_determinant_rescaling, Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
+            }
+        }
+        detSolver.compute(M);
+        out=out*detSolver.determinant();
+        //        cout<<"det piece = "<<detSolver.determinant()<<endl;
+        
+        //phase previously missing.
+        vector<double> wsum(2);
+        for (int i=0; i<invNu; i++) {
+            wsum[0]+=ws[i][0];
+            wsum[1]+=ws[i][1];
+        }
+        complex<double> w_comp = wsum[0]*L1+wsum[1]*L2, zcom_comp = 1.*COM[0]/NPhi*L1+1.*COM[1]/NPhi*L2;
+        complex<double> dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L2;
+        out*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+    }
+    return out;
+}
 LATTICE::~LATTICE(){  }

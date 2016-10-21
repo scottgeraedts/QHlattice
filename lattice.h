@@ -8,6 +8,7 @@
 #include "MersenneTwister.h"
 #include <numeric>
 #include <deque>
+#include <unordered_set>
 
 using namespace std;
 
@@ -86,6 +87,10 @@ public:
     
     //Filled Landau Level Wavefunction (not IQH wf)
     complex<double> FilledLL(vector<vector<int>> zs);
+	//IQH wavefunction
+    complex<double> FilledLL2(vector<vector<int>> zs);
+	//product of 2 CFL wavefunctions
+    complex<double> doubled_CFL(const vector<vector<int>> &zs);
 	
 private:
     double get_in_det_rescaling(int Ne, int invNu);
@@ -96,7 +101,7 @@ private:
 	vector<int> random_move(const vector<int> &oldsite);
 	int p(int); int m(int);
 	void cold_start();
-	void hotter_start();
+	void hot_start();
 	void det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z);
     double det_helper(int z1, int z2, int d, double dbar_parameter);
     void check_sanity();
@@ -126,6 +131,7 @@ private:
 //    vector< complex<double> > omegasq;
     
     vector<vector<int> > ds;//an integer defined on an Ne lattice
+    
 };
 
 #endif
