@@ -843,8 +843,9 @@ void LATTICE::set_ds(vector< vector<int> > tds){
 	for(int i=0;i<Ne;i++){
         dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu; //'ds' is on L/Ne lattice, 'dsum' is on L/Nphi lattice.
 	}
-	//print_ds();
+	print_ds();
 	change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));
+    
     
     //reset ws, according to ds.
     ws.clear(); ws=ws0;
@@ -898,6 +899,10 @@ inline void LATTICE::det_helper(const vector<int> &z1, const vector<int> &z2, co
 }
 inline double LATTICE::det_helper(int z1, int z2, int d, double dbarp){ return z1-z2-d*invNu+dbarp;}
 
+complex<double> LATTICE::getL(int dir){
+	if(dir==1) return L1;
+	else return L2;
+}
 void LATTICE::cold_start(){
 	for(int i=0;i<Ne;i++){
 		locs[i][0]=i;

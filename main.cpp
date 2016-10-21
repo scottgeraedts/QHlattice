@@ -8,10 +8,10 @@ bool IsOdd (int i) {
 }
 int main(){
     double theta=0.5*M_PI, alpha=1.0;
-    int num_core=4;
-//    CFL_berry_phases_parallel("params_ne8", "ne8bp", num_core, "fullloop");//params_name, output_name, num_core, kind.
+    int num_core=1;
+    CFL_berry_phases_parallel("params", "ne8bp", num_core, "fullloop");//params_name, output_name, num_core, kind.
     
-    structurefactor();
+//    structurefactor();
 //    single_run();
     
 //    testIQHwf();

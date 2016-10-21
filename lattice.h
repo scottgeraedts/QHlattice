@@ -38,6 +38,7 @@ public:
 	int Ne, NPhi;
 	double running_weight;//running_weight is a global variable. need reset in every run.
     int tries,accepts;
+    complex<double> getL(int dir);
     
     vector<double> hole;
     bool fermions,holes_set;

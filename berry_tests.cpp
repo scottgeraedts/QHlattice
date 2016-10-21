@@ -91,7 +91,6 @@ void single_run(){
     //initialize MC object
     
     int gs=0;
-<<<<<<< HEAD
 	LATTICE ds_generator(9,2,testing,type,seed,0);
 	vector< vector<int> > old_ds=ds_generator.get_ds();
 	vector<int> temp_ds(2);
@@ -122,19 +121,7 @@ void single_run(){
     ll.print_ds();
 
 	ofstream outfile("out"), eout("energy");
-=======
-//    LATTICE ds_generator(Ne, invNu, testing, type, seed, 0);
-//    vector< vector<int> > old_ds=ds_generator.get_ds();
-    double theta, alpha;
-    alpha=1.;
-    theta=2.0*M_PI/3;
-    
-    LATTICE ll(Ne,invNu, testing, type, seed, gs, theta, alpha);
-//    ll.set_ds(old_ds);
-//    ll.print_ds();
-    
-    ofstream outfile("out"), eout("energy");
->>>>>>> 4768729afdc1f2f8903e0d56ee5d7bbc122e0490
+
     for(int s=0;s<nBins;s++){
 //        ll.change_dbar_parameter(s*0.1,s*0.1);
         ll.reset();
@@ -868,7 +855,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
     //  mtwod: removes two electrons from the circular fermi surface, i.e. adds two "holes", moves these holes around
     //  oned: removes one electron from the fermi surface
     infile>>type;
-    
+	infile>>kind;    
     //tempNe is the number of electrons in the circular part of the Fermi surface
     //Ne is the total number of electrons including the extra electrons/holes
     if(type=="twod") Ne=tempNe+2;
@@ -1102,18 +1089,21 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
     else if(holes){
         if(tempNe==21){
             if (kind=="fermisurface") {
-                extra_ds.push_back(vector<int>{2,0});
-                extra_ds.push_back(vector<int>{2,1});
-                extra_ds.push_back(vector<int>{1,2});
-                extra_ds.push_back(vector<int>{0,2});
-                extra_ds.push_back(vector<int>{-1,2});
-                extra_ds.push_back(vector<int>{-2,1});
-                extra_ds.push_back(vector<int>{-2,0});
-                extra_ds.push_back(vector<int>{-2,-1});
-                extra_ds.push_back(vector<int>{-1,-2});
-                extra_ds.push_back(vector<int>{0,-2});
-                extra_ds.push_back(vector<int>{1,-2});
                 extra_ds.push_back(vector<int>{2,-1});
+//                extra_ds.push_back(vector<int>{2,0});
+                extra_ds.push_back(vector<int>{2,1});
+
+//                extra_ds.push_back(vector<int>{1,2});
+                extra_ds.push_back(vector<int>{0,2});
+//                extra_ds.push_back(vector<int>{-1,2});
+
+//                extra_ds.push_back(vector<int>{-2,1});
+                extra_ds.push_back(vector<int>{-2,0});
+//                extra_ds.push_back(vector<int>{-2,-1});
+
+                extra_ds.push_back(vector<int>{-1,-2});
+//                extra_ds.push_back(vector<int>{0,-2});
+                extra_ds.push_back(vector<int>{1,-2});
             }
             else if (kind=="surround0") {
                 extra_ds.push_back(vector<int>{1,0});
@@ -1487,6 +1477,19 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
                 extra_ds.push_back(vector<int>{2,1});
                 extra_ds.push_back(vector<int>{2,-1});
                 extra_ds.push_back(vector<int>{-1,-1});
+            }else if(kind=="cross"){
+                extra_ds.push_back(vector<int>{0,-1});
+                //extra_ds.push_back(vector<int>{1,-1});
+
+                //extra_ds.push_back(vector<int>{2,0});
+                extra_ds.push_back(vector<int>{2,1});
+
+                //extra_ds.push_back(vector<int>{1,2});
+                extra_ds.push_back(vector<int>{0,2});
+
+                extra_ds.push_back(vector<int>{-1,1});
+                //extra_ds.push_back(vector<int>{-1,0});
+            
             }
             else {cout<<"unrecoginzed kind."<<endl; exit(0);}
         }
@@ -1825,6 +1828,13 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
         Eigen::MatrixXcd berrymatrix_integral = Eigen::MatrixXcd::Identity(invNu, invNu);
         vector<double> phases(invNu, 0.);
         datas.clear();//clear datas.
+        
+        stringstream filename;
+        filename<<"ampout"<<Ne;
+        ofstream ampout(filename.str().c_str(),ios::app);
+        complex<double> complex_d1,complex_d2;
+        double offset;
+        
         for (int b=0; b<dsteps; b++) {
             Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_step[b]);
             data tmp;
@@ -1833,6 +1843,13 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
                 phases[i]+=arg(es.eigenvalues()[i]);
                 tmp.num = b; tmp.amp[i] = abs(es.eigenvalues()[i]); tmp.ang[i] = arg(es.eigenvalues()[i]);
             }
+            
+            //write amplitude and phase of each step
+            if(tempNe%2) offset=0;
+            else offset=0.5;
+            complex_d1=(1.*extra_ds[b][0]-offset)/ll[0][0].getL(1)+(1.*extra_ds[b][1]-offset)/ll[0][0].getL(2);
+            complex_d2=(1.*extra_ds[(b+1)%dsteps][0]-offset)/ll[0][0].getL(1)+(1.*extra_ds[(b+1)%dsteps][1]-offset)/ll[0][0].getL(2);
+            ampout<<abs(complex_d1)<<" "<<abs(complex_d2)<<" "<<arg(complex_d1)<<" "<<arg(complex_d2)<<" "<<abs(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[0])<<endl;
             //            // dfromnorm. calculates deviation from normality.
             //            double normeigenvalue=0., normmatrix=0.;
             //            for (int i=0; i<invNu; i++) {normeigenvalue+=sqrt(norm(es.eigenvalues()[i]));}
@@ -1842,7 +1859,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
             //            tmp.dfromnorm=normmatrix-normeigenvalue;
             datas.push_back(tmp);
         }
-        
+        ampout.close();
         double avephase=0.;
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
         
