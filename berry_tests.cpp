@@ -155,12 +155,12 @@ void single_run(){
     outfile.close();
 }
 
-void structurefactor(){
+void structurefactor(string intputfilename){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, theta, alpha;
     string type;
-    ifstream infile("params_sq");
+    ifstream infile(intputfilename);
     infile>>Ne>>invNu>>theta_t>>alpha;
     infile>>nWarmup>>nMeas>>nSteps>>nBins;
     infile>>seed;
@@ -171,21 +171,21 @@ void structurefactor(){
     
     int gs=0;
     
-    vector<vector<int>> strangeds;
-    if (Ne==36) {
-        for (int y=0; y<6; y++) {
-            for (int x=-5+y; x<=5-y; x++) {
-                strangeds.push_back(vector<int>{x, y});
-            }
-        }
-        cout<<"strangeds.size="<<strangeds.size()<<endl;
-    }
+//    vector<vector<int>> strangeds;
+//    if (Ne==36) {
+//        for (int y=0; y<6; y++) {
+//            for (int x=-5+y; x<=5-y; x++) {
+//                strangeds.push_back(vector<int>{x, y});
+//            }
+//        }
+//        cout<<"strangeds.size="<<strangeds.size()<<endl;
+//    }
     
 //    LATTICE ll0(Ne, invNu, testing, type, seed, gs, 0.5*M_PI, 1.0);
     LATTICE ll(Ne, invNu, testing, type, seed, gs, theta, alpha);
     if (type=="CFL") {
-//        ll.set_ds(ll0.get_ds());
-        ll.set_ds(strangeds);
+////        ll.set_ds(ll0.get_ds());
+//        ll.set_ds(strangeds);
         ll.print_ds();
     }
     
@@ -222,7 +222,7 @@ void structurefactor(){
             }
             ll.update_structure_factors();
         }
-        ll.print_structure_factors(nMeas, "ne9_"+to_string((long long int)s));
+        ll.print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)s));
         
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;

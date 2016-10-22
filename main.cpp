@@ -8,14 +8,14 @@ bool IsOdd (int i) {
     return ((i%2)==1);
 }
 int main(){
-    double theta=0.333333333333*M_PI, alpha=1.0;
+//    double theta=0.333333333333*M_PI, alpha=1.0;
     int num_core=1;
     
-    vector<double> length;
-    double steplength=0.1;
+//    vector<double> length;
+//    double steplength=0.1;
     
-    length=vector<double>{0.5,0.5};
-    laughlinberryphase("laughlin_ne20_0505", length, steplength, 0, 0, num_core);
+//    length=vector<double>{0.5,0.5};
+//    laughlinberryphase("laughlin_ne20_0505", length, steplength, 0, 0, num_core);
 //
 //    length=vector<double>{0.5,0.4};
 //    laughlinberryphase("laughlin_ne20_0504", length, steplength, 0, 0, num_core);
@@ -34,15 +34,9 @@ int main(){
 //    CFL_berry_phases_parallel("params", "CFL69", num_core, "loop1", 0.5*M_PI, 1.0);
 //    CFL_berry_phases_parallel("params", "CFL69", num_core, "loop2", 0.5*M_PI, 1.0);
     
-//    structurefactor();
+    structurefactor("params_sq9");
+    structurefactor("params_sq13");
 //    single_run();
-    
-//    testIQHwf();
-    
-//    cout<<"PH from FilledLL"<<endl;
-//    ParticleHoleSym();
-//    cout<<"PH from Laughlin"<<endl;
-//    ParticleHoleSym2();
 }
 
 void outformfactor(){

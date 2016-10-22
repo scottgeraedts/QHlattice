@@ -28,7 +28,7 @@ double phasemod(complex<double> in);
 //Some Checkings, including ortho, auto-correlation
 void check_orthogonality(string type);
 void single_run();
-void structurefactor();
+void structurefactor(string);
 
 //Energetics
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename);
