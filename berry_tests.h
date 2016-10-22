@@ -9,8 +9,8 @@
 struct data{
     int num;
     double position[2];
-    double amp[3];
-    double ang[3];
+    double amp[5];
+    double ang[5];
     double energy;
     double ang_trace;
     double det;
@@ -37,7 +37,7 @@ void CFL_ne5_energy_var(int nMeas, int nBins, int num_core=1);
 void findstate();
 
 //Laughlin-Hole Berry Phase
-void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, int change_nMeas, int change_Ne, int num_core);
+void laughlinberryphase(string params_name, vector<double> length, double steplength, int change_nMeas, int change_Ne, int num_core, double theta=0.5*M_PI, double alpha=1.0);
 void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas);
 void two_holes(string str, int nmeasurement, data& test);
 void test_error(int ne, double loop, double steplength, int nMea, int ncore, string test, int num_core);
