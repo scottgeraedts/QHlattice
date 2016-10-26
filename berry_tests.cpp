@@ -91,15 +91,38 @@ void single_run(){
     //initialize MC object
     
     int gs=0;
-//    LATTICE ds_generator(Ne, invNu, testing, type, seed, 0);
-//    vector< vector<int> > old_ds=ds_generator.get_ds();
     double theta, alpha;
     alpha=1.;
     theta=0.5*M_PI;
     
+    LATTICE ds_generator(Ne, invNu, testing, type, seed, gs, theta, alpha);
+    vector< vector<int> > old_ds=ds_generator.get_ds();
+//    vector<vector<int>> old_ds;
+    if (Ne==21) {
+        old_ds.clear();
+        for (int i=-3; i<4; i++) {
+            for (int j=-1; j<2; j++) {
+                old_ds.push_back(vector<int>{i,j});
+            }
+        }
+    }
+    if (Ne==17) {
+        old_ds.clear();
+        for (int i=-2; i<3; i++) {
+            for (int j=0; j<2; j++) {
+                old_ds.push_back(vector<int>{i,j});
+            }
+        }
+        for (int i=-1; i<2; i++) {
+            old_ds.push_back(vector<int>{i,-1});
+            old_ds.push_back(vector<int>{i,2});
+        }
+        old_ds.push_back(vector<int>{2,-1});
+    }
+    
     LATTICE ll(Ne,invNu, testing, type, seed, gs, theta, alpha);
-//    ll.set_ds(old_ds);
-//    ll.print_ds();
+    ll.set_ds(old_ds);
+    ll.print_ds();
     
     ofstream outfile("out"), eout("energy");
     for(int s=0;s<nBins;s++){
@@ -1166,6 +1189,25 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
             else {cout<<"unrecognized kind"<<endl; exit(0);}
             
         }
+        else if (tempNe==16){
+            if (kind=="triangle1") {
+                old_ds.clear(); extra_ds.clear();
+                for (int i=-3; i<4; i++) {
+                    old_ds.push_back(vector<int>{i,0});
+                }
+                for (int i=-2; i<3; i++) {
+                    old_ds.push_back(vector<int>{i,1});
+                }
+                for (int i=-1; i<2; i++) {
+                    old_ds.push_back(vector<int>{i,2});
+                }
+                old_ds.push_back(vector<int>{0,3});
+                
+                extra_ds.push_back(vector<int>{0,-1});
+                extra_ds.push_back(vector<int>{2,2});
+                extra_ds.push_back(vector<int>{-2,2});
+            }
+        }
         else{
             cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
             exit(0);
@@ -1766,7 +1808,8 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
             exit(0);
         }
     }
-//    templl.set_ds(old_ds); templl.print_ds(); exit(0);
+    templl.set_ds(old_ds);
+//    templl.print_ds(); exit(0);
 //    exit(0);
     
     int nds=extra_ds.size();

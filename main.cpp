@@ -32,10 +32,11 @@ int main(){
 //    single_run();
     
 //    CFL_berry_phases_parallel("params", "CFL69", num_core, "loop1", 0.5*M_PI, 1.0);
-//    CFL_berry_phases_parallel("params", "CFL69", num_core, "loop2", 0.5*M_PI, 1.0);
+//    CFL_berry_phases_parallel("params", "CFL21", num_core, "loop1", 0.5*M_PI, 1.0);
+    CFL_berry_phases_parallel("params", "CFL17", num_core, "triangle1", 0.5*M_PI, 1.0);
     
-    structurefactor("params_sq9");
-    structurefactor("params_sq13");
+//    structurefactor("params_lau20_1_1");
+//    structurefactor("params_sq13");
 //    single_run();
 }
 
