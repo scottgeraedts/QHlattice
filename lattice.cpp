@@ -1,5 +1,5 @@
 #include "lattice.h"
-int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
+//int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 
 LATTICE::LATTICE() {
     Ne=0;
@@ -39,7 +39,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 		make_fermi_surface(center_frac, Ne);
         print_ds();
 	}
-    else if (type=="laughlin" || type=="laughlin-hole" || type=="FilledLL" || type=="FilledLL2") {
+    else if (type=="laughlin" || type=="laughlin-hole" || type=="FilledLL" ) {
         ds.clear();
     }
     else {cout<<"recognized type."<<endl; exit(0);}
@@ -750,8 +750,9 @@ void LATTICE::reset(){
     while(running_weight<-1e10){
 	//for some sizes the configuration specified by cold_start has zero weight
 	//if that happens fiddle around until you find a better configuration, thats why theres a while loop
-		locs[site][0]=locs[p(site)][0];
-		site++;
+//		locs[site][0]=locs[p(site)][0];
+//		site++;
+	hot_start();
 		if(site==Ne) cout<<"couldn't easily find a good configuration!"<<endl;
 		
 		if(type=="CFL"){
@@ -810,7 +811,7 @@ void LATTICE::reset(){
 }
 //checks a few different things to make sure that they make sense
 void LATTICE::check_sanity(){
-	if(type!="CFL" && type!="laughlin" && type!= "laughlin-hole" && type!="FilledLL" && type!="FilledLL2" &&  type!="doubledCFL"){
+	if(type!="CFL" && type!="laughlin" && type!= "laughlin-hole" && type!="FilledLL" &&   type!="doubledCFL"){
 		cout<<"type not recognized: "<<type<<endl;
 		exit(0);
 	}

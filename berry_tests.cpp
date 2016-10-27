@@ -1918,8 +1918,8 @@ void ParticleHoleSym(){
     infile>>type;
     //initialize MC object
     
-    Ne=18; invNu=2;
-    int Ne1=9, Ne2=Ne-Ne1;
+    Ne=8; invNu=2;
+    int Ne1=Ne/2, Ne2=Ne-Ne1;
     
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
@@ -1928,7 +1928,7 @@ void ParticleHoleSym(){
         cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
         cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
     }
-    LATTICE FLL(Ne, 1, testing, "FilledLL2", seed, 0);//Filled LL Wavefunction.
+    LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);//Filled LL Wavefunction.
 //    cout<<"testing = "<<testing<<endl;
 //    cfl1[1].print_ws();
     
@@ -1955,7 +1955,7 @@ void ParticleHoleSym(){
                     complex<double> tmp=cfl1[m].get_wf(z1)*cfl2[n].get_wf(z2)/FLL.get_wf(z);
                     overlaps[0](m,n)+=tmp;
                     overlaps[1](m,n)+=norm(tmp);
-                	cout<<norm(tmp)<<endl;
+                	//cout<<norm(tmp)<<endl;
                 }
             }
             
@@ -1986,11 +1986,11 @@ void ParticleHoleSymBackwards(){
     infile>>type;
     //initialize MC object
     
-    Ne=18; invNu=2;
+    Ne=8; invNu=2;
     int Ne1=Ne/2, Ne2=Ne-Ne1;
 
     LATTICE cfl=LATTICE(Ne1, invNu, testing, "CFL", seed, 0);
-    LATTICE FLL(Ne, 1, testing, "FilledLL2", seed, 0);//Filled LL Wavefunction.
+    LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);//Filled LL Wavefunction.
     LATTICE doubledcfl(Ne1,invNu,testing,"doubledCFL",seed,0);
 //    cout<<"testing = "<<testing<<endl;
 //    cfl1[1].print_ws();
@@ -2008,10 +2008,10 @@ void ParticleHoleSymBackwards(){
             z1.resize(Ne1);
             z2.erase(z2.begin(), z2.begin()+Ne1);
 			//inversion symmetry
-            for(int j=0;j<(signed)z2.size();j++){
-            	z2[j][0]=-z2[j][0];
-            	z2[j][1]=-z2[j][1];
-            }
+//            for(int j=0;j<(signed)z2.size();j++){
+//            	z2[j][0]=-z2[j][0];
+//            	z2[j][1]=-z2[j][1];
+//            }
             
             complex<double> tmp=FLL.get_wf(z)/doubledcfl.get_wf(z);
             overlaps[0]+=tmp;
@@ -2091,7 +2091,127 @@ void ParticleHoleSym2(){
         cout<<endl;
     }
 }
+//Particle Hole Symmetry (Ne9, maximal symmetric ds).
+void Explicit(){
+    int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
+    ifstream infile("params");
+    //initialize MC object
+    
+    Ne=4; invNu=2;
+    int Ne1=Ne/2, Ne2=Ne-Ne1;
+    
+    vector<LATTICE> cfl1(invNu), cfl2(invNu);
+    for (unsigned gs=0; gs<invNu; gs++) {
+        cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
+        //cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
+    }
+    LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);//Filled LL Wavefunction.
+    
+    vector< vector<int> > zs(Ne, vector<int>(2)), zs1(Ne1, vector<int>(2)),zs2(Ne2, vector<int>(2) );
+    int temp;
+    complex<double> out=0,v1,v2,v3,phd=0;
+    double norm1,norm2,norm3;
+   	vector< vector<int> >::iterator it;
+   	bool duplicate;
+	//stuff for explicit PH calculation   	
+	for(int i=0;i<pow(Ne,Ne*2);i++){
+		duplicate=false;
+		for(int p=0;p<2*Ne;p++){
+			temp=(i/pow(Ne,p));
+			zs[p/2][p%2]=temp%Ne;
+			if(p%2==1 and p/2>0){
+				it=find(zs.begin(),zs.begin()+p/2,zs[p/2]);
+				if(it!=zs.begin()+p/2){
+					duplicate=true;
+					break;
+				}
+			}
+		}
+		if(duplicate) continue;
 
+//don't antisymmetrize
+		zs1=zs;
+		zs1.resize(Ne1);
+		zs2=zs;
+		zs2.erase(zs2.begin(),zs2.begin()+Ne1);
+		for(auto it2=zs2.begin();it2!=zs2.end();++it2){
+			(*it2)[0]*=-1;
+			(*it2)[1]*=-1;
+		}
+		v1=cfl1[0].get_wf(zs1);
+		v2=cfl1[1].get_wf(zs2);
+
+//antisymmetrize
+//		int total=comb(Ne,Ne1);
+//		double sign;
+//		v1=0; v2=0;
+//		for(int a=0;a<Ne;a++){
+//			zs1[0]=zs[a];
+//			for(int b=a+1;b<Ne;b++){
+//				zs1[1]=zs[b];
+//				zs2=zs;
+//				zs2.erase(zs2.begin()+b);
+//				zs2.erase(zs2.begin()+a);
+//				for(auto it2=zs2.begin();it2!=zs2.end();++it2){
+//					(*it2)[0]*=-1;
+//					(*it2)[1]*=-1;
+//				}
+//				if( (a+b)%2) sign=1; //this likely only works for the Ne=2 case
+//				else sign=-1;
+//				v1+=sign*cfl1[0].get_wf(zs1)*cfl1[1].get_wf(zs2);
+////				for(int p=0;p<2*Ne;p++){
+////					cout<<zs[p/2][p%2]<<" ";
+////				}
+////				cout<<";";			
+////				for(int p=0;p<Ne;p++){
+////					cout<<zs1[p/2][p%2]<<" ";
+////				}
+////				cout<<";";			
+////				for(int p=0;p<Ne;p++){
+////					cout<<zs2[p/2][p%2]<<" ";
+////				}			
+////				cout<<sign<<endl;
+//			}
+//		}
+		v3=FLL.get_wf(zs);
+
+
+		for(int p=0;p<2*Ne;p++){
+			cout<<zs[p/2][p%2]<<" ";
+		}
+		norm3+=norm(v3);
+
+//		cout<<v1<<" "<<v3<<endl;
+//		out+=v1*conj(v3);
+
+		cout<<v1*v2<<" "<<v3<<endl;
+		out+=v1*v2*conj(v3);
+	}
+	
+	//calculate normalization constants
+	zs=vector<vector<int> >(Ne1, vector<int> (2,0));
+	for(int i=0;i<pow(Ne,Ne1*2);i++){
+		duplicate=false;
+		for(int p=0;p<2*Ne1;p++){
+			temp=(i/pow(Ne,p));
+			zs[p/2][p%2]=temp%Ne;
+			if(p%2==1 and p/2>0){
+				it=find(zs.begin(),zs.begin()+p/2,zs[p/2]);
+				if(it!=zs.begin()+p/2){
+					duplicate=true;
+					break;
+				}
+			}
+		}
+		if(duplicate) continue;
+
+		norm1+=norm(cfl1[0].get_wf(zs));
+		norm2+=norm(cfl2[1].get_wf(zs));
+	}
+	cout<<out/sqrt(norm1*norm2*norm3)<<endl;
+		
+    		
+}
 void GetCoefficient(vector<int> landauwfindex){
     int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
     ifstream infile("params");

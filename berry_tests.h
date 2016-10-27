@@ -51,6 +51,7 @@ void ParticleHoleSymBackwards();
 void ParticleHoleSym2();
 void testIQHwf();
 complex<double> landauwf(int Nphi, int n, vector<double> latticeshift, vector<int> z, double theta=0.5*M_PI, double alpha=1.0);
+void Explicit();
 
 //...
 void GetCoefficient(vector<int> input);

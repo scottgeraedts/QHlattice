@@ -6,7 +6,7 @@ CC=g++ -fopenmp -std=c++11
 HERE = /home/sgeraedt/QHlattice
 MYDIR = /home/sgeraedt/myClibrary/
 CFLAGS= -I$(HERE) -I$(MYDIR)
-LIBS=  -lgfortran 
+LIBS=  -lgfortran $(MYDIR)utils.o
 OBJECTS=main.o lattice.o berry_tests.o z_function_m.o wf_tools.o new_coulomb_m.o
 
 a.out: $(OBJECTS)
