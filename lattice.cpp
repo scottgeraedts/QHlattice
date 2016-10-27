@@ -37,7 +37,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 	if(type=="CFL" or type=="doubledCFL"){
 		if(Ne%2==0){center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
-        print_ds();
+//        print_ds();
 	}
     else if (type=="laughlin" || type=="laughlin-hole" || type=="FilledLL" ) {
         ds.clear();
@@ -84,22 +84,37 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 }
 double LATTICE::get_in_det_rescaling(int Ne, int invNu){
     double rescaling=1.;
-    if (invNu==1) {
-        rescaling=1.0;
-    }
-    else if (invNu==2) {
-        if (Ne<15) rescaling=1.;
-        else if (Ne>=15 && Ne<=38) rescaling=0.28;
-        else {rescaling=0.28; cout<<"Please set in_determinant_rescaling if doing berry phase."<<endl;}
-    }
-    else if (invNu==4) {
-        if (Ne<15) rescaling=0.2;
-        else if (Ne>=15 && Ne<=19) rescaling=0.12;
-        else if (Ne==20) rescaling=0.105;
-        else if (Ne==21) rescaling=0.095;
+    if (type=="CFL") {
+        if (invNu==1) {
+            rescaling=1.0;
+        }
+        else if (invNu==2) {
+            if (Ne<45) rescaling=0.28;
+            else if (Ne>=46 && Ne<=75) rescaling=0.2;
+            else if (Ne<90) rescaling=0.15;
+            else {rescaling=0.15; cout<<"Please set in_determinant_rescaling if doing berry phase."<<endl;}
+        }
+        else if (invNu==4) {
+            if (Ne<15) rescaling=0.1;
+            else if (Ne>=15 && Ne<=21) rescaling=0.08;
+            else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
+        }
         else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
     }
-    else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
+    else if (type=="laughlin"||type=="laughlin-hole") {
+        if (invNu==3) {
+            if (Ne<35) {
+                rescaling=0.87;
+            }
+            else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
+        }
+        if (invNu==5) {
+            if (Ne<=20) {
+                rescaling=0.7;
+            }
+            else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
+        }
+    }
     return rescaling;
 }
 void LATTICE::step(int Nsteps){
@@ -329,7 +344,15 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
                 x=(zs[i][0]-zs[j][0])/(1.*NPhi);
                 y=(zs[i][1]-zs[j][1])/(1.*NPhi);
                 z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);
-                out+=log(norm( pow(temp,vandermonde_exponent) ));
+                temp=pow(temp,vandermonde_exponent);
+                
+                //......
+                if (type=="laughlin"||type=="laughlin-hole") {
+//                    temp*=pow(in_determinant_rescaling, vandermonde_exponent*(Ne-1));
+                    temp*=pow(in_determinant_rescaling, Ne-1);
+                }
+                
+                out+=log(norm( temp ));
             }
         }
         
@@ -404,9 +427,9 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
         cout<<"cannot get_wf because zs.size()!=Ne "<<zs.size()<<" "<<Ne<<endl;
         exit(0);
     }
-	complex<double> out=1,temp;
-	int ix,iy;
-	double x,y;
+    complex<double> out=1,temp;
+    int ix,iy;
+    double x,y;
     
     if (type=="FilledLL") {
         out=FilledLL(zs);
@@ -430,7 +453,12 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                 for( int j=i+1;j<Ne;j++){
                     ix=(zs[i][0]-zs[j][0]);
                     iy=(zs[i][1]-zs[j][1]);
-                    out*=pow(lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one),vandermonde_exponent);
+                    out*=pow(lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one), vandermonde_exponent);
+                    //......
+                    if (type=="laughlin"||type=="laughlin-hole") {
+                        //                        out*=pow(in_determinant_rescaling, vandermonde_exponent*(Ne-1));
+                        out*=pow(in_determinant_rescaling, Ne-1);
+                    }
                 }
             }
         }
@@ -942,6 +970,7 @@ void LATTICE::hot_start(){
 		locs[i][1]=y;
 	}
 }
+
 //call's duncan's lattice_z function, if the arguments x or y are outside of the range (0,NPhi) it shifts them into that range
 //and multiplies by the appropriate phase
 //only works for a square torus
