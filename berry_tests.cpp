@@ -1967,7 +1967,7 @@ void ParticleHoleSym(){
         for (int m=0; m<invNu; m++) {
             for (int n=0; n<invNu; n++) {
                 cout<<"m="<<m<<" ,n="<<n<<" ,overlap="<<overlaps[0](m,n)<<endl;
-                cout<<"m="<<m<<" ,n="<<n<<" ,1-|overlap|="<<1-sqrt(norm(overlaps[0](m,n)))<<endl;
+                cout<<"m="<<m<<" ,n="<<n<<" ,1-|overlap|="<<1-sqrt(norm(overlaps[0](m,n)))*sqrt(comb(Ne,Ne/2))<<endl;
                 cout<<endl;
             }
         }
@@ -2016,7 +2016,7 @@ void ParticleHoleSymBackwards(){
             complex<double> tmp=FLL.get_wf(z)/doubledcfl.get_wf(z);
             overlaps[0]+=tmp;
             overlaps[1]+=norm(tmp);
-        	cout<<norm(tmp)<<endl;
+        	//cout<<norm(tmp)<<endl;
             
         }
         
@@ -2141,38 +2141,6 @@ void Explicit(){
 		v1=cfl1[0].get_wf(zs1);
 		v2=cfl1[1].get_wf(zs2);
 
-//antisymmetrize
-//		int total=comb(Ne,Ne1);
-//		double sign;
-//		v1=0; v2=0;
-//		for(int a=0;a<Ne;a++){
-//			zs1[0]=zs[a];
-//			for(int b=a+1;b<Ne;b++){
-//				zs1[1]=zs[b];
-//				zs2=zs;
-//				zs2.erase(zs2.begin()+b);
-//				zs2.erase(zs2.begin()+a);
-//				for(auto it2=zs2.begin();it2!=zs2.end();++it2){
-//					(*it2)[0]*=-1;
-//					(*it2)[1]*=-1;
-//				}
-//				if( (a+b)%2) sign=1; //this likely only works for the Ne=2 case
-//				else sign=-1;
-//				v1+=sign*cfl1[0].get_wf(zs1)*cfl1[1].get_wf(zs2);
-////				for(int p=0;p<2*Ne;p++){
-////					cout<<zs[p/2][p%2]<<" ";
-////				}
-////				cout<<";";			
-////				for(int p=0;p<Ne;p++){
-////					cout<<zs1[p/2][p%2]<<" ";
-////				}
-////				cout<<";";			
-////				for(int p=0;p<Ne;p++){
-////					cout<<zs2[p/2][p%2]<<" ";
-////				}			
-////				cout<<sign<<endl;
-//			}
-//		}
 		v3=FLL.get_wf(zs);
 
 
@@ -2206,7 +2174,7 @@ void Explicit(){
 		if(duplicate) continue;
 
 		norm1+=norm(cfl1[0].get_wf(zs));
-		norm2+=norm(cfl2[1].get_wf(zs));
+		norm2+=norm(cfl1[1].get_wf(zs));
 	}
 	cout<<out/sqrt(norm1*norm2*norm3)<<endl;
 		
