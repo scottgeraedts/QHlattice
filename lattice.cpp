@@ -15,8 +15,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
     
     //set in_determinant_rescaling.
     //It has been set for more Ne for invNu=2, some Ne for invNu=4.
-    if (type=="CFL" or type=="doubledCFL")
-        in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
+    in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
     
     //make l1, l2 through theta, alpha.
     L1=sqrt(1.*M_PI*NPhi/sin(theta))*alpha;
@@ -93,6 +92,7 @@ double LATTICE::get_in_det_rescaling(int Ne, int invNu){
             else if (Ne>=46 && Ne<=75) rescaling=0.2;
             else if (Ne<90) rescaling=0.15;
             else {rescaling=0.15; cout<<"Please set in_determinant_rescaling if doing berry phase."<<endl;}
+            rescaling=1;
         }
         else if (invNu==4) {
             if (Ne<15) rescaling=0.1;
@@ -257,8 +257,8 @@ int LATTICE::simple_update(){
 		return 1;
 	}
 	else{
-		return 0;
 		if(type=="doubledCFL") locs[electron]=oldloc;
+		return 0;
 	}
 }
 //chooses a new site, given an old site
@@ -454,7 +454,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                     ix=(zs[i][0]-zs[j][0]);
                     iy=(zs[i][1]-zs[j][1]);
                     out*=pow(lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one), vandermonde_exponent);
-                    //......
+                    
                     if (type=="laughlin"||type=="laughlin-hole") {
                         //                        out*=pow(in_determinant_rescaling, vandermonde_exponent*(Ne-1));
                         out*=pow(in_determinant_rescaling, Ne-1);
@@ -462,7 +462,6 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                 }
             }
         }
-        //    cout<<" vandermonde piece = "<<out<<endl;
         complex<double> assist=out;
         
         //COM piece
@@ -488,7 +487,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                 out*=temp;
             }
         }
-        //    cout<<" com piece = "<<out/assist<<endl; assist=out;
+          //  cout<<" com piece = "<<out<<endl; assist=out;
         
         //Determinant piece
         if(type=="CFL"){
@@ -780,7 +779,7 @@ void LATTICE::reset(){
 	//if that happens fiddle around until you find a better configuration, thats why theres a while loop
 //		locs[site][0]=locs[p(site)][0];
 //		site++;
-	hot_start();
+
 		if(site==Ne) cout<<"couldn't easily find a good configuration!"<<endl;
 		
 		if(type=="CFL"){
@@ -828,7 +827,7 @@ void LATTICE::reset(){
 			exit(0);
 		}
 	}
-
+	//cout<<"starting weight"<<running_weight<<endl;
     sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
     sq2=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
     sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
@@ -894,7 +893,7 @@ void LATTICE::set_ds(vector< vector<int> > tds){
     
     //reset ws, according to ds.
     ws.clear(); ws=ws0;
-    if (type=="CFL") {
+    if (type=="CFL" or type=="doubledCFL") {
         for (int i=0; i<ws.size(); i++) {
             ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.
         }
@@ -912,7 +911,7 @@ void LATTICE::set_ws(vector<vector<double>> ws_t){
         }
     }
     ws0=ws_t; ws=ws0;
-    if (type=="CFL") {
+    if (type=="CFL" or type=="doubledCFL") {
         for (int i=0; i<ws.size(); i++) {
             ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.
         }
@@ -1080,7 +1079,7 @@ complex<double> LATTICE::FilledLL2(vector< vector<int> > z){
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
 complex<double> LATTICE::doubled_CFL(const vector< vector<int> > &bothzs){
     if (bothzs.size()!=Ne*2) {
-        cout<<"cannot get_wf because zs.size()!=Ne"<<endl;
+        cout<<"cannot get_wf because zs.size()!=2Ne"<<endl;
         exit(0);
     }
 	complex<double> out=1,temp;
@@ -1093,8 +1092,8 @@ complex<double> LATTICE::doubled_CFL(const vector< vector<int> > &bothzs){
 	onezs[0].resize(Ne);
 	onezs[1].erase(onezs[1].begin(),onezs[1].begin()+Ne);
 	for(int i=0;i<Ne;i++){
-		onezs[1][i][0]*=-1;
-		onezs[1][i][1]*=-1;
+		onezs[1][i][0]*=-1; //=supermod(-onezs[1][i][0],NPhi);
+		onezs[1][i][1]*=-1; //=supermod(-onezs[1][i][1],NPhi);
 	}
 	for(int copy=0;copy<2;copy++){
 		zs=onezs[copy];
@@ -1109,11 +1108,11 @@ complex<double> LATTICE::doubled_CFL(const vector< vector<int> > &bothzs){
         double dx,dy;
         for( int i=0;i<invNu;i++){
             dx=COM[0]/(1.*NPhi)-ws[i][0];
-            dy=COM[1]/(1.*NPhi)-ws[i][1];
+            dy=COM[1]/(1.*NPhi)-ws[i][1]-copy/(1.*invNu);
             z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
             out*=temp;
         }
-        //    cout<<" com piece = "<<out/assist<<endl; assist=out;
+//            cout<<" com piece = "<<out<<endl; 
         complex<double> product;
         vector<int> z(2);
         Eigen::MatrixXcd M(Ne,Ne);
@@ -1131,13 +1130,13 @@ complex<double> LATTICE::doubled_CFL(const vector< vector<int> > &bothzs){
         }
         detSolver.compute(M);
         out=out*detSolver.determinant();
-        //        cout<<"det piece = "<<detSolver.determinant()<<endl;
+//                cout<<"det piece = "<<detSolver.determinant()<<endl;
         
         //phase previously missing.
         vector<double> wsum(2);
         for (int i=0; i<invNu; i++) {
             wsum[0]+=ws[i][0];
-            wsum[1]+=ws[i][1];
+            wsum[1]+=ws[i][1]+copy/(1.*invNu);
         }
         complex<double> w_comp = wsum[0]*L1+wsum[1]*L2, zcom_comp = 1.*COM[0]/NPhi*L1+1.*COM[1]/NPhi*L2;
         complex<double> dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L2;

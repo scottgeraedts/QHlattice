@@ -2060,11 +2060,13 @@ void ParticleHoleSym(){
         cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
         cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
     }
+    LATTICE doubledcfl(Ne1, invNu, testing, "doubledCFL", seed, 0);
     LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);//Filled LL Wavefunction.
 //    cout<<"testing = "<<testing<<endl;
 //    cfl1[1].print_ws();
     
     //monte carlo.
+    complex<double> testdouble=0, testdouble_denom=0;
     for (unsigned nbin=0; nbin<nBins; nbin++) {
         vector<Eigen::MatrixXcd> overlaps(2, Eigen::MatrixXcd::Zero(invNu, invNu));
         //overlaps[0][m][n]=<FLL|cfl1[m]*cfl2[n]>, overlaps[1][m][n]=<|FLL|cfl1[m]*cfl2[n]|^2>.
@@ -2088,7 +2090,13 @@ void ParticleHoleSym(){
                     complex<double> tmp=cfl1[m].get_wf(z1)*cfl2[n].get_wf(z2)/FLL.get_wf(z);
                     overlaps[0](m,n)+=tmp;
                     overlaps[1](m,n)+=norm(tmp);
+                    if(m==0 and n==1){
+		                tmp=doubledcfl.get_wf(z)/FLL.get_wf(z);
+		                testdouble+=tmp;
+		                testdouble_denom+=norm(tmp);
+					}
                 	//cout<<norm(tmp)<<endl;
+                	if(m==0 and n==1) cout<<doubledcfl.get_wf(z)<<" "<<cfl1[m].get_wf(z1)*cfl2[n].get_wf(z2)<<endl;
                 }
             }
             
@@ -2096,11 +2104,15 @@ void ParticleHoleSym(){
         
         for (int l=0; l<2; l++) overlaps[l]/=(1.*nMeas);
         overlaps[0]=overlaps[0].array()/overlaps[1].array().sqrt();
+        testdouble/=(1.*nMeas);
+        testdouble_denom/=(1.*nMeas);
+        
         cout<<"nbin="<<nbin<<endl;
         for (int m=0; m<invNu; m++) {
             for (int n=0; n<invNu; n++) {
-                cout<<"m="<<m<<" ,n="<<n<<" ,overlap="<<overlaps[0](m,n)<<endl;
+                cout<<"m="<<m<<" ,n="<<n<<" ,overlap="<<abs(overlaps[0](m,n))<<endl;
                 cout<<"m="<<m<<" ,n="<<n<<" ,1-|overlap|="<<1-sqrt(norm(overlaps[0](m,n)))*sqrt(comb(Ne,Ne/2))<<endl;
+                cout<<abs(testdouble/sqrt(testdouble_denom))<<endl;
                 cout<<endl;
             }
         }
@@ -2138,27 +2150,22 @@ void ParticleHoleSymBackwards(){
         for (int nmea=0; nmea<nMeas; nmea++) {
             doubledcfl.step(nSteps);
             vector<vector<int>> z=doubledcfl.get_locs(), z1=z, z2=z;
-            z1.resize(Ne1);
-            z2.erase(z2.begin(), z2.begin()+Ne1);
-			//inversion symmetry
-//            for(int j=0;j<(signed)z2.size();j++){
-//            	z2[j][0]=-z2[j][0];
-//            	z2[j][1]=-z2[j][1];
-//            }
-            
+//	   		for(int i=0;i<Ne;i++) cout<<"("<<z[i][0]<<","<<z[i][1]<<") ";
+//			cout<<endl;
+//         
             complex<double> tmp=FLL.get_wf(z)/doubledcfl.get_wf(z);
             overlaps[0]+=tmp;
             overlaps[1]+=norm(tmp);
-        	//cout<<norm(tmp)<<endl;
+        	//cout<<"output: "<<doubledcfl.get_wf(z)<<" "<<FLL.get_wf(z)<<endl;
             
         }
         
         for (int l=0; l<2; l++) overlaps[l]/=(1.*nMeas);
         overlaps[0]/=sqrt(overlaps[1]);
         cout<<"nbin="<<nbin<<endl;
-        cout<<"overlap="<<overlaps[0]<<endl;
-        cout<<"1-|overlap|="<<1-sqrt(norm(overlaps[0]))<<endl;
-        cout<<endl;
+        cout<<"overlap="<<abs(overlaps[0])<<endl;
+        cout<<"1-|overlap|="<<1-abs(overlaps[0])<<endl;
+        cout<<1.*doubledcfl.accepts/doubledcfl.tries<<endl;
         cout<<endl;
     }
 }
