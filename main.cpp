@@ -12,7 +12,7 @@ int main(){
     double theta=0.5*M_PI, alpha=1.0;
     int num_core=1;
 //    CFL_berry_phases_parallel("params", "ne8bp", num_core, "fullloop");//params_name, output_name, num_core, kind.
-	ParticleHoleSymBackwards();   
+	ParticleHoleSym2();   
 //	Explicit();
 //    structurefactor();
 //    double theta=0.333333333333*M_PI, alpha=1.0;

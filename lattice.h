@@ -50,7 +50,7 @@ public:
 	void step(int);// step(int Nsteps); Nsetps = total MC steps. tries:steps, accepts:updated steps.
 	double get_weight(const vector< vector<int> > &zs);  
 	complex<double> get_wf(const vector< vector<int> > &zs);
-    void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value);
+    void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value, const vector< vector<int> > &zs);
 
 	//utility functions
 	complex<double> modded_lattice_z(int x, int y);
@@ -60,6 +60,7 @@ public:
 	//initialization related functions
 	void make_fermi_surface(double* center_frac, int N);
 	void reset();
+	void reset(const vector< vector<int> > &zs);
 	vector <vector<int> > get_ds();
 	void change_dbar_parameter(double dbarx, double dbary);
 	vector<double> get_dbar_parameter();
@@ -91,6 +92,12 @@ public:
     complex<double> FilledLL2(vector<vector<int>> zs);
 	//product of 2 CFL wavefunctions
     complex<double> doubled_CFL(const vector<vector<int>> &zs);
+    
+    //stuff for lattice_wrapper
+    double update_weight(const vector<vector<int>> &zs, int electron, vector<int> newz);
+    void update();
+	static vector< vector<int> > hot_start(int NPhi_t, int Ne_t, MTRand &ran);
+	static vector<int> random_move(const vector<int> &oldsite, int NPhi_t, MTRand &ran_t);
 	
 private:
     double get_in_det_rescaling(int Ne, int invNu);
@@ -98,10 +105,8 @@ private:
 	void sum_locs(int []);
 	void setup_coulomb();
 	int simple_update();// returns '1' if updated, '0' if not updated.
-	vector<int> random_move(const vector<int> &oldsite);
 	int p(int); int m(int);
 	void cold_start();
-	void hot_start();
 	void det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z);
     double det_helper(int z1, int z2, int d, double dbar_parameter);
     void check_sanity();
@@ -117,8 +122,8 @@ private:
     vector <vector <double> > SMAq;
 	vector <vector<int> > sx,sx2;
 	vector <vector <complex<double> > > shifted_ztable;
-	Eigen::MatrixXcd oldMatrix;
-	complex<double> oldDeterminant;
+	Eigen::MatrixXcd oldMatrix, newMatrix;
+	complex<double> oldDeterminant, newDeterminant;
 	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;
 //    Eigen::FullPivLU<Eigen::MatrixXcd> detSolver_FLL;
 	MTRand ran;
@@ -132,6 +137,37 @@ private:
     
     vector<vector<int> > ds;//an integer defined on an Ne lattice
     
+};
+
+class wf_info{
+public:
+	wf_info();
+	wf_info(bool conj, bool denom, int start, int end, int sign);
+	LATTICE wf;
+	bool conj,denom;
+	vector< vector<int> > make_zs(const vector< vector<int> > &inzs);
+	int start, end;
+	int sign;
+};
+
+class LATTICE_WRAPPER{
+public:
+	LATTICE_WRAPPER(int Ne, vector<wf_info> &wfs_t, int seed, bool testing);
+	int step(int);
+	complex<double> get_wf();
+	void reset();
+	vector< vector<int> > get_zs();
+	vector< vector<int> > hot_start();
+private:
+	vector<wf_info> wfs;
+	
+	bool testing;
+	int Ne; //assume Ne=NPhi
+	vector< vector<int> > zs;
+	vector<int> random_move(vector<int>);
+	int tries,accepts;
+	double running_weight;
+	MTRand ran;
 };
 
 #endif

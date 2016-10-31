@@ -2131,7 +2131,6 @@ void ParticleHoleSymBackwards(){
     infile>>type;
     //initialize MC object
     
-    Ne=8; invNu=2;
     int Ne1=Ne/2, Ne2=Ne-Ne1;
 
     LATTICE cfl=LATTICE(Ne1, invNu, testing, "CFL", seed, 0);
@@ -2141,7 +2140,7 @@ void ParticleHoleSymBackwards(){
 //    cfl1[1].print_ws();
     
     //monte carlo.
-    for (unsigned nbin=0; nbin<nBins; nbin++) {
+    for (unsigned int nbin=0; nbin<nBins; nbin++) {
         vector<complex<double> > overlaps(2, 0);
         //overlaps[0][m][n]=<FLL|cfl1[m]*cfl2[n]>, overlaps[1][m][n]=<|FLL|cfl1[m]*cfl2[n]|^2>.
         
@@ -2179,64 +2178,46 @@ void ParticleHoleSym2(){
     infile>>type;
     //initialize MC object
     
-    Ne=18; invNu=2;
-    int Ne1=9, Ne2=Ne-Ne1;
-    
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
-    vector<LATTICE> cfl1(invNu), cfl2(invNu);
-    for (unsigned gs=0; gs<invNu; gs++) {
-        cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
-        cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
-    }
-    LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);//Filled LL Wavefunction.
-//    cfl1[1].print_ws();
-//    cfl1[1].print_ds();
-    FLL.print_ws();
-    FLL.print_ds();
-    
+    vector<wf_info> wfs(3);
+    wfs[0]=wf_info(false, false, 0, Ne/invNu, 1);
+	wfs[0].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 0);
+	wfs[1]=wf_info(false, false, Ne/invNu, Ne, -1);
+	wfs[1].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 1);
+	wfs[2]=wf_info(true, false, 0, Ne, 1);
+	wfs[2].wf=LATTICE(Ne, 1, testing, "laughlin", seed, 0);
+	LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);
+
+	LATTICE_WRAPPER ll(Ne, wfs, seed, testing);
+	    
     //monte carlo.
+	double denom=0;
+	complex<double> tmp, num=0;
+
     for (unsigned nbin=0; nbin<nBins; nbin++) {
         vector<Eigen::MatrixXcd> overlaps(2, Eigen::MatrixXcd::Zero(invNu, invNu));
         //overlaps[0][m][n]=<FLL|cfl1[m]*cfl2[n]>, overlaps[1][m][n]=<|FLL|cfl1[m]*cfl2[n]|^2>.
         
-        FLL.reset();
-        FLL.step(nWarmup);
+        num=0; denom=0;
+        ll.reset();
+        ll.step(nWarmup);
         for (int nmea=0; nmea<nMeas; nmea++) {
-            FLL.step(nSteps);
-            vector<vector<int>> z=FLL.get_locs(), z1=z, z2=z;
-            z1.resize(Ne1);
-            z2.erase(z2.begin(), z2.begin()+Ne1);
-            
-//            vector<vector<double>> z1_d(Ne1, vector<double>(2)), z2_d(Ne1, vector<double>(2));
-//            
-//            for (int i=0; i<Ne1; i++) {
-//                for (int l=0; l<2; l++) {
-//                    z1_d[i][l]=1.*z1[i][1]/sqrt(2);
-//                    z2_d[i][l]=-1.*z2[i][1]/sqrt(2);
-//                }
-//            }
-            
-            for (int m=0; m<invNu; m++) {
-                for (int n=0; n<invNu; n++) {
-                    complex<double> tmp=cfl1[m].get_wf(z1)*cfl2[n].get_wf(z2)/FLL.get_wf(z);
-                    overlaps[0](m,n)+=tmp;
-                    overlaps[1](m,n)+=norm(tmp);
-                }
-            }
+            ll.step(nSteps);
+			//tmp=FLL.get_wf(ll.get_zs())/ll.get_wf();
+			tmp=1./conj(ll.get_wf());
+			num+=tmp;
+			denom+=norm(tmp);			
+			cout<<norm(tmp)<<endl;
         }
-        
-        for (int l=0; l<2; l++) overlaps[l]/=(1.*nMeas);
-        overlaps[0].array()=overlaps[0].array()/overlaps[1].array().sqrt();
-        cout<<"nbin="<<nbin<<endl;
-        for (int m=0; m<invNu; m++) {
-            for (int n=0; n<invNu; n++) {
-                cout<<"m="<<m<<" ,n="<<n<<" ,overlap="<<overlaps[0](m,n)<<endl;
-                cout<<"m="<<m<<" ,n="<<n<<" ,1-|overlap|="<<1-abs(overlaps[0](m,n))<<endl;
-                cout<<endl;
-            }
-        }
-        cout<<endl;
+
+		num/=(1.*nMeas);
+		denom/=(1.*nMeas);
+		num/=sqrt(denom);
+
+//        cout<<"nbin="<<nbin<<endl;
+//        cout<<abs(num)<<endl;
+//		cout<<1.-abs(num)*sqrt(comb(Ne,Ne/invNu))<<endl<<endl;
     }
 }
 //Particle Hole Symmetry (Ne9, maximal symmetric ds).
