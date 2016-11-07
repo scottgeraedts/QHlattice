@@ -1198,25 +1198,28 @@ complex<double> LATTICE::FilledLL(vector<vector<int>> z){
     return detSolver.determinant();
 }
 
+//normalized filled LL wave function
+//made from determinants of single particle wave functions
+//the zeros are evenly spaced and centered at 0 x direction
+//evenly spaced centered at 1 in the y direction
+//used the definition of the single particle orbitals given in Fremling
+//only tested in square torus
 complex<double> LATTICE::FilledLL2(vector< vector<int> > z){
-	complex<double> out=1,temp;
-	double x,y;
-	vector<int> COM(2,0);
-	for(int i=0;i<Ne;i++){
-		for(int j=i+1;j<Ne;j++){
-			x=(z[i][0]-z[j][0])/(1.*NPhi);
-			y=(z[i][1]-z[j][1])/(1.*NPhi);
-			z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-			out*=temp;
-		}
-		COM[0]+=z[i][0];
-		COM[1]+=z[i][1];
-	}
-	x=COM[0]/(1.*NPhi);
-	y=COM[1]/(1.*NPhi);
-	z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-	out*=temp;
-	return out;
+	complex<double> out=1,temp, tempz;
+	complex<double> tau=(1.*NPhi)*L2/L1;	
+	int type=2;
+	if(NPhi%2) type=1;
+    Eigen::MatrixXcd landauwf(NPhi, NPhi);
+    for (int m=0; m<NPhi; m++) {
+        for (int n=0; n<NPhi; n++) {
+        	tempz=z[n][0]/(1.*NPhi)*L1+(z[n][1]-m)/(1.*NPhi)*L2;
+			jacobi_theta_(&type, &tempz, &tau, &temp, &zero);
+			landauwf(m,n)=temp;
+        }
+    }
+//    cout<<"matrix="<<endl<<landauwf<<endl;
+    detSolver.compute(landauwf);
+    return detSolver.determinant();
 }
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
 complex<double> LATTICE::doubled_CFL(const vector< vector<int> > &bothzs){

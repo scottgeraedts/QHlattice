@@ -44,6 +44,7 @@ void test_error(int ne, double loop, double steplength, int nMea, int ncore, str
 
 //CFL Berry Phase
 void CFL_berry_phases_parallel(string params_name, string output_name, int num_core, string kind, double theta=0.5*M_PI, double alpha=1.0);
+void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &extra_ds, vector< vector<int> > &remove_ds, vector< vector<int> > &old_ds);
 
 //Particle-Hole Symmetry
 void ParticleHoleSym();

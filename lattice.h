@@ -27,6 +27,8 @@ extern"C"{
 	void set_l_(int *NPhi, complex<double> *l1, complex <double> *l2);
 	void setup_laughlin_state_(int *Ne, int *invNu, int *sl2z, int *k); //wl_tools.f90
 	void get_laughlin_cm_(int *x, complex<double> *wf);
+	void jacobi_theta_(int *n, complex<double> *z, complex<double> *tau, complex<double> *theta, int *sum);
+
 }
 
 
@@ -88,7 +90,7 @@ public:
     
     //Filled Landau Level Wavefunction (not IQH wf)
     complex<double> FilledLL(vector<vector<int>> zs);
-	//IQH wavefunction
+	//another version of filled Landau level wavefunction, this one is normalized
     complex<double> FilledLL2(vector<vector<int>> zs);
 	//product of 2 CFL wavefunctions
     complex<double> doubled_CFL(const vector<vector<int>> &zs);
