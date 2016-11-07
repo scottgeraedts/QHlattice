@@ -2629,6 +2629,19 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
     		extra_ds.push_back(vector<int>{2,2});
     		remove_ds.push_back(vector<int>{1,1});
  
-    	}
+    	}else if(tempNe==12){
+    		extra_ds.push_back(vector<int>{2,2});
+    		remove_ds.push_back(vector<int>{1,1});
+    	}else if(tempNe==21){
+    		extra_ds.push_back(vector<int>{2,2});
+    		remove_ds.push_back(vector<int>{1,1});
+
+    		extra_ds.push_back(vector<int>{2,0});
+    		remove_ds.push_back(vector<int>{1,0});
+    	
+    	}else{
+            cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
+            exit(0);
+        }
     }
 }
