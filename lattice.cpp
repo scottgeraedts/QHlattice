@@ -1,10 +1,10 @@
 #include "lattice.h"
-int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
+//int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 
 LATTICE::LATTICE() {
     Ne=0;
 }
-LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t, bool trace_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t),trace(trace_t){
+LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t){
 	//various parameters from input file
 	NPhi=Ne*invNu;
 	if(type=="laughlin-hole") NPhi++;
@@ -16,7 +16,6 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
     //set in_determinant_rescaling.
     //It has been set for more Ne for invNu=2, some Ne for invNu=4.
     in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
-
     
     //make l1, l2 through theta, alpha.
     L1=sqrt(1.*M_PI*NPhi/sin(theta))*alpha;
@@ -28,17 +27,18 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 	one=1; zero=0; //useful for fortran calls
 
 	//****initialize z's, w's, d's
-	locs=vector< vector<int> >(Ne, vector<int>(2,0)); //initalize locations of all electrons
+	if(type=="doubledCFL") locs=vector< vector<int> >(2*Ne, vector<int>(2,0)); //initalize locations of all electrons
+	else locs=vector< vector<int> >(Ne, vector<int>(2,0)); //initalize locations of all electrons
 
 	double center_frac[2]={0., 0.};
-    dbar_parameter=vector<double>(2);
+    dbar_parameter=vector<double>(2,0);
     
-	if(type=="CFL"){
+	if(type=="CFL" or type=="doubledCFL"){
 		if(Ne%2==0){center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
 //        print_ds();
 	}
-    else if (type=="laughlin" || type=="laughlin-hole" || type=="FilledLL") {
+    else if (type=="laughlin" || type=="laughlin-hole" || type=="FilledLL" ) {
         ds.clear();
     }
     else {cout<<"recognized type."<<endl; exit(0);}
@@ -51,7 +51,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
         ws0[i][1]=gs/(1.*invNu);
     }
     
-    if (type=="CFL") set_ds(ds);//set ds, and reset ws.
+    if (type=="CFL" or type=="doubledCFL") set_ds(ds);//set ds, and reset ws.
     else if (type=="FilledLL") set_zeros(vector<double>{0., 0.});
     else ws=ws0;
     
@@ -93,6 +93,7 @@ double LATTICE::get_in_det_rescaling(int Ne, int invNu){
             else if (Ne<90) rescaling=0.18;
 //            else if (Ne<90) rescaling=0.1;
             else {rescaling=0.15; cout<<"Please set in_determinant_rescaling if doing berry phase."<<endl;}
+            rescaling=1;
         }
         else if (invNu==4) {
             if (Ne<15) rescaling=0.1;
@@ -126,15 +127,17 @@ void LATTICE::step(int Nsteps){
 }
 int LATTICE::simple_update(){
 	//find a new position for a randomly chosen electron
-	int electron=ran.randInt(Ne-1);
-	vector<int> newloc=random_move(locs[electron]);
+	int electron;
+	if(type=="doubledCFL") electron=ran.randInt(2*Ne-1);
+	else electron=ran.randInt(Ne-1);
+	vector<int> oldloc, newloc=random_move(locs[electron], NPhi, ran);
 	vector< vector<int> >::iterator it=find(locs.begin(),locs.end(),newloc);
 	if(it!=locs.end()) return 0;
+
 	double prob=0;
 	complex<double> temp;
-    //move the declaration of 'newDeterminant' and 'newMatrix' from ''***Determinant Part'' to Here.
-    complex<double> newDeterminant;
-    Eigen::MatrixXcd newMatrix=oldMatrix;
+    //move the declaration 'newMatrix' from ''***Determinant Part'' to Here. (newDeterminant is now global)
+    newMatrix=oldMatrix;
 
     if (type=="FilledLL") {
         //Here I just use 'newDeterminant' to store the FilledLL wf value, though it has nothing to do with determinant.
@@ -147,8 +150,12 @@ int LATTICE::simple_update(){
         detSolver.compute(newMatrix);
         newDeterminant=detSolver.determinant();
         prob+=log(norm(newDeterminant/oldDeterminant));
-    }
-    else {
+    }else if(type=="doubledCFL"){
+    	oldloc=locs[electron];
+    	locs[electron]=newloc;
+    	newDeterminant=get_wf(locs);
+    	prob+=log(norm(newDeterminant/oldDeterminant));
+    }else {
         //***************hole part
         double dx,dy; //TODO: this calls z_function every time, should speed that up
         if(type=="laughlin-hole"){
@@ -229,7 +236,7 @@ int LATTICE::simple_update(){
 //        complex<double> newDeterminant;
 //        Eigen::MatrixXcd newMatrix=oldMatrix;
         if(type=="CFL"){
-            make_CFL_det(newMatrix, newloc, electron, newDeterminant);
+            make_CFL_det(newMatrix, newloc, electron, newDeterminant, locs);
             prob+=log(norm(newDeterminant/oldDeterminant));
         }
         //******phase. no, since calculating weight.
@@ -249,10 +256,108 @@ int LATTICE::simple_update(){
         oldMatrix=newMatrix;
 		return 1;
 	}
-	else return 0;
+	else{
+		if(type=="doubledCFL") locs[electron]=oldloc;
+		return 0;
+	}
 }
+
+//very similar to simple update (above), but it uses a provided set of zs, instead of this objects version
+//and it is also provided with an position to update
+double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vector<int> newloc){
+	double prob=0;
+	complex<double> temp;
+//	cout<<endl;
+//	for(auto it=zs.begin(); it!=zs.end(); ++it){
+//		cout<<"("<<(*it)[0]<<","<<(*it)[1]<<") ";
+//	}cout<<endl<<electron<<" ("<<newloc[0]<<","<<newloc[1]<<")"<<endl;
+
+    //***************hole part
+    double dx,dy; //TODO: this calls z_function every time, should speed that up
+    if(type=="laughlin-hole"){
+        dx=(zs[electron][0]/(1.*NPhi)-hole[0]);
+        dy=(zs[electron][1]/(1.*NPhi)-hole[1]);
+        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+        prob-=log(norm(temp));
+        dx=(newloc[0]/(1.*NPhi)-hole[0]);
+        dy=(newloc[1]/(1.*NPhi)-hole[1]);
+        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+        prob+=log(norm(temp));
+    }
+        
+    //***************vandermode part
+    int vandermonde_exponent=invNu;
+    if(type=="CFL") vandermonde_exponent-=2;
+    int xi,yi;
+    
+    if(vandermonde_exponent!=0){
+        for(int i=0;i<Ne;i++){
+            //divide off old part
+            if(i==electron) continue;
+            xi=(zs[i][0]-zs[electron][0]);
+            yi=(zs[i][1]-zs[electron][1]);
+            if(i>electron){
+                xi=-xi; yi=-yi;
+            }
+            temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
+            prob-=log(norm( pow(temp,vandermonde_exponent) ));
+            
+            //multiply new part
+            xi=(zs[i][0]-newloc[0]);
+            yi=(zs[i][1]-newloc[1]);
+            if(i>electron){
+                xi=-xi; yi=-yi;
+            }
+            temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
+            prob+=log(norm( pow(temp,vandermonde_exponent) ));
+        }
+    }
+    //***************COM PART
+    int oldCOM[2]={0,0}, newCOM[2];
+    for(auto it=zs.begin(); it!=zs.end(); ++it){
+    	oldCOM[0]+=(*it)[0];
+    	oldCOM[1]+=(*it)[1];
+    }
+    newCOM[0]=oldCOM[0]-zs[electron][0]+newloc[0];
+    newCOM[1]=oldCOM[1]-zs[electron][1]+newloc[1];
+    
+    if(type=="laughlin-hole"){
+        double dx,dy;
+        for( int i=0;i<invNu;i++){
+            dx=oldCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
+            dy=oldCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
+            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+            prob-=log(norm(temp));
+            dx=newCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
+            dy=newCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
+            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+            prob+=log(norm(temp));
+        }
+    }else{
+        double dx,dy;
+        for( int i=0;i<invNu;i++){
+            dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
+            dy=oldCOM[1]/(1.*NPhi)-ws[i][1];
+            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+            prob-=log(norm(temp));
+            dx=newCOM[0]/(1.*NPhi)-ws[i][0];
+            dy=newCOM[1]/(1.*NPhi)-ws[i][1];
+            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+            prob+=log(norm(temp));
+        }
+    }
+    if(type=="CFL"){
+    	newMatrix=oldMatrix;
+        make_CFL_det(newMatrix, newloc, electron, newDeterminant, zs);
+        prob+=log(norm(newDeterminant/oldDeterminant));
+    }
+
+	return prob;	  
+}
+
+
 //chooses a new site, given an old site
-vector<int> LATTICE::random_move( const vector<int> &in){
+vector<int> LATTICE::random_move( const vector<int> &in, int NPhi_t, MTRand &ran_t){
 	vector<int>newloc(2);
 
 	//the stupidest way to do this
@@ -270,14 +375,14 @@ vector<int> LATTICE::random_move( const vector<int> &in){
 		for(int j=0;j<=2*hoplength;j++){
 			yi=j-hoplength+in[1];
 			if(xi==in[0] && yi==in[1]) continue;
-			newx[counter]=supermod(xi,NPhi);
-			newy[counter]=supermod(yi,NPhi);
+			newx[counter]=supermod(xi,NPhi_t);
+			newy[counter]=supermod(yi,NPhi_t);
 //			newprob.push_back( exp(-0.5*( pow(in[0]-i,2)+pow(in[1]-j,2) )/pow(hoplength,2) ) );
 			newprob[counter]=1.;
 			counter++;
 		}
 	}
-	double r=ran.rand();
+	double r=ran_t.rand();
 	r*=accumulate(newprob.begin(),newprob.end(),0.);	
 //	cout<<accumulate(newprob.begin(),newprob.end(),0.)<<endl;	
 	
@@ -310,8 +415,11 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
     
     if (type=="FilledLL") {
         out=log(norm(FilledLL(zs)));
-    }
-    else {
+    }else if(type=="FilledLL2"){
+    	out=log(norm(FilledLL2(zs)));
+    }else if(type=="doubledCFL"){
+    	out=log(norm(doubled_CFL(zs)));
+    }else {
         //hole piece
         if(type=="laughlin-hole"){
             for(int i=0;i<Ne;i++){
@@ -410,8 +518,8 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 } 
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
 complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
-    if (zs.size()!=Ne) {
-        cout<<"cannot get_wf because zs.size()!=Ne"<<endl;
+    if (type!="doubledCFL" and zs.size()!=Ne) {
+        cout<<"cannot get_wf because zs.size()!=Ne "<<zs.size()<<" "<<Ne<<endl;
         exit(0);
     }
     complex<double> out=1,temp;
@@ -420,7 +528,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
     
     if (type=="FilledLL") {
         out=FilledLL(zs);
-    }
+    }else if(type=="doubledCFL") out=doubled_CFL(zs);
     else {
         //hole part
         if(type=="laughlin-hole"){
@@ -441,7 +549,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                     ix=(zs[i][0]-zs[j][0]);
                     iy=(zs[i][1]-zs[j][1]);
                     out*=pow(lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one), vandermonde_exponent);
-                    //......
+                    
                     if (type=="laughlin"||type=="laughlin-hole") {
                         //                        out*=pow(in_determinant_rescaling, vandermonde_exponent*(Ne-1));
                         out*=pow(in_determinant_rescaling, Ne-1);
@@ -449,7 +557,6 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                 }
             }
         }
-        //    cout<<" vandermonde piece = "<<out<<endl;
         complex<double> assist=out;
         
         //COM piece
@@ -475,7 +582,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                 out*=temp;
             }
         }
-        //    cout<<" com piece = "<<out/assist<<endl; assist=out;
+          //  cout<<" com piece = "<<out<<endl; assist=out;
         
         //Determinant piece
         if(type=="CFL"){
@@ -753,19 +860,19 @@ complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 }
 void LATTICE::reset(){
 	tries=0; accepts=0;
-//	cold_start();
-    hotter_start();
+	locs=hot_start(locs.size(), NPhi, ran);
     
 	//**** setting up the initial determinant matrix
-	running_weight=0;
+	running_weight=-1e11;
 	int site=0;
 	int initial_state_counter=0;
 	
-    while(running_weight==0){
+    while(running_weight<-1e10){
 	//for some sizes the configuration specified by cold_start has zero weight
 	//if that happens fiddle around until you find a better configuration, thats why theres a while loop
-		locs[site][0]=locs[p(site)][0];
-		site++;
+//		locs[site][0]=locs[p(site)][0];
+//		site++;
+
 		if(site==Ne) cout<<"couldn't easily find a good configuration!"<<endl;
 		
 		if(type=="CFL"){
@@ -786,7 +893,9 @@ void LATTICE::reset(){
 				}
 			}
 			detSolver.compute(oldMatrix);
+			newMatrix=oldMatrix;
 			oldDeterminant=detSolver.determinant();
+			newDeterminant=oldDeterminant;
 //			cout<<in_determinant_rescaling<<" "<<oldDeterminant<<endl;
 		}
         
@@ -803,6 +912,8 @@ void LATTICE::reset(){
                     }
                 }
             }
+        }else if(type=="doubledCFL"){
+        	oldDeterminant=get_wf(locs);
         }
         
 		initial_state_counter++;
@@ -811,7 +922,7 @@ void LATTICE::reset(){
 			exit(0);
 		}
 	}
-    
+	//cout<<"starting weight"<<running_weight<<endl;
     sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
     sq2=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
     sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
@@ -820,9 +931,36 @@ void LATTICE::reset(){
     
     check_sanity();
 }
+//same as above, only sets up the starting determinants
+void LATTICE::reset(const vector< vector<int> > &zs){
+
+	if(type=="CFL"){
+		complex<double> temp,product;
+		double x,y;
+		oldMatrix=Eigen::MatrixXcd(Ne,Ne);
+		for(int i=0;i<Ne;i++){
+			for(int j=0;j<Ne;j++){
+				product=1;
+				for(int k=0;k<Ne;k++){
+					if(k==i) continue;
+		            x=det_helper(zs[i][0],zs[k][0],ds[j][0],dbar_parameter[0])/(1.*NPhi);
+		            y=det_helper(zs[i][1],zs[k][1],ds[j][1],dbar_parameter[1])/(1.*NPhi);
+					z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+					product*=temp;
+				}
+				oldMatrix(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), M_PI*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(1.*NPhi) );
+			}
+		}
+		detSolver.compute(oldMatrix);
+		newMatrix=oldMatrix;
+		oldDeterminant=detSolver.determinant();
+		newDeterminant=oldDeterminant;
+	}
+    check_sanity();
+}
 //checks a few different things to make sure that they make sense
 void LATTICE::check_sanity(){
-	if(type!="CFL" && type!="laughlin" && type!= "laughlin-hole" && type!="FilledLL"){
+	if(type!="CFL" && type!="laughlin" && type!= "laughlin-hole" && type!="FilledLL" &&   type!="doubledCFL"){
 		cout<<"type not recognized: "<<type<<endl;
 		exit(0);
 	}
@@ -841,7 +979,7 @@ void LATTICE::check_sanity(){
 }
 //changes the dbar (which ordinarily is the sum of d's) to whatever we want
 void LATTICE::change_dbar_parameter(double dbarx, double dbary){
-	if(type!="CFL" && type!="FilledLL"){
+	if(type!="CFL" && type!="FilledLL" && type!="doubledCFL"){
 		cout<<"changing dbar, but not CFL nor FilledLL."<<endl;
 		//exit(0);
 	}
@@ -871,12 +1009,13 @@ void LATTICE::set_ds(vector< vector<int> > tds){
 	for(int i=0;i<Ne;i++){
         dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu; //'ds' is on L/Ne lattice, 'dsum' is on L/Nphi lattice.
 	}
-	//print_ds();
+	print_ds();
 	change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));
+    
     
     //reset ws, according to ds.
     ws.clear(); ws=ws0;
-    if (type=="CFL") {
+    if (type=="CFL" or type=="doubledCFL") {
         for (int i=0; i<ws.size(); i++) {
             ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.
         }
@@ -894,7 +1033,7 @@ void LATTICE::set_ws(vector<vector<double>> ws_t){
         }
     }
     ws0=ws_t; ws=ws0;
-    if (type=="CFL") {
+    if (type=="CFL" or type=="doubledCFL") {
         for (int i=0; i<ws.size(); i++) {
             ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.
         }
@@ -926,19 +1065,33 @@ inline void LATTICE::det_helper(const vector<int> &z1, const vector<int> &z2, co
 }
 inline double LATTICE::det_helper(int z1, int z2, int d, double dbarp){ return z1-z2-d*invNu+dbarp;}
 
+complex<double> LATTICE::getL(int dir){
+	if(dir==1) return L1;
+	else return L2;
+}
 void LATTICE::cold_start(){
-	for(int i=0;i<Ne;i++){
+	for(int i=0;i<(signed)locs.size();i++){
 		locs[i][0]=i;
 		locs[i][1]=i;
 	}
 }
-void LATTICE::hotter_start(){
-    for(int i=0;i<Ne;i++){
-        locs[i][0]=i;
-        double r=ran.rand();
-//        cout<<"r="<<r<<endl;
-        locs[i][1]=(int)(r*NPhi);
-    }
+vector< vector<int> > LATTICE::hot_start(int Ne_t, int NPhi_t, MTRand &ran_t){
+	unordered_set<int> locs_table;
+	bool found;
+	int x,y;
+	vector< vector<int> > new_locs(Ne_t, vector<int>(2));
+	for(int i=0;i<(signed)new_locs.size();i++){
+		found=true;
+		while(found){
+			x=ran_t.randInt(NPhi_t-1);
+			y=ran_t.randInt(NPhi_t-1);
+			if(locs_table.count(NPhi_t*x+y)==0) found=false;
+		}
+		locs_table.insert(NPhi_t*x+y);
+		new_locs[i][0]=x;
+		new_locs[i][1]=y;
+	}
+	return new_locs;
 }
 
 //call's duncan's lattice_z function, if the arguments x or y are outside of the range (0,NPhi) it shifts them into that range
@@ -950,57 +1103,74 @@ complex<double> LATTICE::modded_lattice_z(int x, int y){
 //	complex<double> out=lattice_z_(&NPhi,&modx,&mody,&L1,&L2,&one);
 	complex<double> out=shifted_ztable[modx][mody];
 	int j=(modx-x)/NPhi, k=(mody-y)/NPhi;
-//	out*=omega[supermod(-(mody+dbar_parameter[1])*j+(modx+dbar_parameter[0])*k,2*NPhi)];
+///	out*=omega[supermod(-(mody+dbar_parameter[1])*j+(modx+dbar_parameter[0])*k,2*NPhi)];
 	out*=polar(1., (-(mody+dbar_parameter[1])*j+(modx+dbar_parameter[0])*k)*M_PI/(1.*NPhi));
 	if(j%2 || k%2) return -out;
 	else return out;
 }
 
-void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& new_det){
+void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& new_det, const vector< vector<int> > &zs){
     complex<double> product;
     vector<int> z(2);
     complex<double> temp;
     
+    //recalculate the new matrix for checking purposes
+//	double x,y;
+//	Eigen::MatrixXcd testMatrix=Eigen::MatrixXcd(Ne,Ne);
+//	for(int i=0;i<Ne;i++){
+//		for(int j=0;j<Ne;j++){
+//			product=1;
+//			for(int k=0;k<Ne;k++){
+//				if(k==i) continue;
+//                x=det_helper(zs[i][0],zs[k][0],ds[j][0],dbar_parameter[0])/(1.*NPhi);
+//                y=det_helper(zs[i][1],zs[k][1],ds[j][1],dbar_parameter[1])/(1.*NPhi);
+//				z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+//				product*=temp;
+//			}
+//			testMatrix(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), M_PI*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(1.*NPhi) );
+//		}
+//	}   
+//	cout<<"-------------------------"<<endl<<testMatrix<<endl;
+
     for(int i=0;i<Ne;i++){
         for(int j=0;j<Ne;j++){
             if(i==electron){
                 product=1.;
                 for(int k=0;k<Ne;k++){
                     if(k==i) continue;
-                    det_helper(newloc,locs[k],ds[j],z);
+                    det_helper(newloc,zs[k],ds[j],z);
 					temp=modded_lattice_z(z[0],z[1]);
                     product*=temp;
                 }
                 newMatrix(i,j)=pow(in_determinant_rescaling,Ne-1)*product*omega[supermod(newloc[1]*ds[j][0] - newloc[0]*ds[j][1],2*NPhi)];
             }
             else if(i!=electron){//all other elements just need to be updated by the ratio of a sigma function
-                if(newMatrix(i,j)==0.){//if zero, need to recompute the whole thing
+                if(newMatrix(i,j)==0.){//unless the old value is zero, then need to recompute the whole thing
                     product=1.;
                     for(int k=0;k<Ne;k++){
                         if(k==i) continue;
                         if(k==electron){
-                            det_helper(locs[i],newloc,ds[j],z);
+                            det_helper(zs[i],newloc,ds[j],z);
                         }
                         else{
-							det_helper(locs[i],locs[k],ds[j],z);
+							det_helper(zs[i],zs[k],ds[j],z);
                         }
                         temp=modded_lattice_z(z[0],z[1]);
                         product*=temp;
                     }
-                    newMatrix(i,j)=pow(in_determinant_rescaling,Ne-1)*product*omega[supermod(locs[i][1]*ds[j][0] - locs[i][0]*ds[j][1],2*NPhi) ];
+                    newMatrix(i,j)=pow(in_determinant_rescaling,Ne-1)*product*omega[supermod(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1],2*NPhi) ];
                 }
                 else if(newMatrix(i,j)!=0.){
-                    det_helper(locs[i],locs[electron],ds[j],z);
+                    det_helper(zs[i],zs[electron],ds[j],z);
                     temp=modded_lattice_z(z[0],z[1]);
                     newMatrix(i,j)/=temp;
-					det_helper(locs[i],newloc,ds[j],z);
+					det_helper(zs[i],newloc,ds[j],z);
                     temp=modded_lattice_z(z[0],z[1]);
                     newMatrix(i,j)*=temp;
                 }
             }
         }
     }
-    
     detSolver.compute(newMatrix);
     new_det=detSolver.determinant();
 //    cout<<electron<<endl;
@@ -1027,4 +1197,102 @@ complex<double> LATTICE::FilledLL(vector<vector<int>> z){
     return detSolver.determinant();
 }
 
+//normalized filled LL wave function
+//made from determinants of single particle wave functions
+//the zeros are evenly spaced and centered at 0 x direction
+//evenly spaced centered at 1 in the y direction
+//used the definition of the single particle orbitals given in Fremling
+//only tested in square torus
+complex<double> LATTICE::FilledLL2(vector< vector<int> > z){
+	complex<double> out=1,temp, tempz;
+	complex<double> tau=(1.*NPhi)*L2/L1;	
+	int type=2;
+	if(NPhi%2) type=1;
+    Eigen::MatrixXcd landauwf(NPhi, NPhi);
+    for (int m=0; m<NPhi; m++) {
+        for (int n=0; n<NPhi; n++) {
+        	tempz=z[n][0]/(1.*NPhi)*L1+(z[n][1]-m)/(1.*NPhi)*L2;
+			jacobi_theta_(&type, &tempz, &tau, &temp, &zero);
+			landauwf(m,n)=temp;
+        }
+    }
+//    cout<<"matrix="<<endl<<landauwf<<endl;
+    detSolver.compute(landauwf);
+    return detSolver.determinant();
+}
+//given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
+complex<double> LATTICE::doubled_CFL(const vector< vector<int> > &bothzs){
+    if (bothzs.size()!=Ne*2) {
+        cout<<"cannot get_wf because zs.size()!=2Ne"<<endl;
+        exit(0);
+    }
+	complex<double> out=1,temp;
+	int ix,iy;
+	double x,y;
+    
+	vector<vector<vector<int> > > onezs(2,bothzs);
+	
+	vector<vector<int> > zs;
+	onezs[0].resize(Ne);
+	onezs[1].erase(onezs[1].begin(),onezs[1].begin()+Ne);
+	for(int i=0;i<Ne;i++){
+		onezs[1][i][0]*=-1; //=supermod(-onezs[1][i][0],NPhi);
+		onezs[1][i][1]*=-1; //=supermod(-onezs[1][i][1],NPhi);
+	}
+	for(int copy=0;copy<2;copy++){
+		zs=onezs[copy];
+//		for(int i=0;i<Ne;i++) cout<<"("<<zs[i][0]<<","<<zs[i][1]<<") ";
+//		cout<<endl;
+        //COM piece
+        int COM[2]={0,0};
+        for( int i=0;i<Ne;i++){
+            COM[0]+=zs[i][0];
+            COM[1]+=zs[i][1];
+        }
+        double dx,dy;
+        for( int i=0;i<invNu;i++){
+            dx=COM[0]/(1.*NPhi)-ws[i][0];
+            dy=COM[1]/(1.*NPhi)-ws[i][1]-copy/(1.*invNu);
+            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+            out*=temp;
+        }
+//            cout<<" com piece = "<<out<<endl; 
+        complex<double> product;
+        vector<int> z(2);
+        Eigen::MatrixXcd M(Ne,Ne);
+        for(int i=0;i<Ne;i++){
+            for(int j=0;j<Ne;j++){
+                product=1;
+                for(int k=0;k<Ne;k++){
+                    if(k==i) continue;
+                    det_helper(zs[i],zs[k],ds[j],z);
+                    temp=modded_lattice_z(z[0],z[1]);
+                    product*=temp;
+                }
+                M(i,j)=product*polar(pow(in_determinant_rescaling, Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
+            }
+        }
+        detSolver.compute(M);
+        out=out*detSolver.determinant();
+//                cout<<"det piece = "<<detSolver.determinant()<<endl;
+        
+        //phase previously missing.
+        vector<double> wsum(2);
+        for (int i=0; i<invNu; i++) {
+            wsum[0]+=ws[i][0];
+            wsum[1]+=ws[i][1]+copy/(1.*invNu);
+        }
+        complex<double> w_comp = wsum[0]*L1+wsum[1]*L2, zcom_comp = 1.*COM[0]/NPhi*L1+1.*COM[1]/NPhi*L2;
+        complex<double> dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L2;
+        out*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+    }
+    return out;
+}
+
+void LATTICE::update(){
+	if(type=="CFL"){
+		oldMatrix=newMatrix;
+		oldDeterminant=newDeterminant;
+	}
+}
 LATTICE::~LATTICE(){  }

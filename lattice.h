@@ -8,6 +8,8 @@
 #include "MersenneTwister.h"
 #include <numeric>
 #include <deque>
+#include <unordered_set>
+//#include <cmath>
 
 using namespace std;
 
@@ -26,19 +28,20 @@ extern"C"{
 	void set_l_(int *NPhi, complex<double> *l1, complex <double> *l2);
 	void setup_laughlin_state_(int *Ne, int *invNu, int *sl2z, int *k); //wl_tools.f90
 	void get_laughlin_cm_(int *x, complex<double> *wf);
+	void jacobi_theta_(int *n, complex<double> *z, complex<double> *tau, complex<double> *theta, int *sum);
 }
 
 class LATTICE{
-    friend class berry_phase;
 public:
 	LATTICE();
 //    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0, double theta=0.5*M_PI, double alpha=1.0);
-    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0, double theta=0.5*M_PI, double alpha=1.0, bool trace=false);
+    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0, double theta=0.5*M_PI, double alpha=1.0);
 	~LATTICE();
 
 	int Ne, NPhi;
 	double running_weight;//running_weight is a global variable. need reset in every run.
     int tries,accepts;
+    complex<double> getL(int dir);
     
     vector<double> hole;
     bool fermions,holes_set;
@@ -49,7 +52,7 @@ public:
 	void step(int);// step(int Nsteps); Nsetps = total MC steps. tries:steps, accepts:updated steps.
 	double get_weight(const vector< vector<int> > &zs);  
 	complex<double> get_wf(const vector< vector<int> > &zs);
-    void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value);
+    void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value, const vector< vector<int> > &zs);
 
 	//utility functions
 	complex<double> modded_lattice_z(int x, int y);
@@ -59,6 +62,7 @@ public:
 	//initialization related functions
 	void make_fermi_surface(double* center_frac, int N);
 	void reset();
+	void reset(const vector< vector<int> > &zs);
 	vector <vector<int> > get_ds();
 	void change_dbar_parameter(double dbarx, double dbary);
 	vector<double> get_dbar_parameter();
@@ -86,6 +90,16 @@ public:
     
     //Filled Landau Level Wavefunction (not IQH wf)
     complex<double> FilledLL(vector<vector<int>> zs);
+	//another version of filled Landau level wavefunction, this one is normalized
+    complex<double> FilledLL2(vector<vector<int>> zs);
+	//product of 2 CFL wavefunctions
+    complex<double> doubled_CFL(const vector<vector<int>> &zs);
+    
+    //stuff for lattice_wrapper
+    double update_weight(const vector<vector<int>> &zs, int electron, vector<int> newz);
+    void update();
+	static vector< vector<int> > hot_start(int NPhi_t, int Ne_t, MTRand &ran);
+	static vector<int> random_move(const vector<int> &oldsite, int NPhi_t, MTRand &ran_t);
 	
 private:
     double get_in_det_rescaling(int Ne, int invNu);
@@ -93,10 +107,8 @@ private:
 	void sum_locs(int []);
 	void setup_coulomb();
 	int simple_update();// returns '1' if updated, '0' if not updated.
-	vector<int> random_move(const vector<int> &oldsite);
 	int p(int); int m(int);
 	void cold_start();
-	void hotter_start();
 	void det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z);
     double det_helper(int z1, int z2, int d, double dbar_parameter);
     void check_sanity();
@@ -112,8 +124,8 @@ private:
     vector <vector <double> > SMAq;
 	vector <vector<int> > sx,sx2;
 	vector <vector <complex<double> > > shifted_ztable;
-	Eigen::MatrixXcd oldMatrix;
-	complex<double> oldDeterminant;
+	Eigen::MatrixXcd oldMatrix, newMatrix;
+	complex<double> oldDeterminant, newDeterminant;
 	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;
 //    Eigen::FullPivLU<Eigen::MatrixXcd> detSolver_FLL;
 	MTRand ran;
@@ -126,6 +138,38 @@ private:
 //    vector< complex<double> > omegasq;
     
     vector<vector<int> > ds;//an integer defined on an Ne lattice
+    
+};
+
+class wf_info{
+public:
+	wf_info();
+	wf_info(bool conj, bool denom, int start, int end, int sign);
+	LATTICE wf;
+	bool conj,denom;
+	vector< vector<int> > make_zs(const vector< vector<int> > &inzs);
+	int start, end;
+	int sign;
+};
+
+class LATTICE_WRAPPER{
+public:
+	LATTICE_WRAPPER(int Ne, vector<wf_info> &wfs_t, int seed, bool testing);
+	int step(int);
+	complex<double> get_wf();
+	void reset();
+	vector< vector<int> > get_zs();
+	vector< vector<int> > hot_start();
+private:
+	vector<wf_info> wfs;
+	
+	bool testing;
+	int Ne; //assume Ne=NPhi
+	vector< vector<int> > zs;
+	vector<int> random_move(vector<int>);
+	int tries,accepts;
+	double running_weight;
+	MTRand ran;
 };
 
 #endif

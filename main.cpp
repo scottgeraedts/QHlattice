@@ -8,32 +8,16 @@ bool IsOdd (int i) {
     return ((i%2)==1);
 }
 int main(){
+    double theta=0.5*M_PI, alpha=1.0;
+    int num_core=1;
+    CFL_berry_phases_parallel("params", "ne8bp", num_core, "fullloop");//params_name, output_name, num_core, kind.
+//	ParticleHoleSym2();   
+//	Explicit();
+//    structurefactor();
 //    double theta=0.333333333333*M_PI, alpha=1.0;
-    int num_core=2;
-    
+
 //    vector<double> length;
 //    double steplength=0.1;
-    
-//    length=vector<double>{0.5,0.5};
-//    laughlinberryphase("laughlin_ne20_0505", length, steplength, 0, 0, num_core);
-//
-//    length=vector<double>{0.5,0.4};
-//    laughlinberryphase("laughlin_ne20_0504", length, steplength, 0, 0, num_core);
-////
-//    length=vector<double>{0.5,0.3};
-//    laughlinberryphase("laughlin_ne20_0503", length, steplength, 0, 0, num_core);
-////
-//    length=vector<double>{0.5,0.2};
-//    laughlinberryphase("laughlin_ne20_0502", length, steplength, 0, 0, num_core);
-////
-//    length=vector<double>{0.5,0.1};
-//    laughlinberryphase("laughlin_ne20_0501", length, steplength, 0, 0, num_core);
-    
-//    single_run();
-    
-//    CFL_berry_phases_parallel("params", "CFL69", num_core, "loop1", 0.5*M_PI, 1.0);
-//    CFL_berry_phases_parallel("params", "CFL21", num_core, "loop1", 0.5*M_PI, 1.0);
-//    CFL_berry_phases_parallel("params", "CFL17", num_core, "triangle5", 0.5*M_PI, 1.0);
     
 //    structurefactor("params_lau20_1_1");
 //    structurefactor("params_sq69");
@@ -77,8 +61,6 @@ int main(){
     
 //    structurefactor("params_sq6asp95new", num_core);
 //    structurefactor("params_sq6hexasp95new", num_core);
-
-    
     
 }
 void outformfactor(){
