@@ -4,7 +4,7 @@ int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
 LATTICE::LATTICE() {
     Ne=0;
 }
-LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t){
+LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t, bool trace_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t),trace(trace_t){
 	//various parameters from input file
 	NPhi=Ne*invNu;
 	if(type=="laughlin-hole") NPhi++;
@@ -88,9 +88,10 @@ double LATTICE::get_in_det_rescaling(int Ne, int invNu){
             rescaling=1.0;
         }
         else if (invNu==2) {
-            if (Ne<45) rescaling=0.28;
-            else if (Ne>=46 && Ne<=75) rescaling=0.2;
-            else if (Ne<90) rescaling=0.15;
+            if (Ne<40) rescaling=0.25;
+            else if (Ne>=40 && Ne<=50) rescaling=0.2;
+            else if (Ne<90) rescaling=0.18;
+//            else if (Ne<90) rescaling=0.1;
             else {rescaling=0.15; cout<<"Please set in_determinant_rescaling if doing berry phase."<<endl;}
         }
         else if (invNu==4) {
@@ -729,7 +730,6 @@ void LATTICE::print_structure_factors(int nMeas, string filename){
     sqout2_mqy.close();
     smaout.close();
 }
-
 complex<double> LATTICE::formfactor(int qx, int qy){
     complex<double> out=0;
     complex<double> temp;
@@ -742,7 +742,6 @@ complex<double> LATTICE::formfactor(int qx, int qy){
     }
     return out;
 }//need to change if want to do non-square case.
-
 complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 	complex<double> out=0;
 	for(int i=0;i<Ne;i++){

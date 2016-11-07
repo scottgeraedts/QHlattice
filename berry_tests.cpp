@@ -78,17 +78,19 @@ void check_orthogonality(string type){
         cout<<"\nnBins="<<nBins<<", overlap matrix = "<<overlaps[2](0,0)<<" "<<overlaps[2](1,1)<<" "<<overlaps[2](0,1)<<" "<<overlaps[2](1,0)<<endl;
     }
 }
-void single_run(){
+void single_run(string filename){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     string type;
-    ifstream infile("params");
+//    ifstream infile("params");
+    ifstream infile(filename);
     infile>>Ne>>invNu;
     infile>>nWarmup>>nMeas>>nSteps>>nBins;
     infile>>seed;
     infile>>testing;
     infile>>type;
     //initialize MC object
+    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
     
     int gs=0;
     double theta, alpha;
@@ -121,8 +123,8 @@ void single_run(){
     }
     
     LATTICE ll(Ne,invNu, testing, type, seed, gs, theta, alpha);
-    ll.set_ds(old_ds);
-    ll.print_ds();
+//    ll.set_ds(old_ds);
+//    ll.print_ds();
     
     ofstream outfile("out"), eout("energy");
     for(int s=0;s<nBins;s++){
@@ -204,14 +206,37 @@ void structurefactor(string intputfilename){//fielname='params_sq_...'.
 //        cout<<"strangeds.size="<<strangeds.size()<<endl;
 //    }
     
+    
 //    LATTICE ll0(Ne, invNu, testing, type, seed, gs, 0.5*M_PI, 1.0);
     LATTICE ll(Ne, invNu, testing, type, seed, gs, theta, alpha);
     if (type=="CFL") {
 ////        ll.set_ds(ll0.get_ds());
 //        ll.set_ds(strangeds);
-        ll.print_ds();
+//        ll.print_ds();
     }
     
+    if (Ne==49) {
+        vector<vector<int>> ds(49, vector<int>(2));
+        for (int y=0; y<7; y++) {
+            for (int x=0; x<7; x++) {
+                ds[x+y*7][0]=x-3;
+                ds[x+y*7][1]=y-3;
+            }
+        }
+        ll.set_ds(ds);
+    }
+    else if (Ne==36) {
+        vector<vector<int>> ds(36, vector<int>(2));
+        for (int y=0; y<6; y++) {
+            for (int x=0; x<6; x++) {
+                ds[x+y*6][0]=x-3;
+                ds[x+y*6][1]=y-3;
+            }
+        }
+        ll.set_ds(ds);
+    }
+    ll.print_ds();
+
     ofstream outfile("out"), eout("energy");
     for(int s=0;s<nBins;s++){
         //        ll.change_dbar_parameter(s*0.1,s*0.1);
@@ -262,6 +287,54 @@ void structurefactor(string intputfilename){//fielname='params_sq_...'.
     eout.close();
     outfile.close();
 }
+void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    double theta_t, theta, alpha;
+    string type;
+    ifstream infile(intputfilename);
+    infile>>Ne>>invNu>>theta_t>>alpha;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    theta=theta_t*M_PI;
+    
+    omp_set_num_threads(num_core);
+    
+    vector<LATTICE> ll(num_core);
+    for (int i=0; i<num_core; i++) {
+        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
+    }
+    if (type=="CFL") {
+        vector<vector<int>> ds(Ne, vector<int>(2));
+        if (Ne==64 || Ne==49 || Ne==36 || Ne==25 || Ne==16 || Ne==9 || Ne==4) {
+            int dis=(int)(sqrt(Ne));
+            for (int y=0; y<dis; y++) {for (int x=0; x<dis; x++) {ds[x+y*dis][0]=x-dis/2; ds[x+y*dis][1]=y-dis/2;}}
+            for (int i=0; i<num_core; i++) {
+                ll[i].set_ds(ds);
+            }
+            ll[0].print_ds();
+        }
+    }
+    
+#pragma omp parallel for
+    for(int s=0;s<nBins;s++){
+        int coren=omp_get_thread_num();
+//        printf("coren=%d\n",coren);
+//        ll[coren].change_dbar_parameter(s*0.1,s*0.1);
+        ll[coren].reset();
+        ll[coren].step(nWarmup);
+
+        for(int i=0;i<nMeas;i++){
+            ll[coren].step(nSteps);
+            ll[coren].update_structure_factors();
+        }
+        ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
+    }
+}
+
 
 //Energetics.
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename){
@@ -1206,6 +1279,92 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
                 extra_ds.push_back(vector<int>{0,-1});
                 extra_ds.push_back(vector<int>{2,2});
                 extra_ds.push_back(vector<int>{-2,2});
+            }
+            else if (kind=="triangle2") {
+                old_ds.clear(); extra_ds.clear();
+                for (int i=-3; i<4; i++) {
+                    old_ds.push_back(vector<int>{i,0});
+                }
+                for (int i=-2; i<3; i++) {
+                    old_ds.push_back(vector<int>{i,1});
+                }
+                for (int i=-1; i<2; i++) {
+                    old_ds.push_back(vector<int>{i,2});
+                }
+                old_ds.push_back(vector<int>{0,3});
+                
+                extra_ds.push_back(vector<int>{0,4});
+                extra_ds.push_back(vector<int>{-1,3});
+                extra_ds.push_back(vector<int>{-2,2});
+                extra_ds.push_back(vector<int>{-3,1});
+                extra_ds.push_back(vector<int>{-4,0});
+                extra_ds.push_back(vector<int>{-3,-1});
+                extra_ds.push_back(vector<int>{-2,-1});
+                extra_ds.push_back(vector<int>{-1,-1});
+                extra_ds.push_back(vector<int>{0,-1});
+                extra_ds.push_back(vector<int>{1,-1});
+                extra_ds.push_back(vector<int>{2,-1});
+                extra_ds.push_back(vector<int>{3,-1});
+                extra_ds.push_back(vector<int>{4,0});
+                extra_ds.push_back(vector<int>{3,1});
+                extra_ds.push_back(vector<int>{2,2});
+                extra_ds.push_back(vector<int>{1,3});
+            }
+            else if (kind=="triangle3") {
+                old_ds.clear(); extra_ds.clear();
+                for (int i=-3; i<4; i++) {
+                    old_ds.push_back(vector<int>{i,0});
+                }
+                for (int i=-2; i<3; i++) {
+                    old_ds.push_back(vector<int>{i,1});
+                }
+                for (int i=-1; i<2; i++) {
+                    old_ds.push_back(vector<int>{i,2});
+                }
+                old_ds.push_back(vector<int>{0,3});
+                
+                extra_ds.push_back(vector<int>{2,2});
+                extra_ds.push_back(vector<int>{-2,2});
+                extra_ds.push_back(vector<int>{-2,-1});
+                extra_ds.push_back(vector<int>{2,-1});
+            }
+            else if (kind=="triangle4") {
+                old_ds.clear(); extra_ds.clear();
+                for (int i=-3; i<4; i++) {
+                    old_ds.push_back(vector<int>{i,0});
+                }
+                for (int i=-2; i<3; i++) {
+                    old_ds.push_back(vector<int>{i,1});
+                }
+                for (int i=-1; i<2; i++) {
+                    old_ds.push_back(vector<int>{i,2});
+                }
+                old_ds.push_back(vector<int>{0,3});
+                
+                extra_ds.push_back(vector<int>{2,2});
+                extra_ds.push_back(vector<int>{-2,2});
+                extra_ds.push_back(vector<int>{-2,4});
+                extra_ds.push_back(vector<int>{2,4});
+            }
+            else if (kind=="triangle5") {
+                old_ds.clear(); extra_ds.clear();
+                for (int i=-3; i<4; i++) {
+                    old_ds.push_back(vector<int>{i,0});
+                }
+                for (int i=-2; i<3; i++) {
+                    old_ds.push_back(vector<int>{i,1});
+                }
+                for (int i=-1; i<2; i++) {
+                    old_ds.push_back(vector<int>{i,2});
+                }
+                old_ds.push_back(vector<int>{0,3});
+                
+                extra_ds.push_back(vector<int>{3,1});
+                extra_ds.push_back(vector<int>{1,3});
+                extra_ds.push_back(vector<int>{-1,3});
+                extra_ds.push_back(vector<int>{-3,1});
+                extra_ds.push_back(vector<int>{-2,-1});
+                extra_ds.push_back(vector<int>{2,-1});
             }
         }
         else{

@@ -9,7 +9,7 @@ bool IsOdd (int i) {
 }
 int main(){
 //    double theta=0.333333333333*M_PI, alpha=1.0;
-    int num_core=1;
+    int num_core=2;
     
 //    vector<double> length;
 //    double steplength=0.1;
@@ -33,13 +33,54 @@ int main(){
     
 //    CFL_berry_phases_parallel("params", "CFL69", num_core, "loop1", 0.5*M_PI, 1.0);
 //    CFL_berry_phases_parallel("params", "CFL21", num_core, "loop1", 0.5*M_PI, 1.0);
-    CFL_berry_phases_parallel("params", "CFL17", num_core, "triangle1", 0.5*M_PI, 1.0);
+//    CFL_berry_phases_parallel("params", "CFL17", num_core, "triangle5", 0.5*M_PI, 1.0);
     
 //    structurefactor("params_lau20_1_1");
-//    structurefactor("params_sq13");
+//    structurefactor("params_sq69");
 //    single_run();
-}
+//    structurefactor("params_sq10", 2);
+    
+//    structurefactor("params_sq49", num_core);
+//    structurefactor("params_sq36", num_core);
+//    structurefactor("params_sq25", num_core);
+//    structurefactor("params_sq16", num_core);
+//    structurefactor("params_sq9", num_core);
+//    structurefactor("params_sq64", num_core);
+    
+//    structurefactor("params_sq6new", num_core);
+//    structurefactor("params_sq6asp12test", num_core);
+//    structurefactor("params_sq6asp15test", num_core);
+//    structurefactor("params_sq6theta1test", num_core);
+//    structurefactor("params_sq6asp2test", num_core);
+    
+//    structurefactor("params_sq4", num_core);
+    
+//    single_run("paramsne20test");
+//    single_run("paramsne15test");
+    
+//    structurefactor("paramsne2test", num_core);
+//    structurefactor("paramsne3test", num_core);
+//    structurefactor("paramsne4test", num_core);
+//    structurefactor("paramsne5test", num_core);
+    
+//    structurefactor("paramsne4theta1", num_core);
+//    structurefactor("paramsne4theta2", num_core);
+//    structurefactor("paramsne4theta3", num_core);
+//    structurefactor("paramsne4theta4", num_core);
+//    structurefactor("paramsne4theta5", num_core);
+//    structurefactor("paramsne4theta6", num_core);
+//    structurefactor("paramsne4theta7", num_core);
+//    structurefactor("paramsne4theta8", num_core);
+    
+//    structurefactor("paramsne4squ", num_core);
+//    structurefactor("paramsne4hex", num_core);
+    
+//    structurefactor("params_sq6asp95new", num_core);
+//    structurefactor("params_sq6hexasp95new", num_core);
 
+    
+    
+}
 void outformfactor(){
     int Ne=8, invNu=2, Nphi=Ne*invNu, seed=0;
     LATTICE lat(Ne, invNu, false, "CFL", seed, 0);
