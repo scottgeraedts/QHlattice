@@ -2470,6 +2470,9 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
     		extra_ds.push_back(vector<int>{2,2});
     		remove_ds.push_back(vector<int>{1,1});
  
+    	}else if(tempNe==4){
+    		extra_ds.push_back(vector<int>{2,2});
+    		remove_ds.push_back(vector<int>{1,1});
     	}else if(tempNe==12){
     		extra_ds.push_back(vector<int>{2,2});
     		remove_ds.push_back(vector<int>{1,1});
@@ -2479,7 +2482,40 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
 
     		extra_ds.push_back(vector<int>{2,0});
     		remove_ds.push_back(vector<int>{1,0});
-    	
+	    	
+	//these next 2 look weird because they are for hex
+    	}else if(tempNe==8){
+    		extra_ds.push_back(vector<int>{2,0});
+    		remove_ds.push_back(vector<int>{1,0});
+    	}else if(tempNe==13){
+    		extra_ds.push_back(vector<int>{2,0});
+    		remove_ds.push_back(vector<int>{1,0});
+
+    		extra_ds.push_back(vector<int>{0,1});
+    		remove_ds.push_back(vector<int>{0,2});
+    	}else if(tempNe==16){
+    		extra_ds.push_back(vector<int>{3,3});
+    		remove_ds.push_back(vector<int>{2,2});
+    	}else if(tempNe==25){
+    		extra_ds.push_back(vector<int>{3,3});
+    		remove_ds.push_back(vector<int>{2,2});
+    		
+		extra_ds.push_back(vector<int>{3,0});
+    		remove_ds.push_back(vector<int>{2,0});
+    	}else if(tempNe==32){
+    		extra_ds.push_back(vector<int>{3,3});
+    		remove_ds.push_back(vector<int>{2,2});
+    	}else if(tempNe==36){
+		//the default here is not a square, so first 4 make it a square
+    		extra_ds.push_back(vector<int>{3,-2});
+    		extra_ds.push_back(vector<int>{-2,3});
+    		extra_ds.push_back(vector<int>{-2,-2});
+    		remove_ds.push_back(vector<int>{-3,0});
+    		remove_ds.push_back(vector<int>{-3,1});
+    		remove_ds.push_back(vector<int>{0,-3});
+    		remove_ds.push_back(vector<int>{0,4});
+		
+    		extra_ds.push_back(vector<int>{4,4});
     	}else{
             cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
             exit(0);
