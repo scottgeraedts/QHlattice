@@ -92,7 +92,6 @@ double LATTICE::get_in_det_rescaling(int Ne, int invNu){
             else if (Ne>=46 && Ne<=75) rescaling=0.2;
             else if (Ne<90) rescaling=0.15;
             else {rescaling=0.15; cout<<"Please set in_determinant_rescaling if doing berry phase."<<endl;}
-            rescaling=1;
         }
         else if (invNu==4) {
             if (Ne<15) rescaling=0.1;
@@ -246,11 +245,11 @@ int LATTICE::simple_update(){
 	if(prob>0) update=true;
 	else if(ran.rand()<exp(prob)) update=true;
 	
+	if(testing) cout<<running_weight<<" "<<get_weight(locs)<<" "<<log(norm(get_wf(locs)))<<endl;
 	if(update){
 		locs[electron]=newloc;
 		running_weight+=prob;
 //		cout<<prob<<endl;
-		if(testing) cout<<running_weight<<" "<<get_weight(locs)<<" "<<log(norm(get_wf(locs)))<<endl;
         oldDeterminant=newDeterminant;
         oldMatrix=newMatrix;
 		return 1;
@@ -466,7 +465,6 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
             z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
             out+=log(norm(temp));
         }
-        
         //determinant part
         double oldDivisor;
         if(type=="CFL"){
@@ -923,7 +921,8 @@ void LATTICE::reset(){
 			exit(0);
 		}
 	}
-	//cout<<"starting weight"<<running_weight<<endl;
+	if(testing) cout<<"starting weight"<<running_weight<<endl;
+	
     sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
     sq2=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
     sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
@@ -1296,4 +1295,6 @@ void LATTICE::update(){
 		oldDeterminant=newDeterminant;
 	}
 }
-LATTICE::~LATTICE(){  }
+LATTICE::~LATTICE(){  
+	if(testing) cout<<"acceptance rate: "<<accepts/(1.*tries)<<endl;	
+}
