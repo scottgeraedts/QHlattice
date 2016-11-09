@@ -1,8 +1,8 @@
+#define __STDCPP_WANT_MATH_SPEC_FUNCS__ 1
 using namespace std;
 #include <iomanip>
 #include "lattice.h"
 #include "berry_tests.h"
-//#include <ctime>
 
 bool IsOdd (int i) {
     return ((i%2)==1);
@@ -62,10 +62,8 @@ int main(){
 //    structurefactor("params_sq6asp95new", num_core);
 //    structurefactor("params_sq6hexasp95new", num_core);
     
-    cout<<"trace=true"<<endl;
-    single_run("params", true);
-    cout<<"trace=false"<<endl;
-    single_run("params", false);
+//    single_run("params", true);
+    
     
 }
 void outformfactor(){

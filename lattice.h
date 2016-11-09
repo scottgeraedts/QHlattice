@@ -9,7 +9,7 @@
 #include <numeric>
 #include <deque>
 #include <unordered_set>
-//#include <cmath>
+#include <cmath>
 
 using namespace std;
 
@@ -82,6 +82,7 @@ public:
 	double threebody();
 	void update_structure_factors();
 	void print_structure_factors(int nMeas, string filename="");
+    double pairamplitude(int n, double alpha);
 	vector <vector<int> > get_locs();
 	complex<double> formfactor(int qx, int qy);
 //    double formfactor(double qx, double qy);

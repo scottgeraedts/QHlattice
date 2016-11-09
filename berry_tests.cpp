@@ -15,6 +15,14 @@ double phasemod(complex<double> in){
     else return out;
     return out;
 }
+inline double laguerre(int n, double x){
+    double result=0;
+    for (int k=0; k<=n; k++) {
+        if (k%2==0) result+=pow(x,k)*comb(n,k)/factorial(k);
+        else result-=pow(x,k)*comb(n,k)/factorial(k);
+    }
+    return result;
+}
 
 //test ortho laughlin states via monte carlo.
 void check_orthogonality(string type){
@@ -184,113 +192,6 @@ void single_run(string filename, bool trace){
     outfile.close();
 }
 
-void structurefactor(string intputfilename){//fielname='params_sq_...'.
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-    bool testing;
-    double theta_t, theta, alpha;
-    string type;
-    ifstream infile(intputfilename);
-    infile>>Ne>>invNu>>theta_t>>alpha;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    //initialize MC object
-    theta=theta_t*M_PI;
-    
-    int gs=0;
-    
-//    vector<vector<int>> strangeds;
-//    if (Ne==36) {
-//        for (int y=0; y<6; y++) {
-//            for (int x=-5+y; x<=5-y; x++) {
-//                strangeds.push_back(vector<int>{x, y});
-//            }
-//        }
-//        cout<<"strangeds.size="<<strangeds.size()<<endl;
-//    }
-    
-    
-//    LATTICE ll0(Ne, invNu, testing, type, seed, gs, 0.5*M_PI, 1.0);
-    LATTICE ll(Ne, invNu, testing, type, seed, gs, theta, alpha);
-    if (type=="CFL") {
-////        ll.set_ds(ll0.get_ds());
-//        ll.set_ds(strangeds);
-//        ll.print_ds();
-    }
-    
-    if (Ne==49) {
-        vector<vector<int>> ds(49, vector<int>(2));
-        for (int y=0; y<7; y++) {
-            for (int x=0; x<7; x++) {
-                ds[x+y*7][0]=x-3;
-                ds[x+y*7][1]=y-3;
-            }
-        }
-        ll.set_ds(ds);
-    }
-    else if (Ne==36) {
-        vector<vector<int>> ds(36, vector<int>(2));
-        for (int y=0; y<6; y++) {
-            for (int x=0; x<6; x++) {
-                ds[x+y*6][0]=x-3;
-                ds[x+y*6][1]=y-3;
-            }
-        }
-        ll.set_ds(ds);
-    }
-    ll.print_ds();
-
-    ofstream outfile("out"), eout("energy");
-    for(int s=0;s<nBins;s++){
-        //        ll.change_dbar_parameter(s*0.1,s*0.1);
-        ll.reset();
-        ll.step(nWarmup);
-        double E=0,E2=0;
-        double P=0,P2=0,three=0;
-        double e ,p;
-        complex<double> berry_phase(0,0);
-        deque<double> e_tracker, p_tracker;
-        int Ntrack=50;
-        vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
-        for(int i=0;i<nMeas;i++){
-            ll.step(nSteps);
-            e=ll.coulomb_energy();
-            E+=e;
-            E2+=e*e;
-            p=ll.running_weight;
-            P+=p;
-            eout<<e<<endl;
-            //autocorrelations
-            e_tracker.push_front(e);
-            p_tracker.push_front(p);
-            if(i>=Ntrack){
-                for(int j=0;j<Ntrack;j++){
-                    autocorr_e[j]+=e_tracker[j]*e;
-                    autocorr_p[j]+=p_tracker[j]*p;
-                }
-                e_tracker.pop_back();
-                p_tracker.pop_back();
-            }
-            ll.update_structure_factors();
-        }
-        ll.print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)s));
-        
-        outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
-        cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
-        
-        ofstream auto_out("auto");
-        for(int j=0;j<Ntrack;j++){
-            auto_out<<j+1<<" ";
-            auto_out<<autocorr_e[j]/(1.*(nMeas-Ntrack))<<" "<<pow(E/(1.*nMeas),2)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))<<" ";
-            //            auto_out<<autocorr_p[j]/(1.*(nMeas-Ntrack))<<" "<<pow(P/(1.*nMeas),2)<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<" ";
-            auto_out<<endl;
-        }
-    }
-    outfile<<endl;
-    eout.close();
-    outfile.close();
-}
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
@@ -337,6 +238,13 @@ void structurefactor(string intputfilename, int num_core){//fielname='params_sq_
         }
         ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
     }
+}
+void pairamplitude(){
+    cout<<laguerre(1, 0.5)<<endl;
+    cout<<laguerre(2, 0.5)<<endl;
+    cout<<laguerre(3, 2)<<endl;
+    cout<<laguerre(4, 2)<<endl;
+    cout<<laguerre(5, 2)<<endl;
 }
 
 

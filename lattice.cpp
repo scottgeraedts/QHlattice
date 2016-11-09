@@ -1,5 +1,13 @@
 #include "lattice.h"
 //int supermod(int k, int n){	return ((k %= n) < 0) ? k+n : k; }
+inline double laguerre(int n, double x){
+    double result=0;
+    for (int k=0; k<=n; k++) {
+        if (k%2==0) result+=pow(x,k)*comb(n,k)/factorial(k);
+        else result-=pow(x,k)*comb(n,k)/factorial(k);
+    }
+    return result;
+}
 
 LATTICE::LATTICE() {
     Ne=0;
@@ -650,15 +658,16 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
             complex<double> w_comp0=w_comp;
             complex<double> outtrace=0.;
             for (int k=0; k<invNu; k++) {
+                complex<double> tempp=1.;
                 for( int i=0;i<invNu;i++){
                     dx=COM[0]/(1.*NPhi)-ws[i][0];
                     dy=COM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    w_comp=w_comp0+1.*k*L2;
-                    
-                    if (type=="laughlin") outtrace+=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                    else if (type=="CFL") outtrace+=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                    tempp*=temp;
                 }
+                w_comp=w_comp0+1.*k*L2;
+                if (type=="laughlin") outtrace+=tempp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") outtrace+=tempp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
             }
             out*=outtrace;
         }
@@ -902,6 +911,15 @@ void LATTICE::print_structure_factors(int nMeas, string filename){
     sqout_mqy.close();
     sqout2_mqy.close();
     smaout.close();
+}
+double LATTICE::pairamplitude(int n, double alpha) {
+    double result=0., u;
+    for (int i=0; i<Ne; i++) {
+        for (int j=0; j<i; j++) {
+            result=1.*pow(1-alpha,n)/pow(alpha,n+1)*laguerre(n,-u/(1.-alpha))*exp(-u);
+        }
+    }
+    return (n%2==0)? result : -result;
 }
 complex<double> LATTICE::formfactor(int qx, int qy){
     complex<double> out=0;
