@@ -35,7 +35,7 @@ class LATTICE{
 public:
 	LATTICE();
 //    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0, double theta=0.5*M_PI, double alpha=1.0);
-    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0, double theta=0.5*M_PI, double alpha=1.0);
+    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0, double theta=0.5*M_PI, double alpha=1.0, bool trace_t=false);
 	~LATTICE();
 
 	int Ne, NPhi;
@@ -131,6 +131,7 @@ private:
 	MTRand ran;
 	vector<vector<int>> locs;//an integer defined on an NPhi lattice
 	vector<vector<double>> ws, ws0;
+//    vector<vector<vector<double>>> wss;
     vector<vector<vector<double>>> zeros;//a parameter for 'FilledLL' state.
 	int one,zero;
 	vector< complex<double> > omega;
@@ -138,6 +139,8 @@ private:
 //    vector< complex<double> > omegasq;
     
     vector<vector<int> > ds;//an integer defined on an Ne lattice
+    
+    bool trace;
     
 };
 

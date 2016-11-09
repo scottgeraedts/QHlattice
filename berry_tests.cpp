@@ -78,7 +78,7 @@ void check_orthogonality(string type){
         cout<<"\nnBins="<<nBins<<", overlap matrix = "<<overlaps[2](0,0)<<" "<<overlaps[2](1,1)<<" "<<overlaps[2](0,1)<<" "<<overlaps[2](1,0)<<endl;
     }
 }
-void single_run(string filename){
+void single_run(string filename, bool trace){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     string type;
@@ -98,32 +98,32 @@ void single_run(string filename){
     alpha=1.;
     theta=0.5*M_PI;
     
-    LATTICE ds_generator(Ne, invNu, testing, type, seed, gs, theta, alpha);
-    vector< vector<int> > old_ds=ds_generator.get_ds();
+//    LATTICE ds_generator(Ne, invNu, testing, type, seed, gs, theta, alpha);
+//    vector< vector<int> > old_ds=ds_generator.get_ds();
 //    vector<vector<int>> old_ds;
-    if (Ne==21) {
-        old_ds.clear();
-        for (int i=-3; i<4; i++) {
-            for (int j=-1; j<2; j++) {
-                old_ds.push_back(vector<int>{i,j});
-            }
-        }
-    }
-    if (Ne==17) {
-        old_ds.clear();
-        for (int i=-2; i<3; i++) {
-            for (int j=0; j<2; j++) {
-                old_ds.push_back(vector<int>{i,j});
-            }
-        }
-        for (int i=-1; i<2; i++) {
-            old_ds.push_back(vector<int>{i,-1});
-            old_ds.push_back(vector<int>{i,2});
-        }
-        old_ds.push_back(vector<int>{2,-1});
-    }
+//    if (Ne==21) {
+//        old_ds.clear();
+//        for (int i=-3; i<4; i++) {
+//            for (int j=-1; j<2; j++) {
+//                old_ds.push_back(vector<int>{i,j});
+//            }
+//        }
+//    }
+//    if (Ne==17) {
+//        old_ds.clear();
+//        for (int i=-2; i<3; i++) {
+//            for (int j=0; j<2; j++) {
+//                old_ds.push_back(vector<int>{i,j});
+//            }
+//        }
+//        for (int i=-1; i<2; i++) {
+//            old_ds.push_back(vector<int>{i,-1});
+//            old_ds.push_back(vector<int>{i,2});
+//        }
+//        old_ds.push_back(vector<int>{2,-1});
+//    }
     
-    LATTICE ll(Ne,invNu, testing, type, seed, gs, theta, alpha);
+    LATTICE ll(Ne,invNu, testing, type, seed, gs, theta, alpha, trace);
 //    ll.set_ds(old_ds);
 //    ll.print_ds();
     
@@ -131,8 +131,9 @@ void single_run(string filename){
 
 
     for(int s=0;s<nBins;s++){
-//        ll.change_dbar_parameter(s*0.1,s*0.1);
+//        ll.change_dbar_parameter(s*0.1,s*0.1);        
         ll.reset();
+        
         ll.step(nWarmup);
         double E=0,E2=0;
         double P=0,P2=0,three=0;
@@ -1085,8 +1086,8 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
 			}            	
             
             for (int i=0; i<invNu; i++) {
-                ll[coren][i].set_ds(new_ds_ll);
                 pp[coren][i].set_ds(new_ds_pp);
+                ll[coren][i].set_ds(new_ds_ll);
                 ll[coren][i].reset(); pp[coren][i].reset();
                 ll[coren][i].step(nWarmup);
             }
@@ -2629,7 +2630,10 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
     		extra_ds.push_back(vector<int>{2,2});
     		remove_ds.push_back(vector<int>{1,1});
  
-    	}else if(tempNe==12){
+        }else if(tempNe==4){
+            extra_ds.push_back(vector<int>{2,2});
+            remove_ds.push_back(vector<int>{1,1});
+        }else if(tempNe==12){
     		extra_ds.push_back(vector<int>{2,2});
     		remove_ds.push_back(vector<int>{1,1});
     	}else if(tempNe==21){
@@ -2638,8 +2642,41 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
 
     		extra_ds.push_back(vector<int>{2,0});
     		remove_ds.push_back(vector<int>{1,0});
-    	
-    	}else{
+            
+            //these next 2 look weird because they are for hex
+        }else if(tempNe==8){
+            extra_ds.push_back(vector<int>{2,0});
+            remove_ds.push_back(vector<int>{1,0});
+        }else if(tempNe==13){
+            extra_ds.push_back(vector<int>{2,0});
+            remove_ds.push_back(vector<int>{1,0});
+            
+            extra_ds.push_back(vector<int>{0,1});
+            remove_ds.push_back(vector<int>{0,2});
+        }else if(tempNe==16){
+            extra_ds.push_back(vector<int>{3,3});
+            remove_ds.push_back(vector<int>{2,2});
+        }else if(tempNe==25){
+            extra_ds.push_back(vector<int>{3,3});
+            remove_ds.push_back(vector<int>{2,2});
+            
+            extra_ds.push_back(vector<int>{3,0});
+            remove_ds.push_back(vector<int>{2,0});
+        }else if(tempNe==32){
+            extra_ds.push_back(vector<int>{3,3});
+        	remove_ds.push_back(vector<int>{2,2});
+        }else if(tempNe==36){
+        //the default here is not a square, so first 4 make it a square
+            extra_ds.push_back(vector<int>{3,-2});
+            extra_ds.push_back(vector<int>{-2,3});
+            extra_ds.push_back(vector<int>{-2,-2});
+            remove_ds.push_back(vector<int>{-3,0});
+            remove_ds.push_back(vector<int>{-3,1});
+            remove_ds.push_back(vector<int>{0,-3});
+            remove_ds.push_back(vector<int>{0,4});
+            
+            extra_ds.push_back(vector<int>{4,4});
+        }else{
             cout<<"not set up to deal with "<<tempNe<<" electrons"<<endl;
             exit(0);
         }

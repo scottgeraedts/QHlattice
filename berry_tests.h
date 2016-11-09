@@ -27,7 +27,7 @@ double phasemod(complex<double> in);
 
 //Some Checkings, including ortho, auto-correlation
 void check_orthogonality(string type);
-void single_run(string filename="params");
+void single_run(string filename="params", bool trace=false);
 void structurefactor(string);
 void structurefactor(string, int);
 
