@@ -8,11 +8,11 @@ bool IsOdd (int i) {
     return ((i%2)==1);
 }
 int main(){
-    double theta=0.5*M_PI, alpha=1.0;
-    int num_core=2;
+//    double theta=0.5*M_PI, alpha=1.0;
+//    int num_core=2;
 //    CFL_berry_phases_parallel("params", "ne8bp", num_core, "fullloop", theta, alpha);//params_name, output_name, num_core, kind.
 //	ParticleHoleSym2();
-//	Explicit();
+	Explicit();
 //    structurefactor();
 //    double theta=0.333333333333*M_PI, alpha=1.0;
 
@@ -62,10 +62,10 @@ int main(){
 //    structurefactor("params_sq6asp95new", num_core);
 //    structurefactor("params_sq6hexasp95new", num_core);
     
-    cout<<"trace=true"<<endl;
-    single_run("params", true);
-    cout<<"trace=false"<<endl;
-    single_run("params", false);
+//    cout<<"trace=true"<<endl;
+//    single_run("params", true);
+//    cout<<"trace=false"<<endl;
+//    single_run("params", false);
     
 }
 void outformfactor(){

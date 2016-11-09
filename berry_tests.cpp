@@ -1385,13 +1385,15 @@ void ParticleHoleSym2(){
     
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
-    vector<wf_info> wfs(3);
+    vector<wf_info> wfs(2);
     wfs[0]=wf_info(false, false, 0, Ne/invNu, 1);
 	wfs[0].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 0);
+	wfs[0].wf.trace=true;
 	wfs[1]=wf_info(false, false, Ne/invNu, Ne, -1);
-	wfs[1].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 1);
-	wfs[2]=wf_info(true, false, 0, Ne, 1);
-	wfs[2].wf=LATTICE(Ne, 1, testing, "laughlin", seed, 0);
+	wfs[1].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 0);
+	wfs[1].wf.trace=true;
+	//wfs[2]=wf_info(true, false, 0, Ne, 1);
+	//wfs[2].wf=LATTICE(Ne, 1, testing, "laughlin", seed, 0);
 	LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);
 
 	LATTICE_WRAPPER ll(Ne, wfs, seed, testing);
@@ -1408,18 +1410,19 @@ void ParticleHoleSym2(){
         ll.step(nWarmup);
         for (int nmea=0; nmea<nMeas; nmea++) {
             ll.step(nSteps);
-			//tmp=FLL.get_wf(ll.get_zs())/ll.get_wf();
-			tmp=1./conj(ll.get_wf());
+			tmp=FLL.get_wf(ll.get_zs())/ll.get_wf();
+			//tmp=1./conj(ll.get_wf());
 			num+=tmp;
-			//denom+=norm(tmp);			
-			denom1+=1/norm(wfs[2].wf.get_wf( wfs[2].make_zs( ll.get_zs() ) ) );
-			denom2+=1/norm( wfs[0].wf.get_wf( wfs[0].make_zs( ll.get_zs() ) )* wfs[1].wf.get_wf(wfs[1].make_zs(ll.get_zs() ) ) );
+			denom+=norm(tmp);			
+			//denom1+=1/norm(wfs[2].wf.get_wf( wfs[2].make_zs( ll.get_zs() ) ) );
+			//denom2+=1/norm( wfs[0].wf.get_wf( wfs[0].make_zs( ll.get_zs() ) )* wfs[1].wf.get_wf(wfs[1].make_zs(ll.get_zs() ) ) );
 			//cout<<norm(tmp)<<endl;
         }
 
-		//num/=(1.*nMeas);
-		//denom/=(1.*nMeas);
-		num/=sqrt(denom1*denom2);
+		num/=(1.*nMeas);
+		denom/=(1.*nMeas);
+		num/=sqrt(denom);
+		//num/=sqrt(denom1*denom2);
 
         cout<<"nbin="<<nbin<<endl;
         cout<<abs(num)<<endl;
@@ -1445,7 +1448,7 @@ void Explicit(){
     vector< vector<int> > zs(Ne, vector<int>(2)), zs1(Ne1, vector<int>(2)),zs2(Ne2, vector<int>(2) );
     int temp;
     complex<double> out=0,v1,v2,v3,phd=0;
-    double norm1,norm2,norm3;
+    double norm1=0,norm2=0,norm3=0;
    	vector< vector<int> >::iterator it;
    	bool duplicate;
 	//stuff for explicit PH calculation   	
@@ -1462,7 +1465,7 @@ void Explicit(){
 				}
 			}
 		}
-		//if(duplicate) continue;
+		if(duplicate) continue;
 
 //don't antisymmetrize
 		zs1=zs;
@@ -1478,20 +1481,20 @@ void Explicit(){
 
 		v3=FLL.get_wf(zs);
 
-		norm3+=norm(v3);
-		norm2+=norm(v1*v2);
-		if (abs(v1*v2*v3)<1e-15) continue;
+//		norm3+=norm(v3);
+//		norm2+=norm(v1*v2);
+//		if (abs(v1*v2*v3)<1e-15) continue;
 
 		for(int p=0;p<2*Ne;p++){
-			cout<<zs[p/2][p%2]<<" ";
+//			cout<<zs[p/2][p%2]<<" ";
 		}
-//		out+=v3*conj(v1*v2);
-//		norm2+=norm(v1*v2);
-//		norm3+=norm(v3);
+		out+=v3*conj(v1*v2);
+		norm2+=norm(v1*v2);
+		norm3+=norm(v3);
 
 
-		out+=1./conj(v3)/v1/v2*norm(v1*v2*v3);
-		cout<<v1*v2<<" "<<v3<<endl;
+//		out+=1./conj(v3)/v1/v2*norm(v1*v2*v3);
+//		cout<<v1*v2<<" "<<v3<<endl;
 	}
 	norm1=1;
 	//calculate normalization constants
@@ -1514,7 +1517,7 @@ void Explicit(){
 		//norm1+=norm(cfl1[0].get_wf(zs));
 		//norm2+=norm(cfl1[1].get_wf(zs));
 	}
-	cout<<"final overlap: "<<sqrt(comb(Ne,Ne1))*abs(out/sqrt(norm1*norm2*norm3))<<endl;
+	cout<<"final overlap: "<<abs(out/sqrt(norm1*norm2*norm3))<<endl;
 		
     		
 }

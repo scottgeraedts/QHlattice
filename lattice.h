@@ -100,6 +100,8 @@ public:
     void update();
 	static vector< vector<int> > hot_start(int NPhi_t, int Ne_t, MTRand &ran);
 	static vector<int> random_move(const vector<int> &oldsite, int NPhi_t, MTRand &ran_t);
+    
+    bool trace;
 	
 private:
     double get_in_det_rescaling(int Ne, int invNu);
@@ -139,8 +141,6 @@ private:
 //    vector< complex<double> > omegasq;
     
     vector<vector<int> > ds;//an integer defined on an Ne lattice
-    
-    bool trace;
     
 };
 
