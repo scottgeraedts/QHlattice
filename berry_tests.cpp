@@ -1443,6 +1443,8 @@ void Explicit(){
         cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
         //cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
     }
+    cfl1[0].trace=1; cfl1[1].trace=-1;
+    cout<<cfl1[0].trace<<" "<<cfl1[1].trace<<endl;
     LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);//Filled LL Wavefunction.
     
     vector< vector<int> > zs(Ne, vector<int>(2)), zs1(Ne1, vector<int>(2)),zs2(Ne2, vector<int>(2) );
@@ -1465,7 +1467,7 @@ void Explicit(){
 				}
 			}
 		}
-		if(duplicate) continue;
+		//if(duplicate) continue;
 
 //don't antisymmetrize
 		zs1=zs;
@@ -1486,7 +1488,7 @@ void Explicit(){
 //		if (abs(v1*v2*v3)<1e-15) continue;
 
 		for(int p=0;p<2*Ne;p++){
-//			cout<<zs[p/2][p%2]<<" ";
+			cout<<zs[p/2][p%2]<<" ";
 		}
 		out+=v3*conj(v1*v2);
 		norm2+=norm(v1*v2);
@@ -1494,7 +1496,7 @@ void Explicit(){
 
 
 //		out+=1./conj(v3)/v1/v2*norm(v1*v2*v3);
-//		cout<<v1*v2<<" "<<v3<<endl;
+		cout<<v1*v2<<" "<<v3<<endl;
 	}
 	norm1=1;
 	//calculate normalization constants
@@ -1517,7 +1519,7 @@ void Explicit(){
 		//norm1+=norm(cfl1[0].get_wf(zs));
 		//norm2+=norm(cfl1[1].get_wf(zs));
 	}
-	cout<<"final overlap: "<<abs(out/sqrt(norm1*norm2*norm3))<<endl;
+	cout<<"final overlap: "<<sqrt(comb(Ne,Ne1))*abs(out/sqrt(norm1*norm2*norm3))<<endl;
 		
     		
 }

@@ -253,12 +253,13 @@ int LATTICE::simple_update(){
                     dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
                     dy=oldCOM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    w_comp=w_comp0+1.*k*L2;
-                    
-                    complex<double> zcom_comp = 1.*oldCOM[0]/NPhi*L1+1.*oldCOM[1]/NPhi*L2;
-                    if (type=="laughlin") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                    else if (type=="CFL") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                    product*=temp;
                 }
+                w_comp=w_comp0+1.*k*L2;
+                
+                complex<double> zcom_comp = 1.*oldCOM[0]/NPhi*L1+1.*oldCOM[1]/NPhi*L2;
+                if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
                 sum+=product;
             }
             prob-=log(norm(sum));
@@ -269,12 +270,13 @@ int LATTICE::simple_update(){
                     dx=newCOM[0]/(1.*NPhi)-ws[i][0];
                     dy=newCOM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    w_comp=w_comp0+1.*k*L2;
-                    
-                    complex<double> zcom_comp = 1.*newCOM[0]/NPhi*L1+1.*newCOM[1]/NPhi*L2;
-                    if (type=="laughlin") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                    else if (type=="CFL") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                    product*=temp;
                 }
+                w_comp=w_comp0+1.*k*L2;
+                
+                complex<double> zcom_comp = 1.*newCOM[0]/NPhi*L1+1.*newCOM[1]/NPhi*L2;
+                if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
                 sum+=product;
             }
             prob+=log(norm(sum));
@@ -409,12 +411,12 @@ double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vec
                 dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
                 dy=oldCOM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
                 z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                w_comp=w_comp0+1.*k*L2;
-                
-                complex<double> zcom_comp = 1.*oldCOM[0]/NPhi*L1+1.*oldCOM[1]/NPhi*L2;
-                if (type=="laughlin") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                else if (type=="CFL") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                product*=temp;
             }
+            w_comp=w_comp0+1.*k*L2;
+            complex<double> zcom_comp = 1.*oldCOM[0]/NPhi*L1+1.*oldCOM[1]/NPhi*L2;
+            if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+            else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
             sum+=product;
         }
         prob-=log(norm(sum));
@@ -425,12 +427,13 @@ double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vec
                 dx=newCOM[0]/(1.*NPhi)-ws[i][0];
                 dy=newCOM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
                 z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                w_comp=w_comp0+1.*k*L2;
-                
-                complex<double> zcom_comp = 1.*newCOM[0]/NPhi*L1+1.*newCOM[1]/NPhi*L2;
-                if (type=="laughlin") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                else if (type=="CFL") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                product*=temp;
             }
+            w_comp=w_comp0+1.*k*L2;
+            
+            complex<double> zcom_comp = 1.*newCOM[0]/NPhi*L1+1.*newCOM[1]/NPhi*L2;
+            if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+            else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
             sum+=product;
         }
         prob+=log(norm(sum));
@@ -578,10 +581,10 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
                     y=COM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
                     z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
                     w_comp=w_comp0+1.*k*L2;
-                    
-                    if (type=="laughlin") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                    else if (type=="CFL") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                    product*=temp;
                 }
+                if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
                 sum+=product;
             }
             out+=log(norm(sum));
@@ -679,17 +682,19 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                     dx=COM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
                     dy=COM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    out*=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                    out*=temp;
                 }
+                out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
             }
             else{
                 for( int i=0;i<invNu;i++){
                     dx=COM[0]/(1.*NPhi)-ws[i][0];
                     dy=COM[1]/(1.*NPhi)-ws[i][1];
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    if (type=="laughlin") out*=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                    else if (type=="CFL") out*=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                    out*=temp;
                 }
+                if (type=="laughlin") out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") out*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
             }
         }
         else {
@@ -706,11 +711,11 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                     dy=COM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
                     w_comp=w_comp0+1.*k*L2;
-                    
-                    if (type=="laughlin") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                    else if (type=="CFL") product*=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                    product*=temp;
                 }
-                sum+=product;
+                if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                sum+=(1.*trace)*product;
             }
             out*=sum;
         }
