@@ -1143,7 +1143,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
                     }
                 }
             }
-            
+
             for (int l=0; l<4; l++) overlaps[b][l]/=(1.*nMeas);
             overlaps[b][0]=overlaps[b][0].array()/overlaps[b][1].array().sqrt();
             //Unlike laughlin-hole states, CFL states are orthogonal, we actually do not need overlaps[b][2].
@@ -2629,11 +2629,11 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
  
     		extra_ds.push_back(vector<int>{2,2});
     		remove_ds.push_back(vector<int>{1,1});
- 
-        }else if(tempNe==4){
-            extra_ds.push_back(vector<int>{2,2});
-            remove_ds.push_back(vector<int>{1,1});
-        }else if(tempNe==12){
+
+    	}else if(tempNe==4){
+    		extra_ds.push_back(vector<int>{2,2});
+    		remove_ds.push_back(vector<int>{1,1});
+    	}else if(tempNe==12){
     		extra_ds.push_back(vector<int>{2,2});
     		remove_ds.push_back(vector<int>{1,1});
     	}else if(tempNe==21){
