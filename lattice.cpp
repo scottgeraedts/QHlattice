@@ -82,6 +82,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
     omega=vector<complex<double>>(2*NPhi);
 	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi));
 
+    pair_amp=vector<double>(NPhi, 0);
     sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi, 0));
     sq2=vector<vector<double>>(NPhi, vector<double>(NPhi, 0));
     sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi, 0));
@@ -254,34 +255,40 @@ int LATTICE::simple_update(){
                 exit(0);
             }
             complex<double> w_comp0=w_comp;
-            complex<double> outtrace=0.;
+            complex<double> sum=0, product;
             for (int k=0; k<invNu; k++) {
+            	product=1.;
                 for( int i=0;i<invNu;i++){
                     dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
                     dy=oldCOM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    w_comp=w_comp0+1.*k*L2;
-                    
-                    complex<double> zcom_comp = 1.*oldCOM[0]/NPhi*L1+1.*oldCOM[1]/NPhi*L2;
-                    if (type=="laughlin") outtrace+=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                    else if (type=="CFL") outtrace+=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                    product*=temp;
                 }
+                w_comp=w_comp0+1.*k*L2;
+                
+                complex<double> zcom_comp = 1.*oldCOM[0]/NPhi*L1+1.*oldCOM[1]/NPhi*L2;
+                if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                sum+=product;
             }
-            prob-=log(norm(outtrace));
-            outtrace=0.;
+            prob-=log(norm(sum));
+           	sum=0.;
             for (int k=0; k<invNu; k++) {
+            	product=1.;
                 for( int i=0;i<invNu;i++){
                     dx=newCOM[0]/(1.*NPhi)-ws[i][0];
                     dy=newCOM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    w_comp=w_comp0+1.*k*L2;
-                    
-                    complex<double> zcom_comp = 1.*newCOM[0]/NPhi*L1+1.*newCOM[1]/NPhi*L2;
-                    if (type=="laughlin") outtrace+=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                    else if (type=="CFL") outtrace+=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                    product*=temp;
                 }
+                w_comp=w_comp0+1.*k*L2;
+                
+                complex<double> zcom_comp = 1.*newCOM[0]/NPhi*L1+1.*newCOM[1]/NPhi*L2;
+                if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                sum+=product;
             }
-            prob+=log(norm(outtrace));
+            prob+=log(norm(sum));
         }
         
         ///***********determinant part
@@ -372,31 +379,75 @@ double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vec
     newCOM[0]=oldCOM[0]-zs[electron][0]+newloc[0];
     newCOM[1]=oldCOM[1]-zs[electron][1]+newloc[1];
     
-    if(type=="laughlin-hole"){
-        double dx,dy;
-        for( int i=0;i<invNu;i++){
-            dx=oldCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
-            dy=oldCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
-            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-            prob-=log(norm(temp));
-            dx=newCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
-            dy=newCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
-            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-            prob+=log(norm(temp));
+    if(!trace){
+		if(type=="laughlin-hole"){
+		    double dx,dy;
+		    for( int i=0;i<invNu;i++){
+		        dx=oldCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
+		        dy=oldCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
+		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+		        prob-=log(norm(temp));
+		        dx=newCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
+		        dy=newCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
+		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+		        prob+=log(norm(temp));
+		    }
+		}else{
+		    double dx,dy;
+		    for( int i=0;i<invNu;i++){
+		        dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
+		        dy=oldCOM[1]/(1.*NPhi)-ws[i][1];
+		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+		        prob-=log(norm(temp));
+		        dx=newCOM[0]/(1.*NPhi)-ws[i][0];
+		        dy=newCOM[1]/(1.*NPhi)-ws[i][1];
+		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+		        prob+=log(norm(temp));
+		    }
+		}
+	}else {
+        if (type=="laughlin-hole") {
+            cout<<" 'trace' is not set up for laughlin-hole"<<endl;
+            exit(0);
         }
-    }else{
-        double dx,dy;
-        for( int i=0;i<invNu;i++){
-            dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
-            dy=oldCOM[1]/(1.*NPhi)-ws[i][1];
-            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-            prob-=log(norm(temp));
-            dx=newCOM[0]/(1.*NPhi)-ws[i][0];
-            dy=newCOM[1]/(1.*NPhi)-ws[i][1];
-            z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-            prob+=log(norm(temp));
+        vector<double> wsum(2); for (int i=0; i<invNu; i++) for (int j=0; j<2; j++) wsum[j]+=ws[i][j];
+        complex<double> w_comp = wsum[0]*L1+wsum[1]*L2, dsum_comp;
+        complex<double> w_comp0=w_comp;
+        complex<double> sum=0, product;
+        for (int k=0; k<invNu; k++) {
+        	product=1.;
+            for( int i=0;i<invNu;i++){
+                dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
+                dy=oldCOM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
+                z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+                product*=temp;
+            }
+            w_comp=w_comp0+1.*k*L2;
+            complex<double> zcom_comp = 1.*oldCOM[0]/NPhi*L1+1.*oldCOM[1]/NPhi*L2;
+            if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+            else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+            sum+=product;
         }
+        prob-=log(norm(sum));
+       	sum=0.;
+        for (int k=0; k<invNu; k++) {
+        	product=1.;
+            for( int i=0;i<invNu;i++){
+                dx=newCOM[0]/(1.*NPhi)-ws[i][0];
+                dy=newCOM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
+                z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+                product*=temp;
+            }
+            w_comp=w_comp0+1.*k*L2;
+            
+            complex<double> zcom_comp = 1.*newCOM[0]/NPhi*L1+1.*newCOM[1]/NPhi*L2;
+            if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+            else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+            sum+=product;
+        }
+        prob+=log(norm(sum));
     }
+
     if(type=="CFL"){
     	newMatrix=oldMatrix;
         make_CFL_det(newMatrix, newloc, electron, newDeterminant, zs);
@@ -467,7 +518,8 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
     if (type=="FilledLL") {
         out=log(norm(FilledLL(zs)));
     }else if(type=="FilledLL2"){
-    	out=log(norm(FilledLL2(zs)));
+    	cout<<"haven't implemented filledLL2"<<endl;
+    	exit(0);
     }else if(type=="doubledCFL"){
     	out=log(norm(doubled_CFL(zs)));
     }else {
@@ -530,19 +582,21 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
                 exit(0);
             }
             complex<double> w_comp0=w_comp;
-            complex<double> outtrace=0.;
+            complex<double> sum=0., product;
             for (int k=0; k<invNu; k++) {
+            	product=1.;
                 for( int i=0;i<invNu;i++){
                     x=COM[0]/(1.*NPhi)-ws[i][0];
                     y=COM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
                     z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
                     w_comp=w_comp0+1.*k*L2;
-                    
-                    if (type=="laughlin") outtrace+=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                    else if (type=="CFL") outtrace+=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                    product*=temp;
                 }
+                if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                sum+=product;
             }
-            out+=log(norm(outtrace));
+            out+=log(norm(sum));
         }
         //determinant part
         double oldDivisor;
@@ -637,17 +691,19 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                     dx=COM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
                     dy=COM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    out*=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                    out*=temp;
                 }
+                out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
             }
             else{
                 for( int i=0;i<invNu;i++){
                     dx=COM[0]/(1.*NPhi)-ws[i][0];
                     dy=COM[1]/(1.*NPhi)-ws[i][1];
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    if (type=="laughlin") out*=temp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                    else if (type=="CFL") out*=temp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                    out*=temp;
                 }
+                if (type=="laughlin") out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") out*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
             }
         }
         else {
@@ -656,20 +712,21 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                 exit(0);
             }
             complex<double> w_comp0=w_comp;
-            complex<double> outtrace=0.;
+            complex<double> sum=0., product;
             for (int k=0; k<invNu; k++) {
-                complex<double> tempp=1.;
+            	product=1.;
                 for( int i=0;i<invNu;i++){
                     dx=COM[0]/(1.*NPhi)-ws[i][0];
                     dy=COM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    tempp*=temp;
+                    w_comp=w_comp0+1.*k*L2;
+                    product*=temp;
                 }
-                w_comp=w_comp0+1.*k*L2;
-                if (type=="laughlin") outtrace+=tempp*exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                else if (type=="CFL") outtrace+=tempp*exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                sum+=(1.*trace)*product;
             }
-            out*=outtrace;
+            out*=sum;
         }
         //  cout<<" com piece = "<<out<<endl; assist=out;
         
@@ -913,13 +970,23 @@ void LATTICE::print_structure_factors(int nMeas, string filename){
     smaout.close();
 }
 double LATTICE::pairamplitude(int n, double alpha) {
-    double result=0., u;
+    double ret=0.;
+    double u;
     for (int i=0; i<Ne; i++) {
         for (int j=0; j<i; j++) {
-            result=1.*pow(1-alpha,n)/pow(alpha,n+1)*laguerre(n,-u/(1.-alpha))*exp(-u);
+            
+            for (int rundx=-3; rundx<4; rundx++) {
+                for (int rundy=-3; rundy<4; rundy++) {
+                    u=norm((locs[i][0]-locs[j][0]+rundx*NPhi)/(1.*NPhi)*L1 + (locs[i][1]-locs[j][1]+rundy*NPhi)/(1.*NPhi)*L2);
+                    u*=0.25/alpha;
+                    ret+=pow(alpha-1,n)/pow(alpha,n+1)*laguerre(n,u/(1.-alpha))*exp(-u);
+                }
+            }
+
         }
     }
-    return (n%2==0)? result : -result;
+
+    return ret;
 }
 complex<double> LATTICE::formfactor(int qx, int qy){
     complex<double> out=0;
@@ -1060,7 +1127,7 @@ void LATTICE::check_sanity(){
 		cout<<"laughlin-hole but haven't set the hole position"<<endl;
 		exit(0);
 	}
-    if(type=="FilledLL" && (zeros.size()!=NPhi || Ne!=NPhi)) {
+    if(type=="FilledLL" && (zeros.size()!=(unsigned)NPhi || Ne!=NPhi)) {
         cout<<"Filled LL zeros size or Ne/NPhi wrong."<<endl;
         exit(0);
     }
@@ -1089,7 +1156,7 @@ void LATTICE::change_dbar_parameter(double dbarx, double dbary){
 	}
 }
 void LATTICE::set_ds(vector< vector<int> > tds){
-    if (tds.size()!=Ne) {
+    if (tds.size()!=(unsigned)Ne) {
         cout<<"cannot set ds, ds.size() wrong."<<endl;
         exit(0);
     }
@@ -1104,17 +1171,17 @@ void LATTICE::set_ds(vector< vector<int> > tds){
     //reset ws, according to ds.
     ws.clear(); ws=ws0;
     if (type=="CFL" or type=="doubledCFL") {
-        for (int i=0; i<ws.size(); i++) {
+        for (unsigned int i=0; i<ws.size(); i++) {
             ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.
         }
     }
 }
 void LATTICE::set_ws(vector<vector<double>> ws_t){
-    if (ws_t.size()!=invNu) {
+    if (ws_t.size()!=(unsigned)invNu) {
         cout<<"cannot set ws, ws.size() wrong."<<endl;
         exit(0);
     }
-    for (unsigned i=0; i<invNu; i++) {
+    for (int i=0; i<invNu; i++) {
         if (ws_t[i].size()!=2) {
             cout<<"cannot set ws, ws[i].size() wrong."<<endl;
             exit(0);
@@ -1122,7 +1189,7 @@ void LATTICE::set_ws(vector<vector<double>> ws_t){
     }
     ws0=ws_t; ws=ws0;
     if (type=="CFL" or type=="doubledCFL") {
-        for (int i=0; i<ws.size(); i++) {
+        for (unsigned int i=0; i<ws.size(); i++) {
             ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.
         }
     }
@@ -1291,32 +1358,30 @@ complex<double> LATTICE::FilledLL(vector<vector<int>> z){
 //evenly spaced centered at 1 in the y direction
 //used the definition of the single particle orbitals given in Fremling
 //only tested in square torus
-complex<double> LATTICE::FilledLL2(vector< vector<int> > z){
-	complex<double> out=1,temp, tempz;
-	complex<double> tau=(1.*NPhi)*L2/L1;	
-	int type=2;
-	if(NPhi%2) type=1;
-    Eigen::MatrixXcd landauwf(NPhi, NPhi);
-    for (int m=0; m<NPhi; m++) {
-        for (int n=0; n<NPhi; n++) {
-        	tempz=z[n][0]/(1.*NPhi)*L1+(z[n][1]-m)/(1.*NPhi)*L2;
-			jacobi_theta_(&type, &tempz, &tau, &temp, &zero);
-			landauwf(m,n)=temp;
-        }
-    }
-//    cout<<"matrix="<<endl<<landauwf<<endl;
-    detSolver.compute(landauwf);
-    return detSolver.determinant();
-}
+//complex<double> LATTICE::FilledLL2(vector< vector<int> > z){
+//	complex<double> out=1,temp, tempz;
+//	complex<double> tau=(1.*NPhi)*L2/L1;	
+//	int type=2;
+//	if(NPhi%2) type=1;
+//    Eigen::MatrixXcd landauwf(NPhi, NPhi);
+//    for (int m=0; m<NPhi; m++) {
+//        for (int n=0; n<NPhi; n++) {
+//        	tempz=z[n][0]/(1.*NPhi)*L1+(z[n][1]-m)/(1.*NPhi)*L2;
+//			jacobi_theta_(&type, &tempz, &tau, &temp, &zero);
+//			landauwf(m,n)=temp;
+//        }
+//    }
+////    cout<<"matrix="<<endl<<landauwf<<endl;
+//    detSolver.compute(landauwf);
+//    return detSolver.determinant();
+//}
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
 complex<double> LATTICE::doubled_CFL(const vector< vector<int> > &bothzs){
-    if (bothzs.size()!=Ne*2) {
+    if (bothzs.size()!=(unsigned)Ne*2) {
         cout<<"cannot get_wf because zs.size()!=2Ne"<<endl;
         exit(0);
     }
 	complex<double> out=1,temp;
-	int ix,iy;
-	double x,y;
     
 	vector<vector<vector<int> > > onezs(2,bothzs);
 	

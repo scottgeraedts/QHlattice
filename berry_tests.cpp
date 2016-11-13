@@ -101,6 +101,8 @@ void single_run(string filename, bool trace){
     cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
     
     int gs=0;
+    int NPhi=Ne*invNu;
+    if (type=="laughlin-hole") NPhi++;
 
     double theta, alpha;
     alpha=1.;
@@ -137,7 +139,6 @@ void single_run(string filename, bool trace){
     
     ofstream outfile("out"), eout("energy");
 
-
     for(int s=0;s<nBins;s++){
 //        ll.change_dbar_parameter(s*0.1,s*0.1);        
         ll.reset();
@@ -150,6 +151,10 @@ void single_run(string filename, bool trace){
         deque<double> e_tracker, p_tracker;
         int Ntrack=50;
         vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
+        
+        vector<vector<double>> pair_amp(NPhi, vector<double>(NPhi, 0.));
+        ofstream pairout("pairamplitude/"+filename+"_"+to_string((long long int) s));
+        
         for(int i=0;i<nMeas;i++){
             ll.step(nSteps);
             e=ll.coulomb_energy();
@@ -170,8 +175,21 @@ void single_run(string filename, bool trace){
                 p_tracker.pop_back();
             }
             ll.update_structure_factors();
+            
+            for (int m=0; m<NPhi; m++) {
+                for (int n=0; n<NPhi; n++) {
+                    pair_amp[m][n]+=ll.pairamplitude(n, 1.*m/NPhi)/(0.5*nMeas*Ne*(Ne-1));
+                }
+            }
+            
         }
         ll.print_structure_factors(nMeas, "_"+to_string((long long int)s));
+        for (int m=0; m<NPhi; m++) {
+            for (int n=0; n<NPhi; n++) {
+                pairout<<pair_amp[m][n]<<endl;
+            }
+        }
+        pairout.close();
         
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
@@ -239,14 +257,6 @@ void structurefactor(string intputfilename, int num_core){//fielname='params_sq_
         ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
     }
 }
-void pairamplitude(){
-    cout<<laguerre(1, 0.5)<<endl;
-    cout<<laguerre(2, 0.5)<<endl;
-    cout<<laguerre(3, 2)<<endl;
-    cout<<laguerre(4, 2)<<endl;
-    cout<<laguerre(5, 2)<<endl;
-}
-
 
 //Energetics.
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename){
@@ -1293,13 +1303,15 @@ void ParticleHoleSym2(){
     
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
-    vector<wf_info> wfs(3);
+    vector<wf_info> wfs(2);
     wfs[0]=wf_info(false, false, 0, Ne/invNu, 1);
 	wfs[0].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 0);
+	wfs[0].wf.trace=true;
 	wfs[1]=wf_info(false, false, Ne/invNu, Ne, -1);
-	wfs[1].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 1);
-	wfs[2]=wf_info(true, false, 0, Ne, 1);
-	wfs[2].wf=LATTICE(Ne, 1, testing, "laughlin", seed, 0);
+	wfs[1].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 0);
+	wfs[1].wf.trace=true;
+	//wfs[2]=wf_info(true, false, 0, Ne, 1);
+	//wfs[2].wf=LATTICE(Ne, 1, testing, "laughlin", seed, 0);
 	LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);
 
 	LATTICE_WRAPPER ll(Ne, wfs, seed, testing);
@@ -1316,18 +1328,19 @@ void ParticleHoleSym2(){
         ll.step(nWarmup);
         for (int nmea=0; nmea<nMeas; nmea++) {
             ll.step(nSteps);
-			//tmp=FLL.get_wf(ll.get_zs())/ll.get_wf();
-			tmp=1./conj(ll.get_wf());
+			tmp=FLL.get_wf(ll.get_zs())/ll.get_wf();
+			//tmp=1./conj(ll.get_wf());
 			num+=tmp;
-			//denom+=norm(tmp);			
-			denom1+=1/norm(wfs[2].wf.get_wf( wfs[2].make_zs( ll.get_zs() ) ) );
-			denom2+=1/norm( wfs[0].wf.get_wf( wfs[0].make_zs( ll.get_zs() ) )* wfs[1].wf.get_wf(wfs[1].make_zs(ll.get_zs() ) ) );
+			denom+=norm(tmp);			
+			//denom1+=1/norm(wfs[2].wf.get_wf( wfs[2].make_zs( ll.get_zs() ) ) );
+			//denom2+=1/norm( wfs[0].wf.get_wf( wfs[0].make_zs( ll.get_zs() ) )* wfs[1].wf.get_wf(wfs[1].make_zs(ll.get_zs() ) ) );
 			//cout<<norm(tmp)<<endl;
         }
 
-		//num/=(1.*nMeas);
-		//denom/=(1.*nMeas);
-		num/=sqrt(denom1*denom2);
+		num/=(1.*nMeas);
+		denom/=(1.*nMeas);
+		num/=sqrt(denom);
+		//num/=sqrt(denom1*denom2);
 
         cout<<"nbin="<<nbin<<endl;
         cout<<abs(num)<<endl;
@@ -1348,12 +1361,14 @@ void Explicit(){
         cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
         //cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
     }
+    cfl1[0].trace=1; cfl1[1].trace=-1;
+    cout<<cfl1[0].trace<<" "<<cfl1[1].trace<<endl;
     LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);//Filled LL Wavefunction.
     
     vector< vector<int> > zs(Ne, vector<int>(2)), zs1(Ne1, vector<int>(2)),zs2(Ne2, vector<int>(2) );
     int temp;
     complex<double> out=0,v1,v2,v3,phd=0;
-    double norm1,norm2,norm3;
+    double norm1=0,norm2=0,norm3=0;
    	vector< vector<int> >::iterator it;
    	bool duplicate;
 	//stuff for explicit PH calculation   	
@@ -1386,19 +1401,19 @@ void Explicit(){
 
 		v3=FLL.get_wf(zs);
 
-		norm3+=norm(v3);
-		norm2+=norm(v1*v2);
-		if (abs(v1*v2*v3)<1e-15) continue;
+//		norm3+=norm(v3);
+//		norm2+=norm(v1*v2);
+//		if (abs(v1*v2*v3)<1e-15) continue;
 
 		for(int p=0;p<2*Ne;p++){
 			cout<<zs[p/2][p%2]<<" ";
 		}
-//		out+=v3*conj(v1*v2);
-//		norm2+=norm(v1*v2);
-//		norm3+=norm(v3);
+		out+=v3*conj(v1*v2);
+		norm2+=norm(v1*v2);
+		norm3+=norm(v3);
 
 
-		out+=1./conj(v3)/v1/v2*norm(v1*v2*v3);
+//		out+=1./conj(v3)/v1/v2*norm(v1*v2*v3);
 		cout<<v1*v2<<" "<<v3<<endl;
 	}
 	norm1=1;

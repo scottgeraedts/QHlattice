@@ -83,6 +83,7 @@ public:
 	void update_structure_factors();
 	void print_structure_factors(int nMeas, string filename="");
     double pairamplitude(int n, double alpha);
+    
 	vector <vector<int> > get_locs();
 	complex<double> formfactor(int qx, int qy);
 //    double formfactor(double qx, double qy);
@@ -101,6 +102,8 @@ public:
     void update();
 	static vector< vector<int> > hot_start(int NPhi_t, int Ne_t, MTRand &ran);
 	static vector<int> random_move(const vector<int> &oldsite, int NPhi_t, MTRand &ran_t);
+    
+    int trace;
 	
 private:
     double get_in_det_rescaling(int Ne, int invNu);
@@ -119,6 +122,7 @@ private:
 	string type;
     int gs;
     double theta, alpha;
+    vector <double> pair_amp;
 	vector <vector <double> > coulomb_table, sq2, sq2_mqy;
 	vector <vector <complex<double> > > sq, sq_mqy;//'minus qy', qy<=0.
 	vector <vector <vector <vector< complex<double> > > > > sq3;
@@ -132,7 +136,6 @@ private:
 	MTRand ran;
 	vector<vector<int>> locs;//an integer defined on an NPhi lattice
 	vector<vector<double>> ws, ws0;
-//    vector<vector<vector<double>>> wss;
     vector<vector<vector<double>>> zeros;//a parameter for 'FilledLL' state.
 	int one,zero;
 	vector< complex<double> > omega;
@@ -140,8 +143,6 @@ private:
 //    vector< complex<double> > omegasq;
     
     vector<vector<int> > ds;//an integer defined on an Ne lattice
-    
-    bool trace;
     
 };
 
