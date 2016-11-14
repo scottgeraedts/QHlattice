@@ -90,6 +90,8 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
     SMAq=vector<vector<double>>(NPhi, vector<double>(NPhi, 0.));
 //	sq3=vector<vector<vector<vector<complex<double>>>>>(NPhi, vector<vector<vector<complex<double>>>>(NPhi, vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0))));
     //comment out sq3, otherwise memory exceed easilly for large invNu state.
+    
+    LATTICE::setup_laguerre();
 }
 double LATTICE::get_in_det_rescaling(int Ne, int invNu){
     double rescaling=1.;
@@ -969,23 +971,40 @@ void LATTICE::print_structure_factors(int nMeas, string filename){
     sqout2_mqy.close();
     smaout.close();
 }
-double LATTICE::pairamplitude(int n, double alpha) {
-    double ret=0.;
-    double u;
-    for (int i=0; i<Ne; i++) {
-        for (int j=0; j<i; j++) {
+void LATTICE::setup_laguerre() {
+    int mlength=50;
+    laguerretable =vector<vector<vector<vector<double>>>> (10, vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi))));
+    for (int n=0; n<10; n++) {
+        for (int a=0; a<mlength; a++) {
+            double alp;
+            if (a==0) {
+                alp=1./sqrt(1.*NPhi);
+            }
+            else alp=1.-log(a+1)/log(mlength+1);
             
             for (int rundx=-3; rundx<4; rundx++) {
                 for (int rundy=-3; rundy<4; rundy++) {
-                    u=norm((locs[i][0]-locs[j][0]+rundx*NPhi)/(1.*NPhi)*L1 + (locs[i][1]-locs[j][1]+rundy*NPhi)/(1.*NPhi)*L2);
-                    u*=0.25/alpha;
-                    ret+=pow(alpha-1,n)/pow(alpha,n+1)*laguerre(n,u/(1.-alpha))*exp(-u);
+                    for (int x=0; x<NPhi; x++) {
+                        for (int y=0; y<NPhi; y++) {
+                            double u=norm((x+rundx*NPhi)/(1.*NPhi)*L1 + (y+rundy*NPhi)/(1.*NPhi)*L2);
+                            u*=0.25/alp;
+                            laguerretable[n][a][x][y]+=pow(alp-1,n)/pow(alp,n+1)*laguerre(n,u/(1.-alp))*exp(-u);
+                        }
+                    }
                 }
             }
-
         }
     }
-
+}
+double LATTICE::pairamplitude(int n, int a) {
+    double ret=0.;
+    for (int i=0; i<Ne; i++) {
+        for (int j=0; j<i; j++) {
+            int x=((locs[i][0]-locs[j][0])%NPhi+NPhi)%NPhi;
+            int y=((locs[i][1]-locs[j][1])%NPhi+NPhi)%NPhi;
+            ret+=laguerretable[n][a][x][y];
+        }
+    }
     return ret;
 }
 complex<double> LATTICE::formfactor(int qx, int qy){

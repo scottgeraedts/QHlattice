@@ -138,6 +138,7 @@ void single_run(string filename, bool trace){
 //    ll.print_ds();
     
     ofstream outfile("out"), eout("energy");
+//    int mlength=11, nlength=10;//m=alpha, n=pair angular momentum.
 
     for(int s=0;s<nBins;s++){
 //        ll.change_dbar_parameter(s*0.1,s*0.1);        
@@ -152,8 +153,9 @@ void single_run(string filename, bool trace){
         int Ntrack=50;
         vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
         
-        vector<vector<double>> pair_amp(NPhi, vector<double>(NPhi, 0.));
-        ofstream pairout("pairamplitude/"+filename+"_"+to_string((long long int) s));
+//        vector<vector<double>> pair_amp(mlength, vector<double>(nlength, 0.));
+//
+//        ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
         
         for(int i=0;i<nMeas;i++){
             ll.step(nSteps);
@@ -176,20 +178,21 @@ void single_run(string filename, bool trace){
             }
             ll.update_structure_factors();
             
-            for (int m=0; m<NPhi; m++) {
-                for (int n=0; n<NPhi; n++) {
-                    pair_amp[m][n]+=ll.pairamplitude(n, 1.*m/NPhi)/(0.5*nMeas*Ne*(Ne-1));
-                }
-            }
+//            for (int m=0; m<mlength; m++) {
+//                for (int n=0; n<nlength; n++) {
+////                    pair_amp[m][n]+=ll.pairamplitude(n, 0.25*m/NPhi)/(0.5*nMeas*Ne*(Ne-1));
+//                    pair_amp[m][n]+=ll.pairamplitude(n, m)/(0.5*nMeas*Ne*(Ne-1));
+//                }
+//            }
             
         }
         ll.print_structure_factors(nMeas, "_"+to_string((long long int)s));
-        for (int m=0; m<NPhi; m++) {
-            for (int n=0; n<NPhi; n++) {
-                pairout<<pair_amp[m][n]<<endl;
-            }
-        }
-        pairout.close();
+//        for (int m=0; m<mlength; m++) {
+//            for (int n=0; n<NPhi; n++) {
+//                pairout<<pair_amp[m][n]<<endl;
+//            }
+//        }
+//        pairout.close();
         
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
@@ -208,6 +211,60 @@ void single_run(string filename, bool trace){
     outfile<<endl;
     eout.close();
     outfile.close();
+}
+void pairamplitude(string filename, bool trace, int num_core) {
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    double theta_t, theta, alpha;
+    string type;
+    ifstream infile(filename);
+    infile>>Ne>>invNu>>theta_t>>alpha;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    theta=theta_t*M_PI;
+    
+    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
+    
+    omp_set_num_threads(num_core);
+    
+    vector<LATTICE> ll(num_core);
+    for (int i=0; i<num_core; i++) {
+        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
+    }
+    
+    int mlength=50, nlength=10;//m=alpha, n=pair angular momentum.
+    
+#pragma omp parallel for
+    for(int s=0;s<nBins;s++){
+        int coren=omp_get_thread_num();
+        //        printf("coren=%d\n",coren);
+        //        ll[coren].change_dbar_parameter(s*0.1,s*0.1);
+        ll[coren].reset();
+        ll[coren].step(nWarmup);
+        
+        vector<vector<double>> pair_amp(mlength, vector<double>(nlength, 0.));
+        ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
+        
+        for(int i=0;i<nMeas;i++){
+            ll[coren].step(nSteps);
+//            ll[coren].update_structure_factors();
+            for (int m=0; m<mlength; m++) {
+                for (int n=0; n<nlength; n++) {
+                    pair_amp[m][n]+=ll[coren].pairamplitude(n, m)/(0.5*nMeas*Ne*(Ne-1));
+                }
+            }
+        }
+//        ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
+        for (int m=0; m<mlength; m++) {
+            for (int n=0; n<nlength; n++) {
+                pairout<<pair_amp[m][n]<<endl;
+            }
+        }
+        pairout.close();
+    }
 }
 
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.

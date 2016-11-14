@@ -82,7 +82,8 @@ public:
 	double threebody();
 	void update_structure_factors();
 	void print_structure_factors(int nMeas, string filename="");
-    double pairamplitude(int n, double alpha);
+//    double pairamplitude(int n, double alpha);
+    double pairamplitude(int n, int a);
     
 	vector <vector<int> > get_locs();
 	complex<double> formfactor(int qx, int qy);
@@ -110,6 +111,9 @@ private:
     double in_determinant_rescaling;
 	void sum_locs(int []);
 	void setup_coulomb();
+    void setup_laguerre();
+    vector<vector<vector<vector<double>>>> laguerretable;
+    
 	int simple_update();// returns '1' if updated, '0' if not updated.
 	int p(int); int m(int);
 	void cold_start();
