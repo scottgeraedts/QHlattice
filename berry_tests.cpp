@@ -236,7 +236,128 @@ void pairamplitude(string filename, bool trace, int num_core) {
     }
     
     int mlength=50, nlength=10;//m=alpha, n=pair angular momentum.
+    int NPhi=Ne*invNu;
+//    int NPhi=30;
     
+    //allowed momentum set on torus, got from ed code.
+    //use this to get matrix element by lattice summation over sigma function.
+//    vector<hop> hoplist_ed;//hoplist from ed, amplitude are laugerrel-gaussian with theta function.
+    vector<hop> hoplist_lat;//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
+    
+    ifstream hopinfile("pairamplitude/hoplist");
+//    vector<complex<double>> total(mlength);//the lattice-sum is 2 large, so normalized it a little bit.
+    while (!hopinfile.eof()) {
+        double re,im;
+        hop tmp;
+        tmp.list.resize(4);
+        hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
+        hopinfile>>re>>im;
+//        for (int a=0; a<mlength; a++) {
+        int a=mlength-2; a=0;
+            complex<double> sum;//lattice summation.
+            for (int x1=0; x1<NPhi*NPhi; x1++) {
+                for (int x2=0; x2<NPhi*NPhi; x2++) {
+                    int x11=x1/NPhi, x12=x1%NPhi, x21=x2/NPhi, x22=x2%NPhi;
+                    int x = ((x11-x21)%NPhi+NPhi)%NPhi;
+                    int y = ((x12-x22)%NPhi+NPhi)%NPhi;
+                    
+//                    if (tmp.list[0]==0 && tmp.list[1]==1 && tmp.list[2]==0 && tmp.list[3]==1) {
+//                        cout<<"output: x1,x2,x,y,x11,x12,x21,x22="<<x1<<" "<<x2<<" "<<x<<" "<<y<<" "<<x11<<" "<<x12<<" "<<x21<<" "<<x22<<endl;
+//                    }
+                    
+                    sum+=
+                    0.5*ll[0].laguerretable[1][a][x][y]
+                    *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+                    *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+                    *ll[0].landautable[tmp.list[2]][x21][x22]
+                    *ll[0].landautable[tmp.list[3]][x11][x12];
+                    
+                    sum+=
+                    0.5*ll[0].laguerretable[1][a][x][y]
+                    *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+                    *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+                    *ll[0].landautable[tmp.list[3]][x21][x22]
+                    *ll[0].landautable[tmp.list[2]][x11][x12];
+                    
+                    sum-=
+                    0.5*ll[0].laguerretable[1][a][x][y]
+                    *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+                    *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+                    *ll[0].landautable[tmp.list[2]][x21][x22]
+                    *ll[0].landautable[tmp.list[3]][x11][x12];
+                    
+                    sum-=
+                    0.5*ll[0].laguerretable[1][a][x][y]
+                    *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+                    *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+                    *ll[0].landautable[tmp.list[3]][x21][x22]
+                    *ll[0].landautable[tmp.list[2]][x11][x12];
+                    
+                    
+                    
+//                    if (tmp.list[0]==7 && tmp.list[1]==8 && tmp.list[2]==7 && tmp.list[3]==8 && x1==78 && (x2==14||x2==13)) {
+//                        cout<<"x2="<<x2<<endl;
+//                        cout<<ll[0].laguerretable[1][a][x][y]<<" "<<conj(ll[0].landautable[tmp.list[0]][x11][x12])<<" "<<conj(ll[0].landautable[tmp.list[1]][x21][x22])<<" "<<ll[0].landautable[tmp.list[2]][x21][x22]<<" "<<ll[0].landautable[tmp.list[3]][x11][x12]<<endl<<endl;
+//                    }
+                    
+//                    cout<<"hoplist0123, x1, x2, value = "<<tmp.list[0]<<" "<<tmp.list[1]<<" "<<tmp.list[2]<<" "<<tmp.list[3]<<", ";
+//                    cout<<x1<<" "<<x2<<", "<<0.5*ll[0].laguerretable[1][a][x][y]
+//                    *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+//                    *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+//                    *ll[0].landautable[tmp.list[2]][x21][x22]
+//                    *ll[0].landautable[tmp.list[3]][x11][x12]<<endl;
+//                    sum+=
+//                    0.5*laguerre( 1, 1.*((x1/NPhi-x2/NPhi)*(x1/NPhi-x2/NPhi) + (x1%NPhi-x2%NPhi)*(x1%NPhi-x2%NPhi))*2.*M_PI/NPhi )
+//                    *conj(ll[0].landautable[tmp.list[0]][x1/NPhi][x1%NPhi])
+//                    *conj(ll[0].landautable[tmp.list[1]][x2/NPhi][x2%NPhi])
+//                    *ll[0].landautable[tmp.list[2]][x2/NPhi][x2%NPhi]
+//                    *ll[0].landautable[tmp.list[3]][x1/NPhi][x1%NPhi];
+                    
+//                    x=abs(x11-x21);
+//                    y=abs(x21-x22);
+                    
+//                    sum+=
+//                    0.5*(ll[0].laguerretable[1][a][x][y]+3.*ll[0].laguerretable[3][a][x][y])
+//                    *conj(ll[0].landautable[tmp.list[0]][x1/NPhi][x1%NPhi])
+//                    *conj(ll[0].landautable[tmp.list[1]][x2/NPhi][x2%NPhi])
+//                    *ll[0].landautable[tmp.list[2]][x2/NPhi][x2%NPhi]
+//                    *ll[0].landautable[tmp.list[3]][x1/NPhi][x1%NPhi];
+                    
+                }
+            }
+
+        tmp.ele.push_back(sum);
+//        }
+        hoplist_lat.push_back(tmp);
+    }
+    hopinfile.close();
+    hoplist_lat.pop_back();
+    
+    /*
+    //to make matrix element smaller by dividing over average. use this is necessary.
+    vector<complex<double>> temp(hoplist_lat[0].ele.size());
+    for (int i=0; i<hoplist_lat.size(); i++) {
+        for (int j=0; j<hoplist_lat[0].ele.size(); j++) {
+            temp[j]+=hoplist_lat[i].ele[j]/(1.*hoplist_lat[0].ele.size());
+        }
+    }
+    for (int i=0; i<hoplist_lat.size(); i++) {
+        for (int j=0; j<hoplist_lat[0].ele.size(); j++) {
+            hoplist_lat[i].ele[j]/=temp[j];
+        }
+    }
+     */
+
+    ofstream outhop("pairamplitude/hoplist_lat");
+    for (int i=0; i<hoplist_lat.size(); i++) {
+        outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
+        for (int k=0; k<hoplist_lat[i].ele.size(); k++)
+            outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
+        outhop<<endl;
+    }
+    
+    /*
+  //this is for monte-carlo calculation of pair-amplitude.
 #pragma omp parallel for
     for(int s=0;s<nBins;s++){
         int coren=omp_get_thread_num();
@@ -265,8 +386,42 @@ void pairamplitude(string filename, bool trace, int num_core) {
         }
         pairout.close();
     }
+     */
 }
-
+void generate_pseu_matrix(string filename){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    double theta_t, theta, alpha;
+    string type;
+    ifstream infile(filename);
+    infile>>Ne>>invNu>>theta_t>>alpha;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    theta=theta_t*M_PI;
+    int NPhi=Ne*invNu;
+    
+    LATTICE ll(Ne, invNu, testing, type, seed, 0, theta, alpha);//gs=0.
+    int mlength=50, nlength=10;
+    for (int m=0; m<mlength; m++) {
+        ofstream outfile ("pseumatrix/pasumatrix_"+to_string((long long int)m));
+        for (int n=0; n<nlength; n++) {
+            complex<double> ret;
+            for (int i=0; i<NPhi*NPhi; i++) {
+                for (int j=0; j<NPhi*NPhi; j++) {
+//                    ret+=ll.landautable[]
+                    //landautable[n][x][y], n is landau level index.
+                    //laguerretable[n][a][x][y] n is Laguerrel polynomial index, a is alpha.
+                }
+            }
+            outfile<<endl;
+        }
+        outfile.close();
+    }
+    
+}
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;

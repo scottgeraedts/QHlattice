@@ -10,6 +10,7 @@
 #include <deque>
 #include <unordered_set>
 #include <cmath>
+#include <iomanip>
 
 using namespace std;
 
@@ -58,6 +59,10 @@ public:
 	complex<double> modded_lattice_z(int x, int y);
 	void print_ds();
     void print_ws();
+    void print_landautable();
+    void print_laguerreltable();
+    vector<vector<vector<vector<double>>>> laguerretable;
+    vector<vector<vector<complex<double>>>> landautable;
 
 	//initialization related functions
 	void make_fermi_surface(double* center_frac, int N);
@@ -111,8 +116,9 @@ private:
     double in_determinant_rescaling;
 	void sum_locs(int []);
 	void setup_coulomb();
-    void setup_laguerre();
-    vector<vector<vector<vector<double>>>> laguerretable;
+    void setup_laguerre_con();
+    void setup_laguerre_lat();
+    void setup_landautable();
     
 	int simple_update();// returns '1' if updated, '0' if not updated.
 	int p(int); int m(int);

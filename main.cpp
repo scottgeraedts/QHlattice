@@ -1,6 +1,6 @@
 #define __STDCPP_WANT_MATH_SPEC_FUNCS__ 1
 using namespace std;
-#include <iomanip>
+//#include <iomanip>
 #include "lattice.h"
 #include "berry_tests.h"
 
@@ -62,10 +62,13 @@ int main(){
 //    structurefactor("params_sq6asp95new", num_core);
 //    structurefactor("params_sq6hexasp95new", num_core);
     
-    pairamplitude("paramsne4", true, num_core);
-//    pairamplitude("paramsne6", true, num_core);
+//    pairamplitude("paramsne4", true, num_core);
+//    pairamplitude("paramsne6", true, num_core);//...
 //    pairamplitude("paramsne10", true, num_core);
 //    pairamplitude("paramsne20", true, num_core);
+    
+    pairamplitude("paramsne2", true, num_core);//...
+    
 }
 void outformfactor(){
     int Ne=8, invNu=2, Nphi=Ne*invNu, seed=0;

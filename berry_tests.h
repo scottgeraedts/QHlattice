@@ -20,6 +20,10 @@ struct oneconfig{
     vector<vector<int> > deletelist, addlist;
     int num;
 };
+struct hop{
+    vector<int> list;//this is momentum list. interaction = v_{1234} c1^+ c2^+ c3 c4.
+    vector<complex<double>> ele;//this is a list for hopping amplitude, for different alpha.
+};
 
 //Some Utilities
 void hermitianize(Eigen::MatrixXcd &x);
@@ -30,6 +34,7 @@ void check_orthogonality(string type);
 void single_run(string filename="params", bool trace=false);
 void structurefactor(string, int num_core=1);
 void pairamplitude(string filename, bool trace, int num_core=1);
+void generate_pseu_matrix(string filename);
 
 //Energetics
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename);
