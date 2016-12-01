@@ -31,14 +31,37 @@ extern"C"{
 	void jacobi_theta_(int *n, complex<double> *z, complex<double> *tau, complex<double> *theta, int *sum);
 }
 
+class LATTICE_PARAMS{
+public:
+	int Ne, invNu, seed, gs;
+	double theta, alpha;
+	complex<double> w_delta;
+	bool testing, trace;
+	string type;
+	LATTICE_PARAMS( int Ne_t){
+		Ne=Ne_t;
+		invNu=2;
+		seed=0;
+		gs=0;
+		theta=M_PI*0.5;
+		alpha=1.0;
+		testing=false;
+		trace=false;
+		type="CFL";
+		w_delta=0;
+	}
+};
+	
 class LATTICE{
 public:
 	LATTICE();
+	LATTICE(LATTICE_PARAMS params);
 //    LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0, double theta=0.5*M_PI, double alpha=1.0);
     LATTICE(int Ne_t, int invNu_t, bool testing_t=false, string type_t="CFL", int seed=0, int gs_t=0, double theta=0.5*M_PI, double alpha=1.0, bool trace_t=false);
 	~LATTICE();
 
 	int Ne, NPhi;
+	complex<double> w_delta; //an offset to the COM zeros
 	double running_weight;//running_weight is a global variable. need reset in every run.
     int tries,accepts;
     complex<double> getL(int dir);
@@ -104,6 +127,7 @@ public:
     int trace;
 	
 private:
+	void init(int seed);
     double get_in_det_rescaling(int Ne, int invNu);
     double in_determinant_rescaling;
 	void sum_locs(int []);

@@ -342,6 +342,8 @@ void structurefactor(string intputfilename, int num_core){//fielname='params_sq_
 
 //Energetics.
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename){
+	
+
     ofstream outfile(filename, ios::out| ios::app);//write into the file, write from the end.
     for (int s=0; s<nBins; s++) {
         lattice.reset();
@@ -353,7 +355,7 @@ void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins
             E+=e;
             E2+=e*e;
         }
-        outfile<<s<<" "<<E/(1.*nMeas)<<" "<<E2/(1.*nMeas)<<" "<<pow(E/(1.*nMeas), 2)-E2/(1.*nMeas)<<endl;
+        outfile<<s<<" "<<E/(1.*nMeas)<<" "<<E2/(1.*nMeas)<<" "<<E2/(1.*nMeas)-pow(E/(1.*nMeas), 2)<<endl;
     }
     outfile<<endl;
     outfile.close();
@@ -1383,15 +1385,21 @@ void ParticleHoleSym2(){
     infile>>type;
     //initialize MC object
     
+    //this parameter object will be used to initialize LATTICE
+    LATTICE_PARAMS params(Ne/invNu);
+    params.w_delta=0.;
+    params.testing=testing;
+    params.seed=seed;
+    
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
     vector<wf_info> wfs(2);
     wfs[0]=wf_info(false, false, 0, Ne/invNu, 1);
-	wfs[0].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 0);
-	wfs[0].wf.trace=true;
+	wfs[0].wf=LATTICE(params);
+	//wfs[0].wf.trace=1;
 	wfs[1]=wf_info(false, false, Ne/invNu, Ne, -1);
-	wfs[1].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 0);
-	wfs[1].wf.trace=true;
+	wfs[1].wf=LATTICE(params);
+	//wfs[1].wf.trace=-1;
 	//wfs[2]=wf_info(true, false, 0, Ne, 1);
 	//wfs[2].wf=LATTICE(Ne, 1, testing, "laughlin", seed, 0);
 	LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);
@@ -1431,7 +1439,7 @@ void ParticleHoleSym2(){
 }
 //Particle Hole Symmetry (Ne9, maximal symmetric ds).
 void Explicit(){
-    int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
+    int Ne, invNu, seed; bool testing; string type;
     ifstream infile("params");
     //initialize MC object
     
@@ -1449,7 +1457,7 @@ void Explicit(){
     
     vector< vector<int> > zs(Ne, vector<int>(2)), zs1(Ne1, vector<int>(2)),zs2(Ne2, vector<int>(2) );
     int temp;
-    complex<double> out=0,v1,v2,v3,phd=0;
+    complex<double> out=0,v1,v2,v3;
     double norm1=0,norm2=0,norm3=0;
    	vector< vector<int> >::iterator it;
    	bool duplicate;

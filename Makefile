@@ -3,7 +3,7 @@
 # examples/product/simple directory makefile.
 
 # including other makefiles.
-CC=g++  -fopenmp 
+CC=g++ -g  -fopenmp 
 HERE = /home/sgeraedt/QHlattice
 MYDIR = /home/sgeraedt/myClibrary/
 CFLAGS=-std=c++11 -Wall -I$(HERE) -I$(MYDIR)

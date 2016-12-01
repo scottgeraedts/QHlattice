@@ -4,24 +4,54 @@
 LATTICE::LATTICE() {
     Ne=0;
 }
+LATTICE::LATTICE(LATTICE_PARAMS params){
+	Ne=params.Ne;
+	invNu=params.invNu;
+	testing=params.testing;
+	type=params.type;
+	gs=params.gs;
+	theta=params.theta;
+	alpha=params.alpha;
+	trace=params.trace;
+	w_delta=params.w_delta;
+	testing=params.testing;
+
+	init(params.seed);
+}
 LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t, bool trace_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t),trace(trace_t){
-    
+
+	
+
+ 	init(seed);
+
+}
+void LATTICE::init(int seed){
+
 	//various parameters from input file
-	NPhi=Ne*invNu;
+ 	NPhi=Ne*invNu;
 	if(type=="laughlin-hole") NPhi++;
     if (type=="FilledLL" && invNu!=1) {
         cout<<"FilledLL state, however invNu!=1."<<endl;
         exit(0);
     }
+
+    //make l1, l2 through theta, alpha.
+    L1=sqrt(1.*M_PI*NPhi/sin(theta))*alpha;
+    L2=sqrt(1.*M_PI*NPhi/sin(theta))/alpha*polar(1.,theta);
+ 	
+	//********calls to duncan's functions
+	set_l_(&NPhi, &L1, &L2);
+	setup_z_function_table_();
+	int *sl2z=new int[4];
+	sl2z[0]=1; sl2z[1]=0; sl2z[2]=0; sl2z[3]=1;
+	if(type!="laughlin-hole") setup_laughlin_state_(&Ne,&invNu,sl2z,&gs);
+//	cout<<"starting weight "<<running_weight<<endl;
+    delete [] sl2z; 
     
     //set in_determinant_rescaling.
     //It has been set for more Ne for invNu=2, some Ne for invNu=4.
     in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
     
-    //make l1, l2 through theta, alpha.
-    L1=sqrt(1.*M_PI*NPhi/sin(theta))*alpha;
-    L2=sqrt(1.*M_PI*NPhi/sin(theta))/alpha*polar(1.,theta);
-
 	ran.seed(seed);
 	fermions=true;
     
@@ -48,8 +78,8 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
     //in the y direction these take the values gs*L/invNu, where gs in (0,invNu-1) is an integer which labels the ground state
     ws0=vector< vector<double> > (invNu, vector<double>(2,0) );
     for( int i=0;i<invNu;i++){
-        ws0[i][0]=((i+0.5)/(1.*invNu)-0.5);
-        ws0[i][1]=gs/(1.*invNu);
+        ws0[i][0]=((i+0.5)/(1.*invNu)-0.5)+real(w_delta);
+        ws0[i][1]=gs/(1.*invNu)+imag(w_delta);
     }
     
     if (type=="CFL" or type=="doubledCFL") set_ds(ds);//set ds, and reset ws.
@@ -60,14 +90,7 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
     //*********************
     //To Avoid Bugs, 'set_ws' must be followed by 'set_ds', 'change_dbar_parameter' must following 'set_ds'.
 
-	//********calls to duncan's functions
-	set_l_(&NPhi, &L1, &L2);
-	setup_z_function_table_();
-	int *sl2z=new int[4];
-	sl2z[0]=1; sl2z[1]=0; sl2z[2]=0; sl2z[3]=1;
-	if(type!="laughlin-hole") setup_laughlin_state_(&Ne,&invNu,sl2z,&gs);
-//	cout<<"starting weight "<<running_weight<<endl;
-    delete [] sl2z;
+
 
 	//*****some counters
 	setup_coulomb();
@@ -622,7 +645,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
 } 
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
 complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
-    if (type!="doubledCFL" and zs.size()!=Ne) {
+    if (type!="doubledCFL" and (signed)zs.size()!=Ne) {
         cout<<"cannot get_wf because zs.size()!=Ne "<<zs.size()<<" "<<Ne<<endl;
         exit(0);
     }
@@ -661,7 +684,6 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                 }
             }
         }
-        complex<double> assist=out;
         
         //COM piece (together with phase)
         int COM[2]={0,0};
@@ -715,11 +737,12 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                 }
                 if (type=="laughlin") product*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
                 else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
-                sum+=(1.*trace)*product;
+				if(k==1) sum+=(1.*trace)*product;
+				else sum+=product;
             }
             out*=sum;
         }
-        //  cout<<" com piece = "<<out<<endl; assist=out;
+        //  cout<<" com piece = "<<out<<endl; 
         
         //Determinant piece
         if(type=="CFL"){
@@ -1313,7 +1336,7 @@ complex<double> LATTICE::FilledLL(vector<vector<int>> z){
     for (int m=0; m<NPhi; m++) {
         for (int n=0; n<NPhi; n++) {
             landauwf(m,n)=1.;
-            for (int i=0; i<zeros[n].size(); i++) {
+            for (int i=0; i<(signed)zeros[n].size(); i++) {
                 complex<double> temp=modded_lattice_z(z[m][0]-i, z[m][1]-n);
                 landauwf(m,n)*=temp*polar(1., (zeros[n][i][0]*z[m][1]-zeros[n][i][1]*z[m][0])*M_PI/NPhi);
             }

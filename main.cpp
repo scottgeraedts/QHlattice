@@ -1,4 +1,4 @@
-using namespace std;
+	using namespace std;
 #include <iomanip>
 #include "lattice.h"
 #include "berry_tests.h"
@@ -11,9 +11,23 @@ int main(){
 //    double theta=0.5*M_PI, alpha=1.0;
 //    int num_core=2;
 //    CFL_berry_phases_parallel("params", "ne8bp", num_core, "fullloop", theta, alpha);//params_name, output_name, num_core, kind.
-//	ParticleHoleSym2();
-	Explicit();
-//    structurefactor();
+
+//	ifstream infile("params");
+//	int Ne, invNu, nWarmups, nBins, nMeas, nSteps, seed;
+//	infile>>Ne>>invNu;
+//	infile>>nWarmups>>nMeas>>nSteps>>nBins;
+//	infile>>seed;
+//	LATTICE_PARAMS params(Ne);
+//	infile>>params.testing;
+
+//	for(int i=0;i<5;i++){
+//		params.w_delta=0.;
+//		LATTICE ll(params);
+//		coul_energy(ll, nWarmups, nMeas, nSteps, nBins, "out");
+//		params.w_delta+=0.2/(1.*invNu*Ne);
+//	}
+	ParticleHoleSym2();
+
 //    double theta=0.333333333333*M_PI, alpha=1.0;
 
 //    vector<double> length;
@@ -79,7 +93,7 @@ void outformfactor(){
     outfile.close();
 }
 void test_Scott_finding8(){
-    int Ne=8, invNu=2, Nphi=Ne*invNu;
+    int Ne=8, invNu=2;
     int nMeas=5000, nWarmup=1000000, nSteps=20, seed=0;
     vector<vector<int>> ds_tmp(Ne+1, vector<int>(2));
     vector<vector<vector<int>>> ds(3);
@@ -137,7 +151,7 @@ void test_Scott_finding8(){
     cout<<endl<<abs(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<abs(es.eigenvalues()[2])<<endl;
 }
 void test_Scott_finding4(){
-    int Ne=4, invNu=2, Nphi=Ne*invNu;
+    int Ne=4, invNu=2;
     int nMeas=5000, nWarmup=1000000, nSteps=20, seed=0;
     vector<vector<int>> ds_tmp(4, vector<int>(2));
     for (int i=0; i<2; i++) for (int j=0; j<2; j++) {ds_tmp[i*2+j][0]=i; ds_tmp[i*2+j][1]=j;}
@@ -188,7 +202,6 @@ void phase_variance(){
     int Ne=8,invNu=2,nWarmup=5000,nMeas=100,nSteps=20,nBins=1000,seed=0;
     outfile<<"Ne=8, invNu=2, nWarmup="<<nWarmup<<", nMeas="<<nMeas<<", nSteps="<<nSteps<<", nBins="<<nBins<<endl;
     bool testing=false;
-    int Nphi=Ne*invNu;
     //initialize MC object
     
     //this instance of LATTICE is only to set up the circular fermi surface of tempNe electrons
@@ -227,7 +240,7 @@ void phase_variance(){
     //dKx/y is divided by invNu, because in lattice.cpp dsum is defined on L/Nphi lattice.
     
     //Monte Carlo Part & Output.
-    for (unsigned nbin=0; nbin<nBins; nbin++) {
+    for (int nbin=0; nbin<nBins; nbin++) {
         //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
         vector<Eigen::MatrixXcd> overlaps(4, Eigen::MatrixXcd::Zero(invNu, invNu));
         
@@ -358,7 +371,7 @@ void onestep(int ne, string output_name){
     //dKx/y is divided by invNu, because in lattice.cpp dsum is defined on L/Nphi lattice.
     
     //Monte Carlo Part & Output.
-    for (unsigned nbin=0; nbin<nBins; nbin++) {
+    for (int nbin=0; nbin<nBins; nbin++) {
         //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
         vector<Eigen::MatrixXcd> overlaps(4, Eigen::MatrixXcd::Zero(invNu, invNu));
         vector<Eigen::MatrixXcd> overlaps_density(4, Eigen::MatrixXcd::Zero(invNu, invNu));
@@ -374,7 +387,7 @@ void onestep(int ne, string output_name){
                 ll[i].step(nSteps);
             
             vector<vector<int>> locs=ll[0].get_locs();
-            for (int i=0; i<locs.size(); i++) {
+            for (int i=0; i<(signed)locs.size(); i++) {
                 counter[i][locs[i][0]][locs[i][1]]++;
             }
             
