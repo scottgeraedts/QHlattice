@@ -1497,9 +1497,30 @@ void ParticleHoleSym2(){
     
     //this parameter object will be used to initialize LATTICE
     LATTICE_PARAMS params(Ne/invNu);
-    params.w_delta=0.;
+    double temp;
+    infile>>temp;
+    params.w_delta=complex<double>(temp,0);
     params.testing=testing;
     params.seed=seed;
+
+    params.gs=0;
+    LATTICE tester(params);
+    vector<vector<int> > zs(3,vector<int>(2));
+    zs[0][0]=0;
+    zs[0][1]=0;
+    zs[1][0]=0;
+    zs[1][1]=2;
+    zs[2][0]=2;
+    zs[2][1]=1;
+//    complex<double> x0=tester.get_wf(zs);
+	for(int i=0;i<3;i++) zs[i][0]++;
+//	complex<double> x1=tester.get_wf(zs);
+	for(int i=0; i<3; i++) { zs[i][0]--; zs[i][1]+=2;} 
+//	complex<double> x2=tester.get_wf(zs);    
+//	cout<<arg(x1/x0)/M_PI<<" "<<arg(x2/x0)/M_PI<<endl;
+	zs[2][1]+=Ne;
+//	cout<<x2<<" "<<tester.get_wf(zs)<<endl;
+	
 
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
@@ -1507,6 +1528,7 @@ void ParticleHoleSym2(){
     wfs[0]=wf_info(false, false, 0, Ne/invNu, 1);
 	wfs[0].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 0);
 	//wfs[0].wf.trace=1;
+	params.gs=1;
 	wfs[1]=wf_info(false, false, Ne/invNu, Ne, -1);
 	wfs[1].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 1);
 	//wfs[1].wf.trace=-1;
@@ -1553,24 +1575,33 @@ void Explicit(){
     ifstream infile("params");
     //initialize MC object
     
-    Ne=4; invNu=2;
+    infile>>Ne>>invNu;
     int Ne1=Ne/2, Ne2=Ne-Ne1;
     
     vector<LATTICE> cfl1(invNu), cfl2(invNu);
+    double tempw;
+    infile>>tempw;
     for (int gs=0; gs<invNu; gs++) {
-        cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
+		LATTICE_PARAMS params(Ne1);
+		params.invNu=invNu;
+		params.testing=testing;
+		params.seed=seed;
+		params.gs=gs;
+		params.w_delta=complex<double>(tempw,0);
+        cfl1[gs]=LATTICE(params);
+
         //cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
     }
-    cfl1[0].trace=1; cfl1[1].trace=-1;
-    cout<<cfl1[0].trace<<" "<<cfl1[1].trace<<endl;
+//    cfl1[0].trace=0; cfl1[1].trace=0;
+//    cout<<cfl1[0].trace<<" "<<cfl1[1].trace<<endl;
     LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);//Filled LL Wavefunction.
     
     vector< vector<int> > zs(Ne, vector<int>(2)), zs1(Ne1, vector<int>(2)),zs2(Ne2, vector<int>(2) );
     int temp;
     complex<double> out=0,v1,v2,v3;
-    double norm1=0,norm2=0,norm3=0;
+    double norm1=0,norm2=0,norm3=0, total=0;
    	vector< vector<int> >::iterator it;
-   	bool duplicate;
+   	bool duplicate, print;
 	//stuff for explicit PH calculation   	
 	for(int i=0;i<pow(Ne,Ne*2);i++){
 		duplicate=false;
@@ -1605,8 +1636,13 @@ void Explicit(){
 //		norm2+=norm(v1*v2);
 //		if (abs(v1*v2*v3)<1e-15) continue;
 
-		for(int p=0;p<2*Ne;p++){
-			cout<<zs[p/2][p%2]<<" ";
+		if(abs(v1*v2)<1e-12 and abs(v3)>1e-12) print=true;
+		else print=false;
+		print=false;
+		if(print){
+			for(int p=0;p<2*Ne;p++){
+				cout<<zs[p/2][p%2]<<" ";
+			}
 		}
 		out+=v3*conj(v1*v2);
 		norm2+=norm(v1*v2);
@@ -1614,7 +1650,10 @@ void Explicit(){
 
 
 //		out+=1./conj(v3)/v1/v2*norm(v1*v2*v3);
-		cout<<v1*v2<<" "<<v3<<endl;
+		if(print){
+			total+=norm(v3);
+			 cout<<v1<<" "<<v2<<" "<<v3<<endl;
+		}
 	}
 	norm1=1;
 	//calculate normalization constants
@@ -1637,7 +1676,7 @@ void Explicit(){
 		//norm1+=norm(cfl1[0].get_wf(zs));
 		//norm2+=norm(cfl1[1].get_wf(zs));
 	}
-	cout<<"final overlap: "<<sqrt(comb(Ne,Ne1))*abs(out/sqrt(norm1*norm2*norm3))<<endl;
+	cout<<"final overlap: "<<sqrt(comb(Ne,Ne1))*abs(out/sqrt(norm1*norm2*norm3))<<" "<<total/norm3<<endl;
 		
     		
 }
