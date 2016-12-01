@@ -9,7 +9,8 @@
 #include <numeric>
 #include <deque>
 #include <unordered_set>
-//#include <cmath>
+#include <cmath>
+#include <iomanip>
 
 using namespace std;
 
@@ -81,6 +82,10 @@ public:
 	complex<double> modded_lattice_z(int x, int y);
 	void print_ds();
     void print_ws();
+    void print_landautable();
+    void print_laguerreltable();
+    vector<vector<vector<vector<double>>>> laguerretable;
+    vector<vector<vector<complex<double>>>> landautable;
 
 	//initialization related functions
 	void make_fermi_surface(double* center_frac, int N);
@@ -105,6 +110,9 @@ public:
 	double threebody();
 	void update_structure_factors();
 	void print_structure_factors(int nMeas, string filename="");
+//    double pairamplitude(int n, double alpha);
+    double pairamplitude(int n, int a);
+    
 	vector <vector<int> > get_locs();
 	complex<double> formfactor(int qx, int qy);
 //    double formfactor(double qx, double qy);
@@ -132,6 +140,10 @@ private:
     double in_determinant_rescaling;
 	void sum_locs(int []);
 	void setup_coulomb();
+    void setup_laguerre_con();
+    void setup_laguerre_lat();
+    void setup_landautable();
+    
 	int simple_update();// returns '1' if updated, '0' if not updated.
 	int p(int); int m(int);
 	void cold_start();
@@ -144,6 +156,7 @@ private:
 	string type;
     int gs;
     double theta, alpha;
+    vector <double> pair_amp;
 	vector <vector <double> > coulomb_table, sq2, sq2_mqy;
 	vector <vector <complex<double> > > sq, sq_mqy;//'minus qy', qy<=0.
 	vector <vector <vector <vector< complex<double> > > > > sq3;
@@ -157,7 +170,6 @@ private:
 	MTRand ran;
 	vector<vector<int>> locs;//an integer defined on an NPhi lattice
 	vector<vector<double>> ws, ws0;
-//    vector<vector<vector<double>>> wss;
     vector<vector<vector<double>>> zeros;//a parameter for 'FilledLL' state.
 	int one,zero;
 	vector< complex<double> > omega;

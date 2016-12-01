@@ -1,31 +1,16 @@
-	using namespace std;
+#define __STDCPP_WANT_MATH_SPEC_FUNCS__ 1
+using namespace std;
 #include <iomanip>
 #include "lattice.h"
 #include "berry_tests.h"
-//#include <ctime>
 
 bool IsOdd (int i) {
     return ((i%2)==1);
 }
 int main(){
 //    double theta=0.5*M_PI, alpha=1.0;
-//    int num_core=2;
+    int num_core=1;
 //    CFL_berry_phases_parallel("params", "ne8bp", num_core, "fullloop", theta, alpha);//params_name, output_name, num_core, kind.
-
-//	ifstream infile("params");
-//	int Ne, invNu, nWarmups, nBins, nMeas, nSteps, seed;
-//	infile>>Ne>>invNu;
-//	infile>>nWarmups>>nMeas>>nSteps>>nBins;
-//	infile>>seed;
-//	LATTICE_PARAMS params(Ne);
-//	infile>>params.testing;
-
-//	for(int i=0;i<5;i++){
-//		params.w_delta=0.;
-//		LATTICE ll(params);
-//		coul_energy(ll, nWarmups, nMeas, nSteps, nBins, "out");
-//		params.w_delta+=0.2/(1.*invNu*Ne);
-//	}
 	ParticleHoleSym2();
 
 //    double theta=0.333333333333*M_PI, alpha=1.0;
@@ -76,10 +61,12 @@ int main(){
 //    structurefactor("params_sq6asp95new", num_core);
 //    structurefactor("params_sq6hexasp95new", num_core);
     
-//    cout<<"trace=true"<<endl;
-//    single_run("params", true);
-//    cout<<"trace=false"<<endl;
-//    single_run("params", false);
+//    pairamplitude("paramsne4", true, num_core);
+//    pairamplitude("paramsne6", true, num_core);//...
+//    pairamplitude("paramsne10", true, num_core);
+//    pairamplitude("paramsne20", true, num_core);
+    
+    pairamplitude("paramsne2", true, num_core);//...
     
 }
 void outformfactor(){

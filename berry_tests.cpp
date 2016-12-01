@@ -15,6 +15,14 @@ double phasemod(complex<double> in){
     else return out;
     return out;
 }
+inline double laguerre(int n, double x){
+    double result=0;
+    for (int k=0; k<=n; k++) {
+        if (k%2==0) result+=pow(x,k)*comb(n,k)/factorial(k);
+        else result-=pow(x,k)*comb(n,k)/factorial(k);
+    }
+    return result;
+}
 
 //test ortho laughlin states via monte carlo.
 void check_orthogonality(string type){
@@ -93,6 +101,8 @@ void single_run(string filename, bool trace){
     cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
     
     int gs=0;
+    int NPhi=Ne*invNu;
+    if (type=="laughlin-hole") NPhi++;
 
     double theta, alpha;
     alpha=1.;
@@ -128,7 +138,7 @@ void single_run(string filename, bool trace){
 //    ll.print_ds();
     
     ofstream outfile("out"), eout("energy");
-
+//    int mlength=11, nlength=10;//m=alpha, n=pair angular momentum.
 
     for(int s=0;s<nBins;s++){
 //        ll.change_dbar_parameter(s*0.1,s*0.1);        
@@ -142,6 +152,11 @@ void single_run(string filename, bool trace){
         deque<double> e_tracker, p_tracker;
         int Ntrack=50;
         vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
+        
+//        vector<vector<double>> pair_amp(mlength, vector<double>(nlength, 0.));
+//
+//        ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
+        
         for(int i=0;i<nMeas;i++){
             ll.step(nSteps);
             e=ll.coulomb_energy();
@@ -162,8 +177,22 @@ void single_run(string filename, bool trace){
                 p_tracker.pop_back();
             }
             ll.update_structure_factors();
+            
+//            for (int m=0; m<mlength; m++) {
+//                for (int n=0; n<nlength; n++) {
+////                    pair_amp[m][n]+=ll.pairamplitude(n, 0.25*m/NPhi)/(0.5*nMeas*Ne*(Ne-1));
+//                    pair_amp[m][n]+=ll.pairamplitude(n, m)/(0.5*nMeas*Ne*(Ne-1));
+//                }
+//            }
+            
         }
         ll.print_structure_factors(nMeas, "_"+to_string((long long int)s));
+//        for (int m=0; m<mlength; m++) {
+//            for (int n=0; n<NPhi; n++) {
+//                pairout<<pair_amp[m][n]<<endl;
+//            }
+//        }
+//        pairout.close();
         
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
@@ -183,13 +212,12 @@ void single_run(string filename, bool trace){
     eout.close();
     outfile.close();
 }
-
-void structurefactor(string intputfilename){//fielname='params_sq_...'.
+void pairamplitude(string filename, bool trace, int num_core) {
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, theta, alpha;
     string type;
-    ifstream infile(intputfilename);
+    ifstream infile(filename);
     infile>>Ne>>invNu>>theta_t>>alpha;
     infile>>nWarmup>>nMeas>>nSteps>>nBins;
     infile>>seed;
@@ -198,98 +226,201 @@ void structurefactor(string intputfilename){//fielname='params_sq_...'.
     //initialize MC object
     theta=theta_t*M_PI;
     
-    int gs=0;
+    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
     
-//    vector<vector<int>> strangeds;
-//    if (Ne==36) {
-//        for (int y=0; y<6; y++) {
-//            for (int x=-5+y; x<=5-y; x++) {
-//                strangeds.push_back(vector<int>{x, y});
-//            }
-//        }
-//        cout<<"strangeds.size="<<strangeds.size()<<endl;
-//    }
+    omp_set_num_threads(num_core);
     
-    
-//    LATTICE ll0(Ne, invNu, testing, type, seed, gs, 0.5*M_PI, 1.0);
-    LATTICE ll(Ne, invNu, testing, type, seed, gs, theta, alpha);
-    if (type=="CFL") {
-////        ll.set_ds(ll0.get_ds());
-//        ll.set_ds(strangeds);
-//        ll.print_ds();
+    vector<LATTICE> ll(num_core);
+    for (int i=0; i<num_core; i++) {
+        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
     }
     
-    if (Ne==49) {
-        vector<vector<int>> ds(49, vector<int>(2));
-        for (int y=0; y<7; y++) {
-            for (int x=0; x<7; x++) {
-                ds[x+y*7][0]=x-3;
-                ds[x+y*7][1]=y-3;
-            }
-        }
-        ll.set_ds(ds);
-    }
-    else if (Ne==36) {
-        vector<vector<int>> ds(36, vector<int>(2));
-        for (int y=0; y<6; y++) {
-            for (int x=0; x<6; x++) {
-                ds[x+y*6][0]=x-3;
-                ds[x+y*6][1]=y-3;
-            }
-        }
-        ll.set_ds(ds);
-    }
-    ll.print_ds();
-
-    ofstream outfile("out"), eout("energy");
-    for(int s=0;s<nBins;s++){
-        //        ll.change_dbar_parameter(s*0.1,s*0.1);
-        ll.reset();
-        ll.step(nWarmup);
-        double E=0,E2=0;
-        double P=0,P2=0,three=0;
-        double e ,p;
-        complex<double> berry_phase(0,0);
-        deque<double> e_tracker, p_tracker;
-        int Ntrack=50;
-        vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
-        for(int i=0;i<nMeas;i++){
-            ll.step(nSteps);
-            e=ll.coulomb_energy();
-            E+=e;
-            E2+=e*e;
-            p=ll.running_weight;
-            P+=p;
-            eout<<e<<endl;
-            //autocorrelations
-            e_tracker.push_front(e);
-            p_tracker.push_front(p);
-            if(i>=Ntrack){
-                for(int j=0;j<Ntrack;j++){
-                    autocorr_e[j]+=e_tracker[j]*e;
-                    autocorr_p[j]+=p_tracker[j]*p;
+    int mlength=50, nlength=10;//m=alpha, n=pair angular momentum.
+    int NPhi=Ne*invNu;
+//    int NPhi=30;
+    
+    //allowed momentum set on torus, got from ed code.
+    //use this to get matrix element by lattice summation over sigma function.
+//    vector<hop> hoplist_ed;//hoplist from ed, amplitude are laugerrel-gaussian with theta function.
+    vector<hop> hoplist_lat;//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
+    
+    ifstream hopinfile("pairamplitude/hoplist");
+//    vector<complex<double>> total(mlength);//the lattice-sum is 2 large, so normalized it a little bit.
+    while (!hopinfile.eof()) {
+        double re,im;
+        hop tmp;
+        tmp.list.resize(4);
+        hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
+        hopinfile>>re>>im;
+//        for (int a=0; a<mlength; a++) {
+        int a=mlength-2; a=0;
+            complex<double> sum;//lattice summation.
+            for (int x1=0; x1<NPhi*NPhi; x1++) {
+                for (int x2=0; x2<NPhi*NPhi; x2++) {
+                    int x11=x1/NPhi, x12=x1%NPhi, x21=x2/NPhi, x22=x2%NPhi;
+                    int x = ((x11-x21)%NPhi+NPhi)%NPhi;
+                    int y = ((x12-x22)%NPhi+NPhi)%NPhi;
+                    
+//                    if (tmp.list[0]==0 && tmp.list[1]==1 && tmp.list[2]==0 && tmp.list[3]==1) {
+//                        cout<<"output: x1,x2,x,y,x11,x12,x21,x22="<<x1<<" "<<x2<<" "<<x<<" "<<y<<" "<<x11<<" "<<x12<<" "<<x21<<" "<<x22<<endl;
+//                    }
+                    
+                    sum+=
+                    0.5*ll[0].laguerretable[1][a][x][y]
+                    *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+                    *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+                    *ll[0].landautable[tmp.list[2]][x21][x22]
+                    *ll[0].landautable[tmp.list[3]][x11][x12];
+                    
+                    sum+=
+                    0.5*ll[0].laguerretable[1][a][x][y]
+                    *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+                    *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+                    *ll[0].landautable[tmp.list[3]][x21][x22]
+                    *ll[0].landautable[tmp.list[2]][x11][x12];
+                    
+                    sum-=
+                    0.5*ll[0].laguerretable[1][a][x][y]
+                    *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+                    *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+                    *ll[0].landautable[tmp.list[2]][x21][x22]
+                    *ll[0].landautable[tmp.list[3]][x11][x12];
+                    
+                    sum-=
+                    0.5*ll[0].laguerretable[1][a][x][y]
+                    *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+                    *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+                    *ll[0].landautable[tmp.list[3]][x21][x22]
+                    *ll[0].landautable[tmp.list[2]][x11][x12];
+                    
+                    
+                    
+//                    if (tmp.list[0]==7 && tmp.list[1]==8 && tmp.list[2]==7 && tmp.list[3]==8 && x1==78 && (x2==14||x2==13)) {
+//                        cout<<"x2="<<x2<<endl;
+//                        cout<<ll[0].laguerretable[1][a][x][y]<<" "<<conj(ll[0].landautable[tmp.list[0]][x11][x12])<<" "<<conj(ll[0].landautable[tmp.list[1]][x21][x22])<<" "<<ll[0].landautable[tmp.list[2]][x21][x22]<<" "<<ll[0].landautable[tmp.list[3]][x11][x12]<<endl<<endl;
+//                    }
+                    
+//                    cout<<"hoplist0123, x1, x2, value = "<<tmp.list[0]<<" "<<tmp.list[1]<<" "<<tmp.list[2]<<" "<<tmp.list[3]<<", ";
+//                    cout<<x1<<" "<<x2<<", "<<0.5*ll[0].laguerretable[1][a][x][y]
+//                    *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+//                    *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+//                    *ll[0].landautable[tmp.list[2]][x21][x22]
+//                    *ll[0].landautable[tmp.list[3]][x11][x12]<<endl;
+//                    sum+=
+//                    0.5*laguerre( 1, 1.*((x1/NPhi-x2/NPhi)*(x1/NPhi-x2/NPhi) + (x1%NPhi-x2%NPhi)*(x1%NPhi-x2%NPhi))*2.*M_PI/NPhi )
+//                    *conj(ll[0].landautable[tmp.list[0]][x1/NPhi][x1%NPhi])
+//                    *conj(ll[0].landautable[tmp.list[1]][x2/NPhi][x2%NPhi])
+//                    *ll[0].landautable[tmp.list[2]][x2/NPhi][x2%NPhi]
+//                    *ll[0].landautable[tmp.list[3]][x1/NPhi][x1%NPhi];
+                    
+//                    x=abs(x11-x21);
+//                    y=abs(x21-x22);
+                    
+//                    sum+=
+//                    0.5*(ll[0].laguerretable[1][a][x][y]+3.*ll[0].laguerretable[3][a][x][y])
+//                    *conj(ll[0].landautable[tmp.list[0]][x1/NPhi][x1%NPhi])
+//                    *conj(ll[0].landautable[tmp.list[1]][x2/NPhi][x2%NPhi])
+//                    *ll[0].landautable[tmp.list[2]][x2/NPhi][x2%NPhi]
+//                    *ll[0].landautable[tmp.list[3]][x1/NPhi][x1%NPhi];
+                    
                 }
-                e_tracker.pop_back();
-                p_tracker.pop_back();
             }
-            ll.update_structure_factors();
-        }
-        ll.print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)s));
-        
-        outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
-        cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
-        
-        ofstream auto_out("auto");
-        for(int j=0;j<Ntrack;j++){
-            auto_out<<j+1<<" ";
-            auto_out<<autocorr_e[j]/(1.*(nMeas-Ntrack))<<" "<<pow(E/(1.*nMeas),2)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))<<" ";
-            //            auto_out<<autocorr_p[j]/(1.*(nMeas-Ntrack))<<" "<<pow(P/(1.*nMeas),2)<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<" ";
-            auto_out<<endl;
+
+        tmp.ele.push_back(sum);
+//        }
+        hoplist_lat.push_back(tmp);
+    }
+    hopinfile.close();
+    hoplist_lat.pop_back();
+    
+    /*
+    //to make matrix element smaller by dividing over average. use this is necessary.
+    vector<complex<double>> temp(hoplist_lat[0].ele.size());
+    for (int i=0; i<hoplist_lat.size(); i++) {
+        for (int j=0; j<hoplist_lat[0].ele.size(); j++) {
+            temp[j]+=hoplist_lat[i].ele[j]/(1.*hoplist_lat[0].ele.size());
         }
     }
-    outfile<<endl;
-    eout.close();
-    outfile.close();
+    for (int i=0; i<hoplist_lat.size(); i++) {
+        for (int j=0; j<hoplist_lat[0].ele.size(); j++) {
+            hoplist_lat[i].ele[j]/=temp[j];
+        }
+    }
+     */
+
+    ofstream outhop("pairamplitude/hoplist_lat");
+    for (int i=0; i<hoplist_lat.size(); i++) {
+        outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
+        for (int k=0; k<hoplist_lat[i].ele.size(); k++)
+            outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
+        outhop<<endl;
+    }
+    
+    /*
+  //this is for monte-carlo calculation of pair-amplitude.
+#pragma omp parallel for
+    for(int s=0;s<nBins;s++){
+        int coren=omp_get_thread_num();
+        //        printf("coren=%d\n",coren);
+        //        ll[coren].change_dbar_parameter(s*0.1,s*0.1);
+        ll[coren].reset();
+        ll[coren].step(nWarmup);
+        
+        vector<vector<double>> pair_amp(mlength, vector<double>(nlength, 0.));
+        ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
+        
+        for(int i=0;i<nMeas;i++){
+            ll[coren].step(nSteps);
+//            ll[coren].update_structure_factors();
+            for (int m=0; m<mlength; m++) {
+                for (int n=0; n<nlength; n++) {
+                    pair_amp[m][n]+=ll[coren].pairamplitude(n, m)/(0.5*nMeas*Ne*(Ne-1));
+                }
+            }
+        }
+//        ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
+        for (int m=0; m<mlength; m++) {
+            for (int n=0; n<nlength; n++) {
+                pairout<<pair_amp[m][n]<<endl;
+            }
+        }
+        pairout.close();
+    }
+     */
+}
+void generate_pseu_matrix(string filename){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    double theta_t, theta, alpha;
+    string type;
+    ifstream infile(filename);
+    infile>>Ne>>invNu>>theta_t>>alpha;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    theta=theta_t*M_PI;
+    int NPhi=Ne*invNu;
+    
+    LATTICE ll(Ne, invNu, testing, type, seed, 0, theta, alpha);//gs=0.
+    int mlength=50, nlength=10;
+    for (int m=0; m<mlength; m++) {
+        ofstream outfile ("pseumatrix/pasumatrix_"+to_string((long long int)m));
+        for (int n=0; n<nlength; n++) {
+            complex<double> ret;
+            for (int i=0; i<NPhi*NPhi; i++) {
+                for (int j=0; j<NPhi*NPhi; j++) {
+//                    ret+=ll.landautable[]
+                    //landautable[n][x][y], n is landau level index.
+                    //laguerretable[n][a][x][y] n is Laguerrel polynomial index, a is alpha.
+                }
+            }
+            outfile<<endl;
+        }
+        outfile.close();
+    }
+    
 }
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
@@ -338,7 +469,6 @@ void structurefactor(string intputfilename, int num_core){//fielname='params_sq_
         ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
     }
 }
-
 
 //Energetics.
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename){
@@ -1263,7 +1393,7 @@ void ParticleHoleSym(){
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
     vector<LATTICE> cfl1(invNu), cfl2(invNu);
-    for (unsigned gs=0; gs<invNu; gs++) {
+    for (int gs=0; gs<invNu; gs++) {
         cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
         cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
     }
@@ -1274,7 +1404,7 @@ void ParticleHoleSym(){
     
     //monte carlo.
     complex<double> testdouble=0, testdouble_denom=0;
-    for (unsigned nbin=0; nbin<nBins; nbin++) {
+    for (int nbin=0; nbin<nBins; nbin++) {
         vector<Eigen::MatrixXcd> overlaps(2, Eigen::MatrixXcd::Zero(invNu, invNu));
         //overlaps[0][m][n]=<FLL|cfl1[m]*cfl2[n]>, overlaps[1][m][n]=<|FLL|cfl1[m]*cfl2[n]|^2>.
         
@@ -1439,7 +1569,7 @@ void ParticleHoleSym2(){
 }
 //Particle Hole Symmetry (Ne9, maximal symmetric ds).
 void Explicit(){
-    int Ne, invNu, seed; bool testing; string type;
+    int Ne, invNu, seed; bool testing=false; string type;
     ifstream infile("params");
     //initialize MC object
     
