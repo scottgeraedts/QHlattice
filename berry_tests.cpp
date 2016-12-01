@@ -554,7 +554,7 @@ void CFL_ne5_energy_var(int nMeas, int nBins, int num_core){
     //Initialize cfls. Write things into n different files, to avoid mass up during omp.
     vector<string> filename(n);
     vector<LATTICE> cfls(n);
-    for (unsigned i=0; i<n; i++) {
+    for (int i=0; i<n; i++) {
         cfls[i]=LATTICE(Ne, invNu, false, "CFL", seed, gs);
     }
     
@@ -575,7 +575,7 @@ void CFL_ne5_energy_var(int nMeas, int nBins, int num_core){
     
     //combine outfiles.
     ofstream combine("cflne5evar/cflne5evar"); combine.close();
-    for (unsigned i=0; i<n; i++) {
+    for (int i=0; i<n; i++) {
         ofstream combine("cflne5evar/cflne5evar", ios::out| ios::app);
         ifstream infile(filename[i]);
         string str;
@@ -739,7 +739,7 @@ void laughlinberryphase(string output_name, vector<double> length, double steple
     vector<vector<LATTICE> > ll(num_core, vector<LATTICE>(invNu)), pp(num_core, vector<LATTICE>(invNu));//do this to avoid wrong memory access since openmp share memory.
     for (int k=0; k<num_core; k++) for (int i=0; i<invNu; i++) {ll[k][i]=LATTICE(Ne, invNu, testing, type, seed, i, theta, alpha); pp[k][i]=LATTICE(Ne, invNu, testing, type, seed, i, theta, alpha);}
     
-    for (unsigned nbin=0; nbin<nBins; nbin++) {
+    for (int nbin=0; nbin<nBins; nbin++) {
         //parallel programming begin.
 #pragma omp parallel for
         for(int b=0; b<nds; b++) {
@@ -1174,7 +1174,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
             pp[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i, theta, alpha);
         }
     
-    for (unsigned nbin=0; nbin<nBins; nbin++) {
+    for (int nbin=0; nbin<nBins; nbin++) {
         //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
         vector<vector<Eigen::MatrixXcd > > overlaps(nds, vector<Eigen::MatrixXcd>(4, Eigen::MatrixXcd::Zero(invNu,invNu) ) );
         
@@ -1477,7 +1477,7 @@ void ParticleHoleSymBackwards(){
 //    cfl1[1].print_ws();
     
     //monte carlo.
-    for (unsigned int nbin=0; nbin<nBins; nbin++) {
+    for (int nbin=0; nbin<nBins; nbin++) {
         vector<complex<double> > overlaps(2, 0);
         //overlaps[0][m][n]=<FLL|cfl1[m]*cfl2[n]>, overlaps[1][m][n]=<|FLL|cfl1[m]*cfl2[n]|^2>.
         
@@ -1525,10 +1525,10 @@ void ParticleHoleSym2(){
     //We will see if overlap with cfl2 after projection is close to 1 or not.
     vector<wf_info> wfs(2);
     wfs[0]=wf_info(false, false, 0, Ne/invNu, 1);
-	wfs[0].wf=LATTICE(params);
+	wfs[0].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 0);
 	//wfs[0].wf.trace=1;
 	wfs[1]=wf_info(false, false, Ne/invNu, Ne, -1);
-	wfs[1].wf=LATTICE(params);
+	wfs[1].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 1);
 	//wfs[1].wf.trace=-1;
 	//wfs[2]=wf_info(true, false, 0, Ne, 1);
 	//wfs[2].wf=LATTICE(Ne, 1, testing, "laughlin", seed, 0);
@@ -1540,7 +1540,7 @@ void ParticleHoleSym2(){
 	double denom=0, denom1, denom2;
 	complex<double> tmp, num=0;
 
-    for (unsigned nbin=0; nbin<nBins; nbin++) {
+    for (int nbin=0; nbin<nBins; nbin++) {
         vector<Eigen::MatrixXcd> overlaps(2, Eigen::MatrixXcd::Zero(invNu, invNu));
         
         num=0; denom1=0; denom2=0;
@@ -1577,7 +1577,7 @@ void Explicit(){
     int Ne1=Ne/2, Ne2=Ne-Ne1;
     
     vector<LATTICE> cfl1(invNu), cfl2(invNu);
-    for (unsigned gs=0; gs<invNu; gs++) {
+    for (int gs=0; gs<invNu; gs++) {
         cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
         //cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
     }
@@ -1683,7 +1683,7 @@ void GetCoefficient(vector<int> landauwfindex){
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
     vector<LATTICE> cfl1(invNu), cfl2(invNu);
-    for (unsigned gs=0; gs<invNu; gs++) {
+    for (int gs=0; gs<invNu; gs++) {
         cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
 //        cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
     }
@@ -1703,7 +1703,7 @@ void GetCoefficient(vector<int> landauwfindex){
     vector<double> latticeshift(2);
     
     //monte carlo.
-    for (unsigned nbin=0; nbin<nBins; nbin++) {
+    for (int nbin=0; nbin<nBins; nbin++) {
         vector<complex<double>> overlaps(2);
         //overlaps[0]=<FLL|cfl1[0]*landauwf>, overlaps[1]=<|FLL|cfl1[0]*landauwf|^2>.
         

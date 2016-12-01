@@ -26,6 +26,7 @@ LATTICE::LATTICE(LATTICE_PARAMS params){
 
 	init(params.seed);
 }
+
 LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t, bool trace_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t),trace(trace_t){
 
 	
