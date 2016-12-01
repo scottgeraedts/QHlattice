@@ -86,6 +86,10 @@ public:
     void print_laguerreltable();
     vector<vector<vector<vector<double>>>> laguerretable;
     vector<vector<vector<complex<double>>>> landautable;
+    
+    void setup_laguerre_con();
+    void setup_laguerre_lat();
+    void setup_landautable();
 
 	//initialization related functions
 	void make_fermi_surface(double* center_frac, int N);
@@ -140,9 +144,6 @@ private:
     double in_determinant_rescaling;
 	void sum_locs(int []);
 	void setup_coulomb();
-    void setup_laguerre_con();
-    void setup_laguerre_lat();
-    void setup_landautable();
     
 	int simple_update();// returns '1' if updated, '0' if not updated.
 	int p(int); int m(int);

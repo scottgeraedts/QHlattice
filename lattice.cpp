@@ -99,8 +99,6 @@ void LATTICE::init(int seed){
     //*********************
     //To Avoid Bugs, 'set_ws' must be followed by 'set_ds', 'change_dbar_parameter' must following 'set_ds'.
 
-
-
 	//*****some counters
 	setup_coulomb();
     omega=vector<complex<double>>(2*NPhi);
@@ -114,15 +112,7 @@ void LATTICE::init(int seed){
     SMAq=vector<vector<double>>(NPhi, vector<double>(NPhi, 0.));
 //	sq3=vector<vector<vector<vector<complex<double>>>>>(NPhi, vector<vector<vector<complex<double>>>>(NPhi, vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0))));
     //comment out sq3, otherwise memory exceed easilly for large invNu state.
-    
-    cout<<"setup laguerretable"<<endl;
-    setup_laguerre_lat();
-    setup_laguerre_con();
-    print_laguerreltable();
-    cout<<"setup lanautable"<<endl;
-    setup_landautable();
-    print_landautable();
-    cout<<"finish iniatilziation"<<endl;
+
 }
 double LATTICE::get_in_det_rescaling(int Ne, int invNu){
     double rescaling=1.;

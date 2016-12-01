@@ -235,6 +235,16 @@ void pairamplitude(string filename, bool trace, int num_core) {
         ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
     }
     
+    cout<<"setup laguerretable"<<endl;
+    ll[0].setup_laguerre_lat();
+    ll[0].setup_laguerre_con();
+    ll[0].print_laguerreltable();
+    cout<<"setup lanautable"<<endl;
+    ll[0].setup_landautable();
+    ll[0].print_landautable();
+    cout<<"finish iniatilziation"<<endl;
+    
+    
     int mlength=50, nlength=10;//m=alpha, n=pair angular momentum.
     int NPhi=Ne*invNu;
 //    int NPhi=30;
@@ -292,36 +302,6 @@ void pairamplitude(string filename, bool trace, int num_core) {
                     *conj(ll[0].landautable[tmp.list[1]][x21][x22])
                     *ll[0].landautable[tmp.list[3]][x21][x22]
                     *ll[0].landautable[tmp.list[2]][x11][x12];
-                    
-                    
-                    
-//                    if (tmp.list[0]==7 && tmp.list[1]==8 && tmp.list[2]==7 && tmp.list[3]==8 && x1==78 && (x2==14||x2==13)) {
-//                        cout<<"x2="<<x2<<endl;
-//                        cout<<ll[0].laguerretable[1][a][x][y]<<" "<<conj(ll[0].landautable[tmp.list[0]][x11][x12])<<" "<<conj(ll[0].landautable[tmp.list[1]][x21][x22])<<" "<<ll[0].landautable[tmp.list[2]][x21][x22]<<" "<<ll[0].landautable[tmp.list[3]][x11][x12]<<endl<<endl;
-//                    }
-                    
-//                    cout<<"hoplist0123, x1, x2, value = "<<tmp.list[0]<<" "<<tmp.list[1]<<" "<<tmp.list[2]<<" "<<tmp.list[3]<<", ";
-//                    cout<<x1<<" "<<x2<<", "<<0.5*ll[0].laguerretable[1][a][x][y]
-//                    *conj(ll[0].landautable[tmp.list[0]][x11][x12])
-//                    *conj(ll[0].landautable[tmp.list[1]][x21][x22])
-//                    *ll[0].landautable[tmp.list[2]][x21][x22]
-//                    *ll[0].landautable[tmp.list[3]][x11][x12]<<endl;
-//                    sum+=
-//                    0.5*laguerre( 1, 1.*((x1/NPhi-x2/NPhi)*(x1/NPhi-x2/NPhi) + (x1%NPhi-x2%NPhi)*(x1%NPhi-x2%NPhi))*2.*M_PI/NPhi )
-//                    *conj(ll[0].landautable[tmp.list[0]][x1/NPhi][x1%NPhi])
-//                    *conj(ll[0].landautable[tmp.list[1]][x2/NPhi][x2%NPhi])
-//                    *ll[0].landautable[tmp.list[2]][x2/NPhi][x2%NPhi]
-//                    *ll[0].landautable[tmp.list[3]][x1/NPhi][x1%NPhi];
-                    
-//                    x=abs(x11-x21);
-//                    y=abs(x21-x22);
-                    
-//                    sum+=
-//                    0.5*(ll[0].laguerretable[1][a][x][y]+3.*ll[0].laguerretable[3][a][x][y])
-//                    *conj(ll[0].landautable[tmp.list[0]][x1/NPhi][x1%NPhi])
-//                    *conj(ll[0].landautable[tmp.list[1]][x2/NPhi][x2%NPhi])
-//                    *ll[0].landautable[tmp.list[2]][x2/NPhi][x2%NPhi]
-//                    *ll[0].landautable[tmp.list[3]][x1/NPhi][x1%NPhi];
                     
                 }
             }
@@ -1520,7 +1500,7 @@ void ParticleHoleSym2(){
     params.w_delta=0.;
     params.testing=testing;
     params.seed=seed;
-    
+
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
     vector<wf_info> wfs(2);
@@ -1535,7 +1515,7 @@ void ParticleHoleSym2(){
 	LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);
 
 	LATTICE_WRAPPER ll(Ne, wfs, seed, testing);
-	    
+
     //monte carlo.
 	double denom=0, denom1, denom2;
 	complex<double> tmp, num=0;

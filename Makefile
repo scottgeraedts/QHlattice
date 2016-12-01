@@ -1,23 +1,18 @@
-# ARPACK++ v1.2 2/18/2000
-# c++ interface to ARPACK code.
-# examples/product/simple directory makefile.
+CC=g++ -std=c++11
+HERE = /Users/jiewang/Google\ Drive/jie_programs/QHlattice
+CLIBRARY = /Users/jiewang/Google\ Drive/jie_programs/Scott_Clibrary
+EIGEN = /Users/jiewang/Google\ Drive/jie_programs/eigen/
+CFLAGS = -I$(HERE) -I$(CLIBRARY) -I$(EIGEN)
+LIBS=-L/usr/local/lib/gcc/4.9 -lgfortran 
 
-# including other makefiles.
-CC=g++ -g  -fopenmp 
-HERE = /home/sgeraedt/QHlattice
-MYDIR = /home/sgeraedt/myClibrary/
-CFLAGS=-std=c++11 -Wall -I$(HERE) -I$(MYDIR)
-LIBS=  -lgfortran $(MYDIR)/utils.o
-OBJECTS=main.o lattice.o berry_tests.o z_function_m.o wf_tools.o new_coulomb_m.o weir3.o lattice_wrapper.o
-
-a.out: $(OBJECTS)
-	$(CC) -O3 $(CFLAGS) -o a.out $(OBJECTS) $(LIBS)
+a.out: main.o lattice.o berry_tests.o lattice_wrapper.o weir3.o z_function_m.o new_coulomb_m.o wf_tools.o
+	$(CC) -O3 $(CFLAGS) -fopenmp -o result z_function_m.o new_coulomb_m.o wf_tools.o lattice.o berry_tests.o lattice_wrapper.o weir3.o main.o $(CLIBRARY)/utils.o $(LIBS)
 	
 clean:
-	rm -f *~ *.o *.mod a.out
+	rm -f *~ *.o a.out
 
 %.o:	%.cpp
-	$(CC) -O3 $(CFLAGS) -c $<
+	$(CC) -w -O3 -fopenmp $(CFLAGS) -c $<
 
 %.o:	%.f90
 	gfortran -O3 $(CFLAGS) -c $<

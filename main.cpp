@@ -9,9 +9,9 @@ bool IsOdd (int i) {
 }
 int main(){
 //    double theta=0.5*M_PI, alpha=1.0;
-    int num_core=1;
+    int num_core=2;
 //    CFL_berry_phases_parallel("params", "ne8bp", num_core, "fullloop", theta, alpha);//params_name, output_name, num_core, kind.
-	ParticleHoleSym2();
+//	ParticleHoleSym2();
 
 //    double theta=0.333333333333*M_PI, alpha=1.0;
 
