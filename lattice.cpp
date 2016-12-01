@@ -67,7 +67,7 @@ void LATTICE::init(int seed){
 	if(type=="CFL" or type=="doubledCFL"){
 		if(Ne%2==0){center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
 		make_fermi_surface(center_frac, Ne);
-//        print_ds();
+        print_ds();
 	}
     else if (type=="laughlin" || type=="laughlin-hole" || type=="FilledLL" ) {
         ds.clear();
@@ -78,10 +78,10 @@ void LATTICE::init(int seed){
     //in the y direction these take the values gs*L/invNu, where gs in (0,invNu-1) is an integer which labels the ground state
     ws0=vector< vector<double> > (invNu, vector<double>(2,0) );
     for( int i=0;i<invNu;i++){
-        ws0[i][0]=((i+0.5)/(1.*invNu)-0.5)+real(w_delta);
-        ws0[i][1]=gs/(1.*invNu)+imag(w_delta);
+        ws0[i][0]=((i+0.5)/(1.*invNu)-0.5)+real(w_delta)*lil_sign(gs)*lil_sign(i);
+        ws0[i][1]=imag(w_delta)*lil_sign(gs)*lil_sign(i);
     }
-    
+    if(type=="CFL") for(int i=0; i<Ne; i++) ds[i][1]+=gs;
     if (type=="CFL" or type=="doubledCFL") set_ds(ds);//set ds, and reset ws.
     else if (type=="FilledLL") set_zeros(vector<double>{0., 0.});
     else ws=ws0;
@@ -716,7 +716,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                     out*=temp;
                 }
                 if (type=="laughlin") out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                else if (type=="CFL") out*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                //else if (type=="CFL") out*=exp(-1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
             }
         }
         else {

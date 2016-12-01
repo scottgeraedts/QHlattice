@@ -20,14 +20,14 @@ int main(){
 //	LATTICE_PARAMS params(Ne);
 //	infile>>params.testing;
 
-//	for(int i=0;i<5;i++){
+//	for(int i=0;i<2;i++){
 //		params.w_delta=0.;
 //		LATTICE ll(params);
 //		coul_energy(ll, nWarmups, nMeas, nSteps, nBins, "out");
-//		params.w_delta+=0.2/(1.*invNu*Ne);
+//		params.w_delta+=0.5;
 //	}
-	ParticleHoleSym2();
-
+//	ParticleHoleSym2();
+	Explicit();
 //    double theta=0.333333333333*M_PI, alpha=1.0;
 
 //    vector<double> length;
