@@ -88,9 +88,10 @@ void LATTICE::init(int seed){
     ws0=vector< vector<double> > (invNu, vector<double>(2,0) );
     for( int i=0;i<invNu;i++){
         ws0[i][0]=((i+0.5)/(1.*invNu)-0.5)+real(w_delta)*lil_sign(gs)*lil_sign(i);
-        ws0[i][1]=imag(w_delta)*lil_sign(gs)*lil_sign(i);
+        ws0[i][1]=gs/(1.*invNu)+imag(w_delta)*lil_sign(gs)*lil_sign(i);
     }
-    if(type=="CFL") for(int i=0; i<Ne; i++) ds[i][1]+=gs;
+    //alternatively, in the CFL case we can access different ground states by moving the ds (to do this uncomment the next line)
+   // if(type=="CFL") for(int i=0; i<Ne; i++) ds[i][1]+=gs;
     if (type=="CFL" or type=="doubledCFL") set_ds(ds);//set ds, and reset ws.
     else if (type=="FilledLL") set_zeros(vector<double>{0., 0.});
     else ws=ws0;
@@ -725,7 +726,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                     out*=temp;
                 }
                 if (type=="laughlin") out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-                //else if (type=="CFL") out*=exp(-1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+                else if (type=="CFL") out*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
             }
         }
         else {
