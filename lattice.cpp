@@ -22,6 +22,7 @@ LATTICE::LATTICE(LATTICE_PARAMS params){
 	alpha=params.alpha;
 	trace=params.trace;
 	w_delta=params.w_delta;
+	dbar_delta=params.dbar_delta;
 	testing=params.testing;
 
 	init(params.seed);
@@ -487,11 +488,12 @@ vector<int> LATTICE::random_move( const vector<int> &in, int NPhi_t, MTRand &ran
 	vector<int>newloc(2);
 
 	//the stupidest way to do this
-//	newloc[0]=ran.randInt(NPhi-1);
-//	newloc[1]=ran.randInt(NPhi-1);
+//	int rint=ran_t.randInt( NPhi_t*NPhi_t-1);
+//	newloc[0]=rint/NPhi_t;
+//	newloc[1]=rint%NPhi_t;
+//	return newloc;
 
-	int hoplength=2;
-//	if(Ne<10) hoplength=2;
+	int hoplength=1;
 	int n=pow(2*hoplength+1,2)-1;
 	vector<int> newx(n),newy(n);
 	vector<double> newprob(n);
@@ -1288,7 +1290,7 @@ void LATTICE::set_ds(vector< vector<int> > tds){
         dsum[0]+=ds[i][0]*invNu; dsum[1]+=ds[i][1]*invNu; //'ds' is on L/Ne lattice, 'dsum' is on L/Nphi lattice.
 	}
 	print_ds();
-	change_dbar_parameter(dsum[0]/(1.*Ne),dsum[1]/(1.*Ne));
+	change_dbar_parameter(dsum[0]/(1.*Ne)+real(dbar_delta),dsum[1]/(1.*Ne)+imag(dbar_delta));
     
     
     //reset ws, according to ds.
@@ -1381,6 +1383,9 @@ complex<double> LATTICE::modded_lattice_z(int x, int y){
 //	complex<double> out=lattice_z_(&NPhi,&modx,&mody,&L1,&L2,&one);
 	complex<double> out=shifted_ztable[modx][mody];
 	int j=(modx-x)/NPhi, k=(mody-y)/NPhi;
+	
+	//the reason this isn't tabulated is because dbar_parameter doesn't have to live on a lattice
+	//but could make a new table, it would make the code slightly faster
 ///	out*=omega[supermod(-(mody+dbar_parameter[1])*j+(modx+dbar_parameter[0])*k,2*NPhi)];
 	out*=polar(1., (-(mody+dbar_parameter[1])*j+(modx+dbar_parameter[0])*k)*M_PI/(1.*NPhi));
 	if(j%2 || k%2) return -out;

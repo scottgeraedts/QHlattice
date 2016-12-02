@@ -36,7 +36,7 @@ class LATTICE_PARAMS{
 public:
 	int Ne, invNu, seed, gs;
 	double theta, alpha;
-	complex<double> w_delta;
+	complex<double> w_delta, dbar_delta;
 	bool testing, trace;
 	string type;
 	LATTICE_PARAMS( int Ne_t){
@@ -50,6 +50,7 @@ public:
 		trace=false;
 		type="CFL";
 		w_delta=0;
+		dbar_delta=0;
 	}
 };
 	
@@ -62,7 +63,6 @@ public:
 	~LATTICE();
 
 	int Ne, NPhi;
-	complex<double> w_delta; //an offset to the COM zeros
 	double running_weight;//running_weight is a global variable. need reset in every run.
     int tries,accepts;
     complex<double> getL(int dir);
@@ -154,6 +154,7 @@ private:
 
     complex<double> L1,L2;
 	int invNu;
+	complex<double> w_delta, dbar_delta; //an offset to the COM zeros, and to the zeros in the determinant
 	string type;
     int gs;
     double theta, alpha;
@@ -194,14 +195,17 @@ public:
 
 class LATTICE_WRAPPER{
 public:
-	LATTICE_WRAPPER(int Ne, vector<wf_info> &wfs_t, int seed, bool testing);
+	LATTICE_WRAPPER(int Ne, vector<vector<wf_info>> &wfs_t, int seed, bool testing);
 	int step(int);
-	complex<double> get_wf();
+	int step_fromwf(int);
+	complex<double> get_wf(), get_wf(const vector<vector<int> > &tempzs);
+	complex<double> get_wf(int i, int j), get_wf(int i, int j, const vector<vector<int>> &tempzs);
 	void reset();
+	void acceptance_rate();
 	vector< vector<int> > get_zs();
 	vector< vector<int> > hot_start();
+	vector<vector<wf_info>> wfs;
 private:
-	vector<wf_info> wfs;
 	
 	bool testing;
 	int Ne; //assume Ne=NPhi
