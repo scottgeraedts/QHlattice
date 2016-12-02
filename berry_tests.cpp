@@ -1551,9 +1551,8 @@ void ParticleHoleSym2(){
 //		num/=sqrt(denom);
 		num/=sqrt(denom1*denom2);
 
-        cout<<"nbin="<<nbin<<endl;
-        cout<<abs(num)<<endl;
-		cout<<1.-abs(num)*sqrt(comb(Ne,Ne/invNu))<<endl<<endl;
+        cout<<abs(num)<<" ";
+		cout<<1.-abs(num)*sqrt(comb(Ne,Ne/invNu))<<endl;
     }
     ll.acceptance_rate();
 }
