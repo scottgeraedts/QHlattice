@@ -131,7 +131,7 @@ public:
     complex<double> doubled_CFL(const vector<vector<int>> &zs);
     
     //stuff for lattice_wrapper
-    double update_weight(const vector<vector<int>> &zs, int electron, vector<int> newz);
+    complex<double> update_weight(const vector<vector<int>> &zs, int electron, vector<int> newz);
     void update();
 	static vector< vector<int> > hot_start(int NPhi_t, int Ne_t, MTRand &ran);
 	static vector<int> random_move(const vector<int> &oldsite, int NPhi_t, MTRand &ran_t);
@@ -214,6 +214,7 @@ private:
 	int tries,accepts;
 	double running_weight;
 	MTRand ran;
+	vector<vector<complex<double>>> oldweight;
 };
 
 #endif

@@ -26,8 +26,8 @@ int main(){
 //		coul_energy(ll, nWarmups, nMeas, nSteps, nBins, "out");
 //		params.w_delta+=0.5;
 //	}
-	ParticleHoleSym2();
-//	Explicit();
+//	ParticleHoleSym2();
+	Explicit();
 //    double theta=0.333333333333*M_PI, alpha=1.0;
 
 //    vector<double> length;

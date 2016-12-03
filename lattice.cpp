@@ -37,6 +37,10 @@ LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed,
 }
 void LATTICE::init(int seed){
 
+	if(trace)
+		cout<<"WARNING! Trace=true is no longer supported, use lattice_wrapper instead"<<endl;
+	
+
 	//various parameters from input file
  	NPhi=Ne*invNu;
 	if(type=="laughlin-hole") NPhi++;
@@ -347,13 +351,8 @@ int LATTICE::simple_update(){
 
 //very similar to simple update (above), but it uses a provided set of zs, instead of this objects version
 //and it is also provided with an position to update
-double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vector<int> newloc){
-	double prob=0;
-	complex<double> temp;
-//	cout<<endl;
-//	for(auto it=zs.begin(); it!=zs.end(); ++it){
-//		cout<<"("<<(*it)[0]<<","<<(*it)[1]<<") ";
-//	}cout<<endl<<electron<<" ("<<newloc[0]<<","<<newloc[1]<<")"<<endl;
+complex<double> LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vector<int> newloc){
+	complex<double> out=1., temp;
 
     //***************hole part
     double dx,dy; //TODO: this calls z_function every time, should speed that up
@@ -361,13 +360,13 @@ double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vec
         dx=(zs[electron][0]/(1.*NPhi)-hole[0]);
         dy=(zs[electron][1]/(1.*NPhi)-hole[1]);
         z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-        prob-=log(norm(temp));
+		out/=temp;
         dx=(newloc[0]/(1.*NPhi)-hole[0]);
         dy=(newloc[1]/(1.*NPhi)-hole[1]);
         z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-        prob+=log(norm(temp));
+		out*=temp;
     }
-        
+       
     //***************vandermode part
     int vandermonde_exponent=invNu;
     if(type=="CFL") vandermonde_exponent-=2;
@@ -383,7 +382,7 @@ double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vec
                 xi=-xi; yi=-yi;
             }
             temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
-            prob-=log(norm( pow(temp,vandermonde_exponent) ));
+            out/=pow(temp,vandermonde_exponent);
             
             //multiply new part
             xi=(zs[i][0]-newloc[0]);
@@ -392,9 +391,10 @@ double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vec
                 xi=-xi; yi=-yi;
             }
             temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
-            prob+=log(norm( pow(temp,vandermonde_exponent) ));
+            out*=pow(temp,vandermonde_exponent);
         }
     }
+
     //***************COM PART
     int oldCOM[2]={0,0}, newCOM[2];
     for(auto it=zs.begin(); it!=zs.end(); ++it){
@@ -411,11 +411,11 @@ double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vec
 		        dx=oldCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
 		        dy=oldCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
 		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-		        prob-=log(norm(temp));
+		        out/=temp;
 		        dx=newCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
 		        dy=newCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
 		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-		        prob+=log(norm(temp));
+				out*=temp;
 		    }
 		}else{
 		    double dx,dy;
@@ -423,13 +423,22 @@ double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vec
 		        dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
 		        dy=oldCOM[1]/(1.*NPhi)-ws[i][1];
 		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-		        prob-=log(norm(temp));
+		        out/=temp;
 		        dx=newCOM[0]/(1.*NPhi)-ws[i][0];
 		        dy=newCOM[1]/(1.*NPhi)-ws[i][1];
 		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-		        prob+=log(norm(temp));
+				out*=temp;
 		    }
-		}
+		
+			//the jie phase
+		    vector<double> wsum(2); for (int i=0; i<invNu; i++) for (int j=0; j<2; j++) wsum[j]+=ws[i][j];
+		    complex<double> w_comp = wsum[0]*L1+wsum[1]*L2, dsum_comp;
+		    complex<double> zcom_comp=1.*(newCOM[0]-oldCOM[0])/NPhi*L1+1.*(newCOM[1]-oldCOM[1])/NPhi*L2;
+		    if (type=="CFL") dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L2;
+
+            if (type=="laughlin") out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+            else if (type=="CFL") out*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+    	}
 	}else {
         if (type=="laughlin-hole") {
             cout<<" 'trace' is not set up for laughlin-hole"<<endl;
@@ -453,7 +462,7 @@ double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vec
             else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
             sum+=product;
         }
-        prob-=log(norm(sum));
+        out/=sum;
        	sum=0.;
         for (int k=0; k<invNu; k++) {
         	product=1.;
@@ -470,16 +479,16 @@ double LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vec
             else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
             sum+=product;
         }
-        prob+=log(norm(sum));
+		out*=sum;
     }
 
     if(type=="CFL"){
     	newMatrix=oldMatrix;
         make_CFL_det(newMatrix, newloc, electron, newDeterminant, zs);
-        prob+=log(norm(newDeterminant/oldDeterminant));
+        out*=newDeterminant/oldDeterminant;
     }
 
-	return prob;	  
+	return out;	  
 }
 
 
@@ -773,8 +782,13 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                     M(i,j)=product*polar(pow(in_determinant_rescaling, Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
                 }
             }
+            newMatrix=M;
+            
             detSolver.compute(M);
-            out=out*detSolver.determinant();
+            
+            newDeterminant=detSolver.determinant();
+//            out=out*detSolver.determinant();
+			out=out*newDeterminant;
             //        cout<<"det piece = "<<detSolver.determinant()<<endl;
         }
         

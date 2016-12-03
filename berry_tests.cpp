@@ -1570,6 +1570,7 @@ void Explicit(){
     //this parameter object will be used to initialize LATTICE
     LATTICE_PARAMS params(Ne/invNu);
     double tempdelta;
+    complex<double> wf;
     infile>>tempdelta;
     params.w_delta=complex<double>(tempdelta,0);
     params.testing=testing;
@@ -1617,20 +1618,21 @@ void Explicit(){
 		v1=ll.get_wf(0,0,zs);
 		v2=ll.get_wf(0,1,zs);
 		v3=ll.get_wf(1,0,zs);
+		wf=ll.get_wf(zs);
 
-		if(abs(v1*v2)<1e-12 and abs(v3)>1e-12) print=true;
+		if(abs(wf)<1e-12 and (abs(v1*v2)>1e-12 or abs(v3)>1e-12)) print=true;
 		else print=false;
-		print=false;
+		//print=false;
 		if(print){
 			for(int p=0;p<2*Ne;p++){
 				cout<<zs[p/2][p%2]<<" ";
 			}
 		}
 		
-		if(norm(ll.get_wf(zs))>1e-12){
-			out+=v3*conj(v1*v2)/norm(ll.get_wf(zs))*norm(ll.get_wf(zs));
-			norm2+=norm(v1*v2)/norm(ll.get_wf(zs))*norm(ll.get_wf(zs));
-			norm3+=norm(v3)/norm(ll.get_wf(zs))*norm(ll.get_wf(zs));
+		if(abs(wf)>1e-12){
+			out+=v3*conj(v1*v2)/norm(wf)*norm(wf);
+			norm2+=norm(v1*v2)/norm(wf)*norm(wf);
+			norm3+=norm(v3)/norm(wf)*norm(wf);
 		}
 
 //		out+=1./conj(v3)/v1/v2*norm(v1*v2*v3);
