@@ -1531,9 +1531,9 @@ void ParticleHoleSym2(){
         
         num=0; denom1=0; denom2=0;
         ll.reset();
-        ll.step_fromwf(nWarmup);
+        ll.step(nWarmup);
         for (int nmea=0; nmea<nMeas; nmea++) {
-            ll.step_fromwf(nSteps);
+            ll.step(nSteps);
 
 //			tmp=FLL.get_wf(ll.get_zs())/ll.get_wf();
 //			num+=tmp;

@@ -62,8 +62,8 @@ int LATTICE_WRAPPER::step(int nSteps){
 					oldprod*=oldweight[it-wfs.begin()][it2-it->begin()];
 				}
 			}
-			prob+=prod;
-			oldprob+=oldprod;
+			prob+=abs(prod);
+			oldprob+=abs(oldprod);
 		}
 		normprob=norm(prob/oldprob);	
 
