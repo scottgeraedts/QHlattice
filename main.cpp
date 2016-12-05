@@ -66,7 +66,7 @@ int main(){
 //    pairamplitude("paramsne10", true, num_core);
 //    pairamplitude("paramsne20", true, num_core);
     
-    pairamplitude("paramsne2", true, num_core);//...
+    pairamplitude("paramsne2", true, num_core, false, true);//...
     
 }
 void outformfactor(){

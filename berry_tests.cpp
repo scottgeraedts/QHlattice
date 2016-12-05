@@ -212,7 +212,7 @@ void single_run(string filename, bool trace){
     eout.close();
     outfile.close();
 }
-void pairamplitude(string filename, bool trace, int num_core) {
+void pairamplitude(string filename, bool trace, int num_core, bool pseu, bool mc) {
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, theta, alpha;
@@ -233,37 +233,34 @@ void pairamplitude(string filename, bool trace, int num_core) {
     vector<LATTICE> ll(num_core);
     for (int i=0; i<num_core; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
+        ll[i].setup_laguerre_lat(); //lattice summation version.
+//        ll[i].setup_laguerre_con(); //continuous integral version.
+        ll[i].setup_landautable();
     }
-    
-    cout<<"setup laguerretable"<<endl;
-    ll[0].setup_laguerre_lat();
-    ll[0].setup_laguerre_con();
     ll[0].print_laguerreltable();
-    cout<<"setup lanautable"<<endl;
-    ll[0].setup_landautable();
     ll[0].print_landautable();
-    cout<<"finish iniatilziation"<<endl;
-    
+    cout<<"\nfinish initialization."<<endl;
     
     int mlength=50, nlength=10;//m=alpha, n=pair angular momentum.
     int NPhi=Ne*invNu;
-//    int NPhi=30;
     
     //allowed momentum set on torus, got from ed code.
     //use this to get matrix element by lattice summation over sigma function.
 //    vector<hop> hoplist_ed;//hoplist from ed, amplitude are laugerrel-gaussian with theta function.
     vector<hop> hoplist_lat;//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
     
-    ifstream hopinfile("pairamplitude/hoplist");
-//    vector<complex<double>> total(mlength);//the lattice-sum is 2 large, so normalized it a little bit.
-    while (!hopinfile.eof()) {
-        double re,im;
-        hop tmp;
-        tmp.list.resize(4);
-        hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
-        hopinfile>>re>>im;
-//        for (int a=0; a<mlength; a++) {
-        int a=mlength-2; a=0;
+    //do this if want to get the lattice-summation version of pseudo-potential for ed use.
+    if (pseu) {
+        ifstream hopinfile("pairamplitude/hoplist");
+        //    vector<complex<double>> total(mlength);//the lattice-sum is 2 large, so normalized it a little bit.
+        while (!hopinfile.eof()) {
+            double re,im;
+            hop tmp;
+            tmp.list.resize(4);
+            hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
+            hopinfile>>re>>im;
+            //        for (int a=0; a<mlength; a++) {
+            int a=mlength-2; a=0;
             complex<double> sum;//lattice summation.
             for (int x1=0; x1<NPhi*NPhi; x1++) {
                 for (int x2=0; x2<NPhi*NPhi; x2++) {
@@ -271,33 +268,31 @@ void pairamplitude(string filename, bool trace, int num_core) {
                     int x = ((x11-x21)%NPhi+NPhi)%NPhi;
                     int y = ((x12-x22)%NPhi+NPhi)%NPhi;
                     
-//                    if (tmp.list[0]==0 && tmp.list[1]==1 && tmp.list[2]==0 && tmp.list[3]==1) {
-//                        cout<<"output: x1,x2,x,y,x11,x12,x21,x22="<<x1<<" "<<x2<<" "<<x<<" "<<y<<" "<<x11<<" "<<x12<<" "<<x21<<" "<<x22<<endl;
-//                    }
+                    int m=4;//just pick the 'm_{th}' pseudo-potential.
                     
                     sum+=
-                    0.5*ll[0].laguerretable[1][a][x][y]
+                    0.5*ll[0].laguerretable[m][a][x][y]
                     *conj(ll[0].landautable[tmp.list[0]][x11][x12])
                     *conj(ll[0].landautable[tmp.list[1]][x21][x22])
                     *ll[0].landautable[tmp.list[2]][x21][x22]
                     *ll[0].landautable[tmp.list[3]][x11][x12];
                     
                     sum+=
-                    0.5*ll[0].laguerretable[1][a][x][y]
+                    0.5*ll[0].laguerretable[m][a][x][y]
                     *conj(ll[0].landautable[tmp.list[1]][x11][x12])
                     *conj(ll[0].landautable[tmp.list[0]][x21][x22])
                     *ll[0].landautable[tmp.list[3]][x21][x22]
                     *ll[0].landautable[tmp.list[2]][x11][x12];
                     
                     sum-=
-                    0.5*ll[0].laguerretable[1][a][x][y]
+                    0.5*ll[0].laguerretable[m][a][x][y]
                     *conj(ll[0].landautable[tmp.list[1]][x11][x12])
                     *conj(ll[0].landautable[tmp.list[0]][x21][x22])
                     *ll[0].landautable[tmp.list[2]][x21][x22]
                     *ll[0].landautable[tmp.list[3]][x11][x12];
                     
                     sum-=
-                    0.5*ll[0].laguerretable[1][a][x][y]
+                    0.5*ll[0].laguerretable[m][a][x][y]
                     *conj(ll[0].landautable[tmp.list[0]][x11][x12])
                     *conj(ll[0].landautable[tmp.list[1]][x21][x22])
                     *ll[0].landautable[tmp.list[3]][x21][x22]
@@ -305,100 +300,68 @@ void pairamplitude(string filename, bool trace, int num_core) {
                     
                 }
             }
-
-        tmp.ele.push_back(sum);
-//        }
-        hoplist_lat.push_back(tmp);
-    }
-    hopinfile.close();
-    hoplist_lat.pop_back();
-    
-    /*
-    //to make matrix element smaller by dividing over average. use this is necessary.
-    vector<complex<double>> temp(hoplist_lat[0].ele.size());
-    for (int i=0; i<hoplist_lat.size(); i++) {
-        for (int j=0; j<hoplist_lat[0].ele.size(); j++) {
-            temp[j]+=hoplist_lat[i].ele[j]/(1.*hoplist_lat[0].ele.size());
+            
+            tmp.ele.push_back(sum);
+            //        }
+            hoplist_lat.push_back(tmp);
+        }
+        hopinfile.close();
+        hoplist_lat.pop_back();
+        
+        /*
+         //to make matrix element smaller by dividing over average. use this is necessary.
+         vector<complex<double>> temp(hoplist_lat[0].ele.size());
+         for (int i=0; i<hoplist_lat.size(); i++) {
+         for (int j=0; j<hoplist_lat[0].ele.size(); j++) {
+         temp[j]+=hoplist_lat[i].ele[j]/(1.*hoplist_lat[0].ele.size());
+         }
+         }
+         for (int i=0; i<hoplist_lat.size(); i++) {
+         for (int j=0; j<hoplist_lat[0].ele.size(); j++) {
+         hoplist_lat[i].ele[j]/=temp[j];
+         }
+         }
+         */
+        
+        ofstream outhop("pairamplitude/hoplist_lat");
+        for (int i=0; i<hoplist_lat.size(); i++) {
+            outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
+            for (int k=0; k<hoplist_lat[i].ele.size(); k++)
+                outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
+            outhop<<endl;
         }
     }
-    for (int i=0; i<hoplist_lat.size(); i++) {
-        for (int j=0; j<hoplist_lat[0].ele.size(); j++) {
-            hoplist_lat[i].ele[j]/=temp[j];
-        }
-    }
-     */
-
-    ofstream outhop("pairamplitude/hoplist_lat");
-    for (int i=0; i<hoplist_lat.size(); i++) {
-        outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
-        for (int k=0; k<hoplist_lat[i].ele.size(); k++)
-            outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
-        outhop<<endl;
-    }
-    
-    /*
+ 
   //this is for monte-carlo calculation of pair-amplitude.
+    if (mc) {
 #pragma omp parallel for
-    for(int s=0;s<nBins;s++){
-        int coren=omp_get_thread_num();
-        //        printf("coren=%d\n",coren);
-        //        ll[coren].change_dbar_parameter(s*0.1,s*0.1);
-        ll[coren].reset();
-        ll[coren].step(nWarmup);
-        
-        vector<vector<double>> pair_amp(mlength, vector<double>(nlength, 0.));
-        ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
-        
-        for(int i=0;i<nMeas;i++){
-            ll[coren].step(nSteps);
-//            ll[coren].update_structure_factors();
+        for(int s=0;s<nBins;s++){
+            int coren=omp_get_thread_num();
+            //        printf("coren=%d\n",coren);
+            //        ll[coren].change_dbar_parameter(s*0.1,s*0.1);
+            ll[coren].reset();
+            ll[coren].step(nWarmup);
+            
+            vector<vector<double>> pair_amp(mlength, vector<double>(nlength, 0.));
+            ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
+            
+            for(int i=0;i<nMeas;i++){
+                ll[coren].step(nSteps);
+                //            ll[coren].update_structure_factors();
+                for (int m=0; m<mlength; m++) {
+                    for (int n=0; n<nlength; n++) {
+                        pair_amp[m][n]+=ll[coren].pairamplitude(n, m)/(0.5*nMeas*Ne*(Ne-1));
+                    }
+                }
+            }
+            //        ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
             for (int m=0; m<mlength; m++) {
                 for (int n=0; n<nlength; n++) {
-                    pair_amp[m][n]+=ll[coren].pairamplitude(n, m)/(0.5*nMeas*Ne*(Ne-1));
+                    pairout<<pair_amp[m][n]<<endl;
                 }
             }
+            pairout.close();
         }
-//        ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
-        for (int m=0; m<mlength; m++) {
-            for (int n=0; n<nlength; n++) {
-                pairout<<pair_amp[m][n]<<endl;
-            }
-        }
-        pairout.close();
-    }
-     */
-}
-void generate_pseu_matrix(string filename){
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-    bool testing;
-    double theta_t, theta, alpha;
-    string type;
-    ifstream infile(filename);
-    infile>>Ne>>invNu>>theta_t>>alpha;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    //initialize MC object
-    theta=theta_t*M_PI;
-    int NPhi=Ne*invNu;
-    
-    LATTICE ll(Ne, invNu, testing, type, seed, 0, theta, alpha);//gs=0.
-    int mlength=50, nlength=10;
-    for (int m=0; m<mlength; m++) {
-        ofstream outfile ("pseumatrix/pasumatrix_"+to_string((long long int)m));
-        for (int n=0; n<nlength; n++) {
-            complex<double> ret;
-            for (int i=0; i<NPhi*NPhi; i++) {
-                for (int j=0; j<NPhi*NPhi; j++) {
-//                    ret+=ll.landautable[]
-                    //landautable[n][x][y], n is landau level index.
-                    //laguerretable[n][a][x][y] n is Laguerrel polynomial index, a is alpha.
-                }
-            }
-            outfile<<endl;
-        }
-        outfile.close();
     }
     
 }

@@ -29,8 +29,6 @@ LATTICE::LATTICE(LATTICE_PARAMS params){
 
 LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t, bool trace_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t),trace(trace_t){
 
-	
-
  	init(seed);
 
 }
@@ -993,7 +991,6 @@ void LATTICE::print_structure_factors(int nMeas, string filename){
     smaout.close();
 }
 void LATTICE::setup_laguerre_con() {
-//    cout<<"L1, L2="<<L1<<" "<<L2<<endl;
     int mlength=50;
     laguerretable =vector<vector<vector<vector<double>>>> (10, vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi))));
     for (int n=0; n<10; n++) {
@@ -1003,31 +1000,17 @@ void LATTICE::setup_laguerre_con() {
                 alp=1./sqrt(1.*NPhi);
             }
             else alp=1.-log(a+1)/log(mlength);
-            
-//            for (int rundx=-5; rundx<6; rundx++) {
-//                for (int rundy=-5; rundy<6; rundy++) {
-                    for (int x=0; x<NPhi; x++) {
-                        for (int y=0; y<NPhi; y++) {
-                            for (int rundx=-5; rundx<6; rundx++) {
-                                for (int rundy=-5; rundy<6; rundy++) {
-//                                    for (int x=0; x<NPhi; x++) {
-//                                        for (int y=0; y<NPhi; y++) {
-                                            double u=2.*norm((x+rundx*NPhi)/(1.*NPhi)*L1 + (y+rundy*NPhi)/(1.*NPhi)*L2);
-                                            u*=0.25/alp;
-                                            laguerretable[n][a][x][y]+=pow(alp-1,n)/pow(alp,n+1)*laguerre(n,u/(1.-alp))*exp(-u);
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            
-//                            double u=2.*norm((x+rundx*NPhi)/(1.*NPhi)*L1 + (y+rundy*NPhi)/(1.*NPhi)*L2);
-//                            u*=0.25/alp;
-//                            laguerretable[n][a][x][y]+=pow(alp-1,n)/pow(alp,n+1)*laguerre(n,u/(1.-alp))*exp(-u);
-//                        }
-//                    }
-//                }
-//            }
+            for (int x=0; x<NPhi; x++) {
+                for (int y=0; y<NPhi; y++) {
+                    for (int rundx=-5; rundx<6; rundx++) {
+                        for (int rundy=-5; rundy<6; rundy++) {
+                            double u=2.*norm((x+rundx*NPhi)/(1.*NPhi)*L1 + (y+rundy*NPhi)/(1.*NPhi)*L2);
+                            u*=0.25/alp;
+                            laguerretable[n][a][x][y]+=pow(alp-1,n)/pow(alp,n+1)*laguerre(n,u/(1.-alp))*exp(-u);
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -1041,7 +1024,6 @@ void LATTICE::setup_laguerre_con() {
                 }
             }
         }
-//        cout<<"table outprint"<<endl;
     
 }
 void LATTICE::setup_laguerre_lat() {
