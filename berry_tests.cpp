@@ -1576,6 +1576,7 @@ void Explicit(){
     params.testing=testing;
     params.seed=seed;
 
+   	int Ne2=Ne*Ne;
 
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
@@ -1595,50 +1596,88 @@ void Explicit(){
 	LATTICE_WRAPPER ll(Ne, wfs, seed, testing);
 	    
     vector< vector<int> > zs(Ne, vector<int>(2));
+    vector<int> rawzs(Ne);
+	vector<vector<int>> all_tempzs(comb(Ne2,Ne/2), vector<int>(Ne/2));
+
+	vector<int> tempzs(Ne/2);
+	for(int i=0;i<Ne/2;i++) tempzs[i]=i;
+	int p;
+	for(int count=0; count<(signed)all_tempzs.size(); count++){
+	
+		all_tempzs[count]=tempzs;
+//		for(int i=0; i<Ne/2; i++) cout<<tempzs[i]<<" ";
+//		cout<<endl;
+		if(tempzs[0]==Ne2-Ne/2) break;	
+
+		//find next valid conf
+		for(p=0; p<Ne/2-1; p++){
+			if(tempzs[p]+1<tempzs[p+1]){
+				tempzs[p]++;
+				break;
+			}
+		}
+		if (p==Ne/2-1){
+			tempzs[p]++;	
+		}
+		for(int i=0; i<p; i++) tempzs[i]=i;
+	}
+
     int temp;
     complex<double> out=0,v1,v2,v3;
     double norm1=0,norm2=0,norm3=0, total=0;
    	vector< vector<int> >::iterator it;
    	bool duplicate, print;
 	//stuff for explicit PH calculation   	
-	for(int i=0;i<pow(Ne,Ne*2);i++){
-		duplicate=false;
-		for(int p=0;p<2*Ne;p++){
-			temp=(i/pow(Ne,p));
-			zs[p/2][p%2]=temp%Ne;
-			if(p%2==1 and p/2>0){
-				it=find(zs.begin(),zs.begin()+p/2,zs[p/2]);
-				if(it!=zs.begin()+p/2){
-					duplicate=true;
-					break;
+	for(int i1=0;i1<(signed)all_tempzs.size();i1++){
+		cout<<i1<<endl;
+		copy(all_tempzs[i1].begin(), all_tempzs[i1].end(), rawzs.begin());
+		for(int i2=0; i2<(signed)all_tempzs.size();i2++){
+			copy(all_tempzs[i2].begin(), all_tempzs[i2].end(), rawzs.begin()+Ne/2);
+//			cout<<i1<<" "<<i2<<endl;
+//			for(int p=0; p<Ne; p++) cout<<rawzs[p]<<" ";
+//			cout<<endl;
+		
+	//		duplicate=false;
+	//		for(int p=0;p<Ne;p++){
+	//			temp=(i/pow(Ne2,p));
+	//			if( (p>0 and p<Ne/2 and temp<=rawzs[p-1]) or (p>Ne/2 and temp<=rawzs[p-1])){
+	//				duplicate=true;
+	//				break;
+	//			}
+	//			rawzs[p]=temp%Ne2;
+	//		}
+	//		if(duplicate) continue;
+
+			for(int p=0; p<Ne; p++){
+				zs[p][0]=rawzs[p]/Ne;
+				zs[p][1]=rawzs[p]%Ne;
+			}
+		
+			v1=ll.get_wf(0,0,zs);
+			v2=ll.get_wf(0,1,zs);
+			v3=ll.get_wf(1,0,zs);
+			wf=ll.get_wf(zs);
+
+			if(abs(wf)<1e-12 and (abs(v1*v2)>1e-12 or abs(v3)>1e-12)) print=true;
+			else print=false;
+			//print=true;
+			if(print){
+				for(int p=0;p<2*Ne;p++){
+					cout<<zs[p/2][p%2]<<" ";
 				}
 			}
-		}
-		//if(duplicate) continue;
-		v1=ll.get_wf(0,0,zs);
-		v2=ll.get_wf(0,1,zs);
-		v3=ll.get_wf(1,0,zs);
-		wf=ll.get_wf(zs);
-
-		if(abs(wf)<1e-12 and (abs(v1*v2)>1e-12 or abs(v3)>1e-12)) print=true;
-		else print=false;
-		//print=false;
-		if(print){
-			for(int p=0;p<2*Ne;p++){
-				cout<<zs[p/2][p%2]<<" ";
-			}
-		}
 		
-		if(abs(wf)>1e-12){
-			out+=v3*conj(v1*v2)/norm(wf)*norm(wf);
-			norm2+=norm(v1*v2)/norm(wf)*norm(wf);
-			norm3+=norm(v3)/norm(wf)*norm(wf);
-		}
+			if(abs(wf)>1e-12){
+				out+=v3*conj(v1*v2)/norm(wf)*norm(wf);
+				norm2+=norm(v1*v2)/norm(wf)*norm(wf);
+				norm3+=norm(v3)/norm(wf)*norm(wf);
+			}
 
-//		out+=1./conj(v3)/v1/v2*norm(v1*v2*v3);
-		if(print){
-			total+=norm(v3);
-			 cout<<v1<<" "<<v2<<" "<<v3<<endl;
+	//		out+=1./conj(v3)/v1/v2*norm(v1*v2*v3);
+			if(print){
+				total+=norm(v3);
+				 cout<<v1<<" "<<v2<<" "<<v3<<endl;
+			}
 		}
 	}
 	norm1=1;

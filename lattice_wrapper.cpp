@@ -77,7 +77,7 @@ int LATTICE_WRAPPER::step(int nSteps){
 			zs[electron]=newz;
 			running_weight+=log(normprob);
 
-			if(testing) cout<<"accepted: "<<running_weight<<" "<<log(norm(get_wf()))<<endl;
+			if(testing) cout<<"accepted: "<<running_weight<<" "<<log(norm(get_wf()))<<" "<<log(norm(get_wf(0,1)*get_wf(0,0)))<<" "<<log(norm(get_wf(1,0)))<<endl;
 			for(auto it=wfs.begin();it!=wfs.end(); ++it){
 				for(auto it2=it->begin(); it2!=it->end(); ++it2){			 
 					if(electron>=it2->start and electron<it2->end) it2->wf.update();
@@ -119,7 +119,7 @@ int LATTICE_WRAPPER::step_fromwf(int nSteps){
 		if(update){
 			running_weight+=log((newweight))-log((oldweight));
 
-			if(testing) cout<<"accepted: "<<running_weight<<" "<<log(norm(get_wf()))<<endl;
+			if(testing) cout<<"accepted: "<<running_weight<<" "<<log(norm(get_wf()))<<" "<<log(norm(get_wf(0,1)*get_wf(0,0)))<<" "<<log(norm(get_wf(1,0)))<<endl;
 			
 			accepts++;
 		}else{
@@ -153,7 +153,7 @@ complex<double> LATTICE_WRAPPER::get_wf(const vector<vector<int>> &tempzs){
 		bigprod*=prod;
 		out+=abs(prod);
 	} 
-	return 0.01*out+bigprod;
+	return out;//+bigprod;
 }	
 
 complex<double> LATTICE_WRAPPER::get_wf(int i, int j){
