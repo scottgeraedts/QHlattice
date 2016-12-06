@@ -496,10 +496,10 @@ vector<int> LATTICE::random_move( const vector<int> &in, int NPhi_t, MTRand &ran
 	vector<int>newloc(2);
 
 	//the stupidest way to do this
-	int rint=ran_t.randInt( NPhi_t*NPhi_t-1);
-	newloc[0]=rint/NPhi_t;
-	newloc[1]=rint%NPhi_t;
-	return newloc;
+//	int rint=ran_t.randInt( NPhi_t*NPhi_t-1);
+//	newloc[0]=rint/NPhi_t;
+//	newloc[1]=rint%NPhi_t;
+//	return newloc;
 
 	int hoplength=1;
 	int n=pow(2*hoplength+1,2)-1;
