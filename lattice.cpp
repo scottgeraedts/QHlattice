@@ -125,7 +125,7 @@ double LATTICE::get_in_det_rescaling(int Ne, int invNu){
             rescaling=1.0;
         }
         else if (invNu==2) {
-            if (Ne<40) rescaling=0.25;
+            if (Ne<40) rescaling=0.85;
             else if (Ne>=40 && Ne<=50) rescaling=0.2;
             else if (Ne<90) rescaling=0.18;
 //            else if (Ne<90) rescaling=0.1;
@@ -350,7 +350,8 @@ int LATTICE::simple_update(){
 //very similar to simple update (above), but it uses a provided set of zs, instead of this objects version
 //and it is also provided with an position to update
 complex<double> LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vector<int> newloc){
-	complex<double> out=1., temp;
+	double out=1.;
+	complex<double> temp;
 
     //***************hole part
     double dx,dy; //TODO: this calls z_function every time, should speed that up
@@ -358,11 +359,11 @@ complex<double> LATTICE::update_weight(const vector< vector<int> > &zs, int elec
         dx=(zs[electron][0]/(1.*NPhi)-hole[0]);
         dy=(zs[electron][1]/(1.*NPhi)-hole[1]);
         z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-		out/=temp;
+		out/=abs(temp);
         dx=(newloc[0]/(1.*NPhi)-hole[0]);
         dy=(newloc[1]/(1.*NPhi)-hole[1]);
         z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-		out*=temp;
+		out*=abs(temp);
     }
        
     //***************vandermode part
@@ -380,7 +381,7 @@ complex<double> LATTICE::update_weight(const vector< vector<int> > &zs, int elec
                 xi=-xi; yi=-yi;
             }
             temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
-            out/=pow(temp,vandermonde_exponent);
+            out/=abs(pow(temp,vandermonde_exponent));
             
             //multiply new part
             xi=(zs[i][0]-newloc[0]);
@@ -389,7 +390,7 @@ complex<double> LATTICE::update_weight(const vector< vector<int> > &zs, int elec
                 xi=-xi; yi=-yi;
             }
             temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
-            out*=pow(temp,vandermonde_exponent);
+            out*=abs(pow(temp,vandermonde_exponent));
         }
     }
 
@@ -409,33 +410,32 @@ complex<double> LATTICE::update_weight(const vector< vector<int> > &zs, int elec
 		        dx=oldCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
 		        dy=oldCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
 		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-		        out/=temp;
+		        out/=abs(temp);
 		        dx=newCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
 		        dy=newCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
 		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-				out*=temp;
+				out*=abs(temp);
 		    }
 		}else{
-		    double dx,dy;
 		    for( int i=0;i<invNu;i++){
-		        dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
-		        dy=oldCOM[1]/(1.*NPhi)-ws[i][1];
-		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-		        out/=temp;
-		        dx=newCOM[0]/(1.*NPhi)-ws[i][0];
-		        dy=newCOM[1]/(1.*NPhi)-ws[i][1];
-		        z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-				out*=temp;
+		        xi=oldCOM[0]-ws[i][0]*NPhi;
+		        yi=oldCOM[1]-ws[i][1]*NPhi;
+				temp=modded_lattice_z_nodbar(xi, yi);
+		        out/=abs(temp);
+		        xi=newCOM[0]-ws[i][0]*NPhi;
+		        yi=newCOM[1]-ws[i][1]*NPhi;
+				temp=modded_lattice_z_nodbar(xi, yi);
+				out*=abs(temp);
 		    }
 		
 			//the jie phase
-		    vector<double> wsum(2); for (int i=0; i<invNu; i++) for (int j=0; j<2; j++) wsum[j]+=ws[i][j];
-		    complex<double> w_comp = wsum[0]*L1+wsum[1]*L2, dsum_comp;
-		    complex<double> zcom_comp=1.*(newCOM[0]-oldCOM[0])/NPhi*L1+1.*(newCOM[1]-oldCOM[1])/NPhi*L2;
-		    if (type=="CFL") dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L2;
-
-            if (type=="laughlin") out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
-            else if (type=="CFL") out*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
+//		    vector<double> wsum(2); for (int i=0; i<invNu; i++) for (int j=0; j<2; j++) wsum[j]+=ws[i][j];
+//		    complex<double> w_comp = wsum[0]*L1+wsum[1]*L2, dsum_comp;
+//		    complex<double> zcom_comp=1.*(newCOM[0]-oldCOM[0])/NPhi*L1+1.*(newCOM[1]-oldCOM[1])/NPhi*L2;
+//		    if (type=="CFL") dsum_comp = 1.*dsum[0]/NPhi*L1 + 1.*dsum[1]/NPhi*L2;
+//			//SLOW LINE
+//            if (type=="laughlin") out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+//            else if (type=="CFL") out*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
     	}
 	}else {
         if (type=="laughlin-hole") {
@@ -460,7 +460,7 @@ complex<double> LATTICE::update_weight(const vector< vector<int> > &zs, int elec
             else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
             sum+=product;
         }
-        out/=sum;
+        out/=abs(sum);
        	sum=0.;
         for (int k=0; k<invNu; k++) {
         	product=1.;
@@ -477,15 +477,14 @@ complex<double> LATTICE::update_weight(const vector< vector<int> > &zs, int elec
             else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
             sum+=product;
         }
-		out*=sum;
+		out*=abs(sum);
     }
 
     if(type=="CFL"){
     	newMatrix=oldMatrix;
         make_CFL_det(newMatrix, newloc, electron, newDeterminant, zs);
-        out*=newDeterminant/oldDeterminant;
+        out*=abs(newDeterminant)/abs(oldDeterminant);
     }
-
 	return out;	  
 }
 
@@ -731,6 +730,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                 for( int i=0;i<invNu;i++){
                     dx=COM[0]/(1.*NPhi)-ws[i][0];
                     dy=COM[1]/(1.*NPhi)-ws[i][1];
+                    //SLOW LINE
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
                     out*=temp;
                 }
@@ -777,11 +777,12 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                         temp=modded_lattice_z(z[0],z[1]);
                         product*=temp;
                     }
+                    //SLOW LINE
                     M(i,j)=product*polar(pow(in_determinant_rescaling, Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
                 }
             }
             newMatrix=M;
-            
+           
             detSolver.compute(M);
             
             newDeterminant=detSolver.determinant();
@@ -1275,6 +1276,12 @@ void LATTICE::change_dbar_parameter(double dbarx, double dbary){
 			shifted_ztable[ix][iy]=temp;
 		}
 	}
+	omega_dbar_range=2;
+	omega_dbar=vector<vector<complex<double>>>(2,vector<complex<double>>(2*omega_dbar_range+1));
+	for(int i=-omega_dbar_range; i<=omega_dbar_range; i++)
+		for(int j=0; j<2; j++) omega_dbar[j][i+omega_dbar_range]=polar(1.,M_PI*dbar_parameter[j]*i/(1.*NPhi));
+	
+	
 }
 void LATTICE::set_ds(vector< vector<int> > tds){
     if (tds.size()!=(unsigned)Ne) {
@@ -1382,12 +1389,29 @@ complex<double> LATTICE::modded_lattice_z(int x, int y){
 	
 	//the reason this isn't tabulated is because dbar_parameter doesn't have to live on a lattice
 	//but could make a new table, it would make the code slightly faster
-///	out*=omega[supermod(-(mody+dbar_parameter[1])*j+(modx+dbar_parameter[0])*k,2*NPhi)];
-	out*=polar(1., (-(mody+dbar_parameter[1])*j+(modx+dbar_parameter[0])*k)*M_PI/(1.*NPhi));
+//	out*=omega_dbar[supermod(-(mody)*j+(modx)*k,2*NPhi)];
+	//SLOW LINE
+	out*=omega[supermod(-(mody)*j+(modx)*k,2*NPhi)]*omega_dbar[0][k+omega_dbar_range]*omega_dbar[1][-j+omega_dbar_range];
+//	out*=polar(1., (-(mody+dbar_parameter[1])*j+(modx+dbar_parameter[0])*k)*M_PI/(1.*NPhi));
 	if(j%2 || k%2) return -out;
 	else return out;
 }
 
+//similar to above but for the COM part
+complex<double> LATTICE::modded_lattice_z_nodbar(int x, int y){
+	int modx=supermod(x,NPhi);
+	int mody=supermod(y,NPhi);
+	complex<double> out=lattice_z_(&NPhi,&modx,&mody,&L1,&L2,&one);
+//	complex<double> out=shifted_ztable[modx][mody];
+	int j=(modx-x)/NPhi, k=(mody-y)/NPhi;
+	
+	//the reason this isn't tabulated is because dbar_parameter doesn't have to live on a lattice
+	//but could make a new table, it would make the code slightly faster
+	out*=-omega[supermod(-(mody)*j+(modx)*k,2*NPhi)];
+
+	if(j%2 || k%2) return -out;
+	else return out;
+}
 void LATTICE::make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& new_det, const vector< vector<int> > &zs){
     complex<double> product;
     vector<int> z(2);

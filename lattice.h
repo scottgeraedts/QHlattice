@@ -79,7 +79,6 @@ public:
     void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value, const vector< vector<int> > &zs);
 
 	//utility functions
-	complex<double> modded_lattice_z(int x, int y);
 	void print_ds();
     void print_ws();
     void print_landautable();
@@ -146,6 +145,8 @@ private:
 	void setup_coulomb();
     
 	int simple_update();// returns '1' if updated, '0' if not updated.
+	complex<double> modded_lattice_z(int x, int y);
+	complex<double> modded_lattice_z_nodbar(int x, int y);
 	int p(int); int m(int);
 	void cold_start();
 	void det_helper(const vector<int> &z1, const vector<int> &z2, const vector<int> &d, vector<int> &z);
@@ -164,7 +165,11 @@ private:
 	vector <vector <vector <vector< complex<double> > > > > sq3;
     vector <vector <double> > SMAq;
 	vector <vector<int> > sx,sx2;
+
 	vector <vector <complex<double> > > shifted_ztable;
+	int omega_dbar_range;
+	vector< vector<complex<double> > > omega_dbar;
+
 	Eigen::MatrixXcd oldMatrix, newMatrix;
 	complex<double> oldDeterminant, newDeterminant;
 	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;
