@@ -70,8 +70,9 @@ int LATTICE_WRAPPER::step(int nSteps){
 		//cout<<electron<<" "<<newz[0]<<" "<<newz[1]<<" "<<normprob<<endl;
 
 		bool update=false;
+		double r=ran.rand();
 		if(normprob>=1) update=true;
-		else if(ran.rand()<normprob) update=true;
+		else if(r<normprob) update=true;
 	
 		if(update){
 			zs[electron]=newz;
