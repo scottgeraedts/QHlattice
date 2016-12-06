@@ -26,7 +26,7 @@ inline double laguerre(int n, double x){
 
 //test ortho laughlin states via monte carlo.
 void check_orthogonality(string type){
-    int Ne=8, invNu, nWarmup=5000, nMeas=5000, nSteps=20, seed=0;
+    int Ne=8, invNu, nWarmup=5000, nMeas=5000, nSteps=20;
     cout<<"--->type = "<<type<<", nMeas="<<nMeas<<", nSteps="<<nSteps<<", Ne="<<Ne;
     
     if (type=="CFL") cout<<". General d, sum of d neq 0."<<endl;
@@ -146,7 +146,7 @@ void single_run(string filename, bool trace){
         
         ll.step(nWarmup);
         double E=0,E2=0;
-        double P=0,P2=0,three=0;
+        double P=0;
         double e ,p;
         complex<double> berry_phase(0,0);
         deque<double> e_tracker, p_tracker;
@@ -241,88 +241,108 @@ void pairamplitude(string filename, bool trace, int num_core, bool pseu, bool mc
     ll[0].print_landautable();
     cout<<"\nfinish initialization."<<endl;
     
-    int mlength=50, nlength=10;//m=alpha, n=pair angular momentum.
+    int mlength=3, nlength=10;//m=alpha, n=pair angular momentum.
     int NPhi=Ne*invNu;
     
     //allowed momentum set on torus, got from ed code.
     //use this to get matrix element by lattice summation over sigma function.
 //    vector<hop> hoplist_ed;//hoplist from ed, amplitude are laugerrel-gaussian with theta function.
+    
     vector<hop> hoplist_lat;//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
+//    vector<vector<hop>> hoplist_lat(mlength);//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
     
     //do this if want to get the lattice-summation version of pseudo-potential for ed use.
     if (pseu) {
         ifstream hopinfile("pairamplitude/hoplist");
         //    vector<complex<double>> total(mlength);//the lattice-sum is 2 large, so normalized it a little bit.
+        
+        int count=0;
         while (!hopinfile.eof()) {
             double re,im;
             hop tmp;
             tmp.list.resize(4);
             hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
             hopinfile>>re>>im;
-            //        for (int a=0; a<mlength; a++) {
-            int a=mlength-2; a=0;
-            complex<double> sum;//lattice summation.
-            for (int x1=0; x1<NPhi*NPhi; x1++) {
-                for (int x2=0; x2<NPhi*NPhi; x2++) {
-                    int x11=x1/NPhi, x12=x1%NPhi, x21=x2/NPhi, x22=x2%NPhi;
-                    int x = ((x11-x21)%NPhi+NPhi)%NPhi;
-                    int y = ((x12-x22)%NPhi+NPhi)%NPhi;
-                    
-                    int m=4;//just pick the 'm_{th}' pseudo-potential.
-                    
-                    sum+=
-                    0.5*ll[0].laguerretable[m][a][x][y]
-                    *conj(ll[0].landautable[tmp.list[0]][x11][x12])
-                    *conj(ll[0].landautable[tmp.list[1]][x21][x22])
-                    *ll[0].landautable[tmp.list[2]][x21][x22]
-                    *ll[0].landautable[tmp.list[3]][x11][x12];
-                    
-                    sum+=
-                    0.5*ll[0].laguerretable[m][a][x][y]
-                    *conj(ll[0].landautable[tmp.list[1]][x11][x12])
-                    *conj(ll[0].landautable[tmp.list[0]][x21][x22])
-                    *ll[0].landautable[tmp.list[3]][x21][x22]
-                    *ll[0].landautable[tmp.list[2]][x11][x12];
-                    
-                    sum-=
-                    0.5*ll[0].laguerretable[m][a][x][y]
-                    *conj(ll[0].landautable[tmp.list[1]][x11][x12])
-                    *conj(ll[0].landautable[tmp.list[0]][x21][x22])
-                    *ll[0].landautable[tmp.list[2]][x21][x22]
-                    *ll[0].landautable[tmp.list[3]][x11][x12];
-                    
-                    sum-=
-                    0.5*ll[0].laguerretable[m][a][x][y]
-                    *conj(ll[0].landautable[tmp.list[0]][x11][x12])
-                    *conj(ll[0].landautable[tmp.list[1]][x21][x22])
-                    *ll[0].landautable[tmp.list[3]][x21][x22]
-                    *ll[0].landautable[tmp.list[2]][x11][x12];
-                    
-                }
-            }
             
-            tmp.ele.push_back(sum);
-            //        }
+            count++;
+            cout<<"cout = "<<count<<endl;
+            cout<<"re, im = "<<re<<" "<<im<<endl;
+            
+            for (int a=0; a<mlength; a++) {
+//                cout<<"a="<<a<<endl;
+                complex<double> sum;//lattice summation.
+                for (int x1=0; x1<NPhi*NPhi; x1++) {
+                    for (int x2=0; x2<NPhi*NPhi; x2++) {
+                        int x11=x1/NPhi, x12=x1%NPhi, x21=x2/NPhi, x22=x2%NPhi;
+                        int x = ((x11-x21)%NPhi+NPhi)%NPhi;
+                        int y = ((x12-x22)%NPhi+NPhi)%NPhi;
+                        
+                        int m=3;//just pick the 'm_{th}' pseudo-potential.
+                        
+                        sum+=
+                        0.5*ll[0].laguerretable[m][a][x][y]
+                        *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+                        *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+                        *ll[0].landautable[tmp.list[2]][x21][x22]
+                        *ll[0].landautable[tmp.list[3]][x11][x12];
+                        
+                        sum+=
+                        0.5*ll[0].laguerretable[m][a][x][y]
+                        *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+                        *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+                        *ll[0].landautable[tmp.list[3]][x21][x22]
+                        *ll[0].landautable[tmp.list[2]][x11][x12];
+                        
+                        sum-=
+                        0.5*ll[0].laguerretable[m][a][x][y]
+                        *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+                        *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+                        *ll[0].landautable[tmp.list[2]][x21][x22]
+                        *ll[0].landautable[tmp.list[3]][x11][x12];
+                        
+                        sum-=
+                        0.5*ll[0].laguerretable[m][a][x][y]
+                        *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+                        *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+                        *ll[0].landautable[tmp.list[3]][x21][x22]
+                        *ll[0].landautable[tmp.list[2]][x11][x12];
+                    }
+                }
+                tmp.ele.push_back(sum);
+                
+            }
             hoplist_lat.push_back(tmp);
         }
         hopinfile.close();
+        cout<<"finish hoplist calculation"<<endl;
+        
+//        for (int a=0; a<mlength; a++) {
+//            hoplist_lat[a].pop_back();
+//            //output hoplist.
+//            ofstream outhop("pairamplitude/hoplist_lat_" + to_string( (long long int)a ));
+//            for (int i=0; i<hoplist_lat[a].size(); i++) {
+//                outhop<<hoplist_lat[a][i].list[0]<<" "<<hoplist_lat[a][i].list[1]<<" "<<hoplist_lat[a][i].list[2]<<" "<<hoplist_lat[a][i].list[3]<<endl;
+//                for (int k=0; k<hoplist_lat[a][i].ele.size(); k++)
+//                    outhop<< setprecision(26) <<real(hoplist_lat[a][i].ele[k])<<" "<<imag(hoplist_lat[a][i].ele[k])<<" ";
+//                outhop<<endl;
+//            }
+//            outhop.close();
+//            
+//            if (a==0) {
+//                ofstream outhop("pairamplitude/hoplist_lat");
+//                for (int i=0; i<hoplist_lat[a].size(); i++) {
+//                    outhop<<hoplist_lat[a][i].list[0]<<" "<<hoplist_lat[a][i].list[1]<<" "<<hoplist_lat[a][i].list[2]<<" "<<hoplist_lat[a][i].list[3]<<endl;
+//                    for (int k=0; k<hoplist_lat[a][i].ele.size(); k++)
+//                        outhop<< setprecision(26) <<real(hoplist_lat[a][i].ele[k])<<" "<<imag(hoplist_lat[a][i].ele[k])<<" ";
+//                    outhop<<endl;
+//                }
+//            }
+//            outhop.close();
+//        }
+        
+        
         hoplist_lat.pop_back();
-        
-        /*
-         //to make matrix element smaller by dividing over average. use this is necessary.
-         vector<complex<double>> temp(hoplist_lat[0].ele.size());
-         for (int i=0; i<hoplist_lat.size(); i++) {
-         for (int j=0; j<hoplist_lat[0].ele.size(); j++) {
-         temp[j]+=hoplist_lat[i].ele[j]/(1.*hoplist_lat[0].ele.size());
-         }
-         }
-         for (int i=0; i<hoplist_lat.size(); i++) {
-         for (int j=0; j<hoplist_lat[0].ele.size(); j++) {
-         hoplist_lat[i].ele[j]/=temp[j];
-         }
-         }
-         */
-        
+        //output hoplist.
         ofstream outhop("pairamplitude/hoplist_lat");
         for (int i=0; i<hoplist_lat.size(); i++) {
             outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
@@ -330,8 +350,12 @@ void pairamplitude(string filename, bool trace, int num_core, bool pseu, bool mc
                 outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
             outhop<<endl;
         }
+        outhop.close();
+        
+        
+        
     }
- 
+
   //this is for monte-carlo calculation of pair-amplitude.
     if (mc) {
 #pragma omp parallel for
@@ -588,17 +612,17 @@ void findstate(){
     LATTICE ll(Ne,invNu, testing, type, seed, gs);
     
     ofstream outfile("ds_energys");
-    for (int k=0; k<configurations.size(); k++) {
+    for (int k=0; k<(signed)configurations.size(); k++) {
         old_ds=old_ds2;
         vector<vector<int> > deletelist=configurations[k].deletelist;
         vector<vector<int> > addlist=configurations[k].addlist;
-        for (int i=0; i<deletelist.size(); i++) {
+        for (int i=0; i<(signed)deletelist.size(); i++) {
             temp_ds[0]=deletelist[i][0]; temp_ds[1]=deletelist[i][1];
             old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
             outfile<<deletelist[i][0]<<" "<<deletelist[i][1]<<" ";
         }
         outfile<<"// ";
-        for (int i=0; i<addlist.size(); i++) {
+        for (int i=0; i<(signed)addlist.size(); i++) {
             temp_ds[0]=addlist[i][0]; temp_ds[1]=addlist[i][1];
             old_ds.push_back(temp_ds);
             outfile<<addlist[i][0]<<" "<<addlist[i][1]<<" ";
@@ -1411,7 +1435,7 @@ void ParticleHoleSymBackwards(){
     infile>>type;
     //initialize MC object
     
-    int Ne1=Ne/2, Ne2=Ne-Ne1;
+    int Ne1=Ne/2;
 
     LATTICE cfl=LATTICE(Ne1, invNu, testing, "CFL", seed, 0);
     LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);//Filled LL Wavefunction.
@@ -1460,80 +1484,109 @@ void ParticleHoleSym2(){
     
     //this parameter object will be used to initialize LATTICE
     LATTICE_PARAMS params(Ne/invNu);
-    params.w_delta=0.;
+    double temp;
+    infile>>temp;
+    params.w_delta=complex<double>(temp,0);
     params.testing=testing;
     params.seed=seed;
 
+
     //cfl1 is the wavefunction that we will project into filled landau level.
     //We will see if overlap with cfl2 after projection is close to 1 or not.
-    vector<wf_info> wfs(2);
-    wfs[0]=wf_info(false, false, 0, Ne/invNu, 1);
-	wfs[0].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 0);
-	//wfs[0].wf.trace=1;
-	wfs[1]=wf_info(false, false, Ne/invNu, Ne, -1);
-	wfs[1].wf=LATTICE(Ne/invNu, invNu, testing, "CFL", seed, 1);
-	//wfs[1].wf.trace=-1;
-	//wfs[2]=wf_info(true, false, 0, Ne, 1);
-	//wfs[2].wf=LATTICE(Ne, 1, testing, "laughlin", seed, 0);
-	LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);
+    vector<vector<wf_info>> wfs(2);
+    wfs[0]=vector<wf_info>(2);
+    wfs[0][0]=wf_info(false, false, 0, Ne/invNu, 1);
+	wfs[0][0].wf=LATTICE(params);
+	params.gs=1;
+	wfs[0][1]=wf_info(false, false, Ne/invNu, Ne, -1);
+	wfs[0][1].wf=LATTICE(params);
+	
+	wfs[1]=vector<wf_info>(1);
+	wfs[1][0]=wf_info(false, false, 0, Ne, 1);
+	wfs[1][0].wf=LATTICE(Ne, 1, testing, "laughlin", seed, 0);
 
+	LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);
 	LATTICE_WRAPPER ll(Ne, wfs, seed, testing);
 
     //monte carlo.
 	double denom=0, denom1, denom2;
 	complex<double> tmp, num=0;
+	complex<double> v1, v2, v3;
 
     for (int nbin=0; nbin<nBins; nbin++) {
         vector<Eigen::MatrixXcd> overlaps(2, Eigen::MatrixXcd::Zero(invNu, invNu));
         
         num=0; denom1=0; denom2=0;
         ll.reset();
-        ll.step(nWarmup);
+        ll.step_fromwf(nWarmup);
         for (int nmea=0; nmea<nMeas; nmea++) {
-            ll.step(nSteps);
-			tmp=FLL.get_wf(ll.get_zs())/ll.get_wf();
-			//tmp=1./conj(ll.get_wf());
-			num+=tmp;
-			denom+=norm(tmp);			
-			//denom1+=1/norm(wfs[2].wf.get_wf( wfs[2].make_zs( ll.get_zs() ) ) );
-			//denom2+=1/norm( wfs[0].wf.get_wf( wfs[0].make_zs( ll.get_zs() ) )* wfs[1].wf.get_wf(wfs[1].make_zs(ll.get_zs() ) ) );
-			//cout<<norm(tmp)<<endl;
+            ll.step_fromwf(nSteps);
+
+//			tmp=FLL.get_wf(ll.get_zs())/ll.get_wf();
+//			num+=tmp;
+//			denom+=norm(tmp);			
+			v1=ll.get_wf(0,0);
+			v2=ll.get_wf(0,1);
+			v3=ll.get_wf(1,0);
+			num+=v1*v2*conj(v3)/norm(ll.get_wf());
+			denom1+=norm(v1*v2/ll.get_wf());
+			denom2+=norm(v3/ll.get_wf());
         }
 
-		num/=(1.*nMeas);
-		denom/=(1.*nMeas);
-		num/=sqrt(denom);
-		//num/=sqrt(denom1*denom2);
+//		num/=(1.*nMeas);
+//		denom/=(1.*nMeas);
+//		num/=sqrt(denom);
+		num/=sqrt(denom1*denom2);
 
-        cout<<"nbin="<<nbin<<endl;
-        cout<<abs(num)<<endl;
-		cout<<1.-abs(num)*sqrt(comb(Ne,Ne/invNu))<<endl<<endl;
+        cout<<abs(num)<<" ";
+		cout<<1.-abs(num)*sqrt(comb(Ne,Ne/invNu))<<endl;
     }
+    ll.acceptance_rate();
 }
 //Particle Hole Symmetry (Ne9, maximal symmetric ds).
 void Explicit(){
-    int Ne, invNu, seed; bool testing=false; string type;
+    int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
     ifstream infile("params");
+    infile>>Ne>>invNu;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
     //initialize MC object
     
-    Ne=4; invNu=2;
-    int Ne1=Ne/2, Ne2=Ne-Ne1;
-    
-    vector<LATTICE> cfl1(invNu), cfl2(invNu);
-    for (int gs=0; gs<invNu; gs++) {
-        cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
-        //cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
-    }
-    cfl1[0].trace=1; cfl1[1].trace=-1;
-    cout<<cfl1[0].trace<<" "<<cfl1[1].trace<<endl;
-    LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);//Filled LL Wavefunction.
-    
-    vector< vector<int> > zs(Ne, vector<int>(2)), zs1(Ne1, vector<int>(2)),zs2(Ne2, vector<int>(2) );
+    //this parameter object will be used to initialize LATTICE
+    LATTICE_PARAMS params(Ne/invNu);
+    double tempdelta;
+    complex<double> wf;
+    infile>>tempdelta;
+    params.w_delta=complex<double>(tempdelta,0);
+    params.testing=testing;
+    params.seed=seed;
+
+
+    //cfl1 is the wavefunction that we will project into filled landau level.
+    //We will see if overlap with cfl2 after projection is close to 1 or not.
+    vector<vector<wf_info>> wfs(2);
+    wfs[0]=vector<wf_info>(2);
+    wfs[0][0]=wf_info(false, false, 0, Ne/invNu, 1);
+	wfs[0][0].wf=LATTICE(params);
+	params.gs=1;
+	wfs[0][1]=wf_info(false, false, Ne/invNu, Ne, -1);
+	wfs[0][1].wf=LATTICE(params);
+	
+	wfs[1]=vector<wf_info>(1);
+	wfs[1][0]=wf_info(false, false, 0, Ne, 1);
+	wfs[1][0].wf=LATTICE(Ne, 1, testing, "laughlin", seed, 0);
+
+	LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);
+	LATTICE_WRAPPER ll(Ne, wfs, seed, testing);
+	    
+    vector< vector<int> > zs(Ne, vector<int>(2));
     int temp;
     complex<double> out=0,v1,v2,v3;
-    double norm1=0,norm2=0,norm3=0;
+    double norm1=0,norm2=0,norm3=0, total=0;
    	vector< vector<int> >::iterator it;
-   	bool duplicate;
+   	bool duplicate, print;
 	//stuff for explicit PH calculation   	
 	for(int i=0;i<pow(Ne,Ne*2);i++){
 		duplicate=false;
@@ -1549,60 +1602,34 @@ void Explicit(){
 			}
 		}
 		//if(duplicate) continue;
+		v1=ll.get_wf(0,0,zs);
+		v2=ll.get_wf(0,1,zs);
+		v3=ll.get_wf(1,0,zs);
+		wf=ll.get_wf(zs);
 
-//don't antisymmetrize
-		zs1=zs;
-		zs1.resize(Ne1);
-		zs2=zs;
-		zs2.erase(zs2.begin(),zs2.begin()+Ne1);
-		for(auto it2=zs2.begin();it2!=zs2.end();++it2){
-			(*it2)[0]*=-1;
-			(*it2)[1]*=-1;
-		}
-		v1=cfl1[0].get_wf(zs1);
-		v2=cfl1[1].get_wf(zs2);
-
-		v3=FLL.get_wf(zs);
-
-//		norm3+=norm(v3);
-//		norm2+=norm(v1*v2);
-//		if (abs(v1*v2*v3)<1e-15) continue;
-
-		for(int p=0;p<2*Ne;p++){
-			cout<<zs[p/2][p%2]<<" ";
-		}
-		out+=v3*conj(v1*v2);
-		norm2+=norm(v1*v2);
-		norm3+=norm(v3);
-
-
-//		out+=1./conj(v3)/v1/v2*norm(v1*v2*v3);
-		cout<<v1*v2<<" "<<v3<<endl;
-	}
-	norm1=1;
-	//calculate normalization constants
-	zs=vector<vector<int> >(Ne1, vector<int> (2,0));
-	for(int i=0;i<pow(Ne,Ne1*2);i++){
-		duplicate=false;
-		for(int p=0;p<2*Ne1;p++){
-			temp=(i/pow(Ne,p));
-			zs[p/2][p%2]=temp%Ne;
-			if(p%2==1 and p/2>0){
-				it=find(zs.begin(),zs.begin()+p/2,zs[p/2]);
-				if(it!=zs.begin()+p/2){
-					duplicate=true;
-					break;
-				}
+		if(abs(wf)<1e-12 and (abs(v1*v2)>1e-12 or abs(v3)>1e-12)) print=true;
+		else print=false;
+		//print=false;
+		if(print){
+			for(int p=0;p<2*Ne;p++){
+				cout<<zs[p/2][p%2]<<" ";
 			}
 		}
-		if(duplicate) continue;
-
-		//norm1+=norm(cfl1[0].get_wf(zs));
-		//norm2+=norm(cfl1[1].get_wf(zs));
-	}
-	cout<<"final overlap: "<<sqrt(comb(Ne,Ne1))*abs(out/sqrt(norm1*norm2*norm3))<<endl;
 		
-    		
+		if(abs(wf)>1e-12){
+			out+=v3*conj(v1*v2)/norm(wf)*norm(wf);
+			norm2+=norm(v1*v2)/norm(wf)*norm(wf);
+			norm3+=norm(v3)/norm(wf)*norm(wf);
+		}
+
+//		out+=1./conj(v3)/v1/v2*norm(v1*v2*v3);
+		if(print){
+			total+=norm(v3);
+			 cout<<v1<<" "<<v2<<" "<<v3<<endl;
+		}
+	}
+	norm1=1;
+	cout<<"final overlap: "<<sqrt(comb(Ne,Ne/2))*abs(out/sqrt(norm1*norm2*norm3))<<" "<<total/norm3<<endl;
 }
 void GetCoefficient(vector<int> landauwfindex){
     int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
@@ -1618,7 +1645,7 @@ void GetCoefficient(vector<int> landauwfindex){
     int Ne1=5, Ne2=Ne-Ne1;
     
     //sanity;
-    if (landauwfindex.size()!=Ne2) {
+    if ((signed)landauwfindex.size()!=Ne2) {
         cout<<"landauwfindex.size() is wrong."<<endl;
         exit(0);
     }
@@ -1675,7 +1702,6 @@ void GetCoefficient(vector<int> landauwfindex){
         cout<<endl;
     }
 }
-
 void testIQHwf(){
     int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
     ifstream infile("params");
@@ -1710,7 +1736,6 @@ void testIQHwf(){
     cout<<"abs(overlap)="<<abs(value)<<" ,arg(overlap)="<<arg(value)<<endl;
     //So, alpha = Nphi*W_0^(0) + 0.5*Lx*(Nphi-1).
 }
-
 complex<double> landauwf(int Nphi, int n, vector<double> latticeshift, vector<int> z, double theta, double alpha){
     //make l1, l2 through theta, alpha.
     complex<double> L1, L2, value=1.;
