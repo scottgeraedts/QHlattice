@@ -241,7 +241,7 @@ void pairamplitude(string filename, bool trace, int num_core, bool pseu, bool mc
     ll[0].print_landautable();
     cout<<"\nfinish initialization."<<endl;
     
-    int mlength=3, nlength=10;//m=alpha, n=pair angular momentum.
+    int mlength=50, nlength=10;//m=alpha, n=pair angular momentum.
     int NPhi=Ne*invNu;
     
     //allowed momentum set on torus, got from ed code.
@@ -2547,7 +2547,8 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
                 extra_ds.push_back(vector<int>{2,1});
                 extra_ds.push_back(vector<int>{2,-1});
                 extra_ds.push_back(vector<int>{-1,-1});
-            }else if(kind=="cross"){
+            }
+            else if(kind=="cross"){
                 extra_ds.push_back(vector<int>{0,-1});
                 //extra_ds.push_back(vector<int>{1,-1});
 
@@ -2560,6 +2561,83 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
                 extra_ds.push_back(vector<int>{-1,1});
                 //extra_ds.push_back(vector<int>{-1,0});
             
+            }
+            else if(kind=="loop1_new"){
+                old_ds.clear(); extra_ds.clear();
+                old_ds.push_back(vector<int>{-1,0});
+                old_ds.push_back(vector<int>{-1,1});
+                old_ds.push_back(vector<int>{0,1});
+                old_ds.push_back(vector<int>{1,1});
+                old_ds.push_back(vector<int>{2,1});
+                old_ds.push_back(vector<int>{2,0});
+                old_ds.push_back(vector<int>{0,2});
+                old_ds.push_back(vector<int>{1,-1});
+                old_ds.push_back(vector<int>{0,-1});
+                old_ds.push_back(vector<int>{1,2});
+                old_ds.push_back(vector<int>{0,0});
+                old_ds.push_back(vector<int>{1,0});
+                
+                extra_ds.push_back(vector<int>{2,0});
+                extra_ds.push_back(vector<int>{2,1});
+                extra_ds.push_back(vector<int>{1,2});
+                extra_ds.push_back(vector<int>{0,2});
+                extra_ds.push_back(vector<int>{-1,1});
+                extra_ds.push_back(vector<int>{-1,0});
+                extra_ds.push_back(vector<int>{0,-1});
+                extra_ds.push_back(vector<int>{1,-1});
+                
+            }
+            else if(kind=="loop2_new"){
+                old_ds.clear(); extra_ds.clear();
+                old_ds.push_back(vector<int>{-1,0});
+                old_ds.push_back(vector<int>{-1,1});
+                old_ds.push_back(vector<int>{0,1});
+                old_ds.push_back(vector<int>{1,1});
+                old_ds.push_back(vector<int>{2,1});
+                old_ds.push_back(vector<int>{2,0});
+                old_ds.push_back(vector<int>{0,2});
+                old_ds.push_back(vector<int>{1,-1});
+                old_ds.push_back(vector<int>{0,-1});
+                old_ds.push_back(vector<int>{1,2});
+                old_ds.push_back(vector<int>{0,0});
+                old_ds.push_back(vector<int>{1,0});
+                
+                extra_ds.push_back(vector<int>{2,0});
+                extra_ds.push_back(vector<int>{2,1});
+                //                extra_ds.push_back(vector<int>{1,2});
+                extra_ds.push_back(vector<int>{0,2});
+                extra_ds.push_back(vector<int>{-1,1});
+                extra_ds.push_back(vector<int>{-1,0});
+                extra_ds.push_back(vector<int>{0,-1});
+                //                extra_ds.push_back(vector<int>{1,-1});
+                
+            }
+            else if(kind=="loop3_new"){
+                old_ds.clear(); extra_ds.clear();
+                old_ds.push_back(vector<int>{-1,0});
+                old_ds.push_back(vector<int>{-1,1});
+                old_ds.push_back(vector<int>{0,1});
+                old_ds.push_back(vector<int>{1,1});
+                old_ds.push_back(vector<int>{2,1});
+                old_ds.push_back(vector<int>{2,0});
+                old_ds.push_back(vector<int>{0,2});
+                old_ds.push_back(vector<int>{1,-1});
+                old_ds.push_back(vector<int>{0,-1});
+                old_ds.push_back(vector<int>{1,2});
+                old_ds.push_back(vector<int>{0,0});
+                old_ds.push_back(vector<int>{1,0});
+                
+                extra_ds.push_back(vector<int>{2,0});
+                extra_ds.push_back(vector<int>{2,1});
+                extra_ds.push_back(vector<int>{1,2});
+                extra_ds.push_back(vector<int>{0,2});
+                
+                extra_ds.push_back(vector<int>{-1,0});
+                extra_ds.push_back(vector<int>{-1,1});
+//                extra_ds.push_back(vector<int>{-1,0});
+                extra_ds.push_back(vector<int>{0,-1});
+                extra_ds.push_back(vector<int>{1,-1});
+                
             }
             else {cout<<"unrecoginzed kind."<<endl; exit(0);}
         }
