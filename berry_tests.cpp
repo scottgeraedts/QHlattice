@@ -1095,7 +1095,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
     //  mtwod: removes two electrons from the circular fermi surface, i.e. adds two "holes", moves these holes around
     //  oned: removes one electron from the fermi surface
     infile>>type;
-	infile>>kind;    
+//	infile>>kind;    //......
     //tempNe is the number of electrons in the circular part of the Fermi surface
     //Ne is the total number of electrons including the extra electrons/holes
     if(type=="twod") Ne=tempNe+2;
@@ -1817,7 +1817,7 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
             extra_ds.push_back(vector<int>{1,-2});
             extra_ds.push_back(vector<int>{2,-1});
         }
-        else if (tempNe==4) {
+        else if (tempNe==4){
             old_ds.clear(); extra_ds.clear();
             old_ds.push_back(vector<int>{0,0});
             old_ds.push_back(vector<int>{0,1});
@@ -2039,6 +2039,28 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
                 extra_ds.push_back(vector<int>{-4,3});
                 extra_ds.push_back(vector<int>{-4,-3});
                 extra_ds.push_back(vector<int>{-3,-4});
+                extra_ds.push_back(vector<int>{3,-4});
+                extra_ds.push_back(vector<int>{4,-3});
+            }
+            else if (kind=="loop3") {
+                extra_ds.push_back(vector<int>{4,3});
+                extra_ds.push_back(vector<int>{3,4});
+                extra_ds.push_back(vector<int>{-3,4});
+                extra_ds.push_back(vector<int>{-4,-3});
+                extra_ds.push_back(vector<int>{-4,3});
+//                extra_ds.push_back(vector<int>{-4,-3});
+                extra_ds.push_back(vector<int>{-3,-4});
+                extra_ds.push_back(vector<int>{3,-4});
+                extra_ds.push_back(vector<int>{4,-3});
+            }
+            else if (kind=="loop4") {
+                extra_ds.push_back(vector<int>{4,3});
+                extra_ds.push_back(vector<int>{3,4});
+                extra_ds.push_back(vector<int>{-3,4});
+                extra_ds.push_back(vector<int>{-4,3});
+                extra_ds.push_back(vector<int>{-3,-4});
+                extra_ds.push_back(vector<int>{-4,-3});
+//                extra_ds.push_back(vector<int>{-3,-4});
                 extra_ds.push_back(vector<int>{3,-4});
                 extra_ds.push_back(vector<int>{4,-3});
             }

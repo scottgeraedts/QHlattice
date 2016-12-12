@@ -9,8 +9,7 @@ bool IsOdd (int i) {
 }
 int main(){
     double theta=0.5*M_PI, alpha=1.0;
-    int num_core=2;
-//    CFL_berry_phases_parallel("params", "ne8bp", num_core, "fullloop", theta, alpha);//params_name, output_name, num_core, kind.
+    int num_core=4;
 
 //	ifstream infile("params");
 //	int Ne, invNu, nWarmups, nBins, nMeas, nSteps, seed;
@@ -84,10 +83,14 @@ int main(){
 //    pairamplitude("paramsne20", true, num_core);
     
 //    pairamplitude("paramsne2", true, num_core, true, false);//first bool: trace, second bool: pseudo-potential, third bool: monte-carlo.
-
-    CFL_berry_phases_parallel("params", "ne11new", num_core, "loop1_new", theta, alpha);
-//    CFL_berry_phases_parallel("params", "ne11new", num_core, "loop2_new", theta, alpha);
-//    CFL_berry_phases_parallel("params", "ne11new", num_core, "loop3_new", theta, alpha);
+    
+    CFL_berry_phases_parallel("params_h", "ne11new", num_core, "loop1_new", theta, alpha);
+    CFL_berry_phases_parallel("params_h", "ne11new", num_core, "loop2_new", theta, alpha);
+    CFL_berry_phases_parallel("params_h", "ne11new", num_core, "loop3_new", theta, alpha);
+    
+//    CFL_berry_phases_parallel("params_e", "ne69", num_core, "loop2", theta, alpha);
+//    CFL_berry_phases_parallel("params_e", "ne69", num_core, "loop3", theta, alpha);
+//    CFL_berry_phases_parallel("params_e", "ne69", num_core, "loop4", theta, alpha);
     
 }
 void outformfactor(){
