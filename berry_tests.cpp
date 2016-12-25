@@ -2060,6 +2060,16 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
                 extra_ds.push_back(vector<int>{-4,3});
                 extra_ds.push_back(vector<int>{-3,-4});
                 extra_ds.push_back(vector<int>{-4,-3});
+                //                extra_ds.push_back(vector<int>{-3,-4});
+                extra_ds.push_back(vector<int>{3,-4});
+                extra_ds.push_back(vector<int>{4,-3});
+            }
+            else if (kind=="loop5") {
+                extra_ds.push_back(vector<int>{4,3});
+                extra_ds.push_back(vector<int>{3,4});
+//                extra_ds.push_back(vector<int>{-3,4});
+//                extra_ds.push_back(vector<int>{-4,3});
+//                extra_ds.push_back(vector<int>{-4,-3});
 //                extra_ds.push_back(vector<int>{-3,-4});
                 extra_ds.push_back(vector<int>{3,-4});
                 extra_ds.push_back(vector<int>{4,-3});
