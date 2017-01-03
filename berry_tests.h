@@ -34,6 +34,8 @@ void check_orthogonality(string type);
 void single_run(string filename="params", bool trace=false);
 void structurefactor(string, int num_core=1);
 void pairamplitude(string filename, bool trace, int num_core=1, bool pseu=false, bool mc=true);
+void pairamplitude_new(string filename, bool trace, int num_core=1, bool pseu=false, bool mc=true);
+void pairamplitude_ED(string filename, bool trace);
 
 //Energetics
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename);

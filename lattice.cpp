@@ -1008,108 +1008,209 @@ void LATTICE::print_structure_factors(int nMeas, string filename){
     sqout2_mqy.close();
     smaout.close();
 }
-void LATTICE::setup_laguerre_con() {
-    int mlength=50;
-    laguerretable =vector<vector<vector<vector<double>>>> (10, vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi))));
+//void LATTICE::setup_laguerre_con() {
+//    int mlength=50;
+//    laguerretable =vector<vector<vector<vector<double>>>> (10, vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi))));
+//    for (int n=0; n<10; n++) {
+//        for (int a=0; a<mlength; a++) {
+//            double alp;
+//            if (a==0) {
+//                alp=1./sqrt(1.*NPhi);
+//            }
+//            else alp=1.-log(a+1)/log(mlength);
+//            for (int x=0; x<NPhi; x++) {
+//                for (int y=0; y<NPhi; y++) {
+//                    for (int rundx=-5; rundx<6; rundx++) {
+//                        for (int rundy=-5; rundy<6; rundy++) {
+//                            double u=2.*norm((x+rundx*NPhi)/(1.*NPhi)*L1 + (y+rundy*NPhi)/(1.*NPhi)*L2);
+//                            u*=0.25/alp;
+////                            laguerretable[n][a][x][y]+=pow(alp-1,n)/pow(alp,n+1)*laguerre(n,u/(1.-alp))*exp(-u);
+//                            laguerretable[n][a][x][y]+=pow(alp-1,n)*laguerre(n,u/(1.-alp))*exp(-u);
+//                            //if I do it in this way, all pairamplitude goes to 0 as alp approaches 0. is this a signal of sth?
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    
+//    ofstream outfile("pairamplitude/setuplaguerrel_con");
+//        for (int n=0; n<10; n++) {
+//            for (int a=0; a<mlength; a++) {
+//                for (int x=0; x<NPhi; x++) {
+//                    for (int y=0; y<NPhi; y++) {
+//                        outfile<<setprecision(26)<<laguerretable[n][a][x][y]<<endl;
+//                    }
+//                }
+//            }
+//        }
+//    
+//}
+//void LATTICE::setup_laguerre_lat() {
+//    int mlength=50;
+//    laguerretable=vector<vector<vector<vector<double>>>> (10, vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi))));
+//    
+//    for (int n=0; n<10; n++) {
+//        for (int a=0; a<mlength; a++) {
+//            double alp;
+//            if (a==0) alp=1./sqrt(1.*NPhi);
+//            else alp=1.-log(a+1)/log(mlength);
+//            // the first and last element of alpha is 1/sqrt{NPhi} and 0.
+//            
+//            vector<vector<double>> qtable=vector<vector<double>>(NPhi, vector<double>(NPhi));
+//            
+//            for (int qx0=0; qx0<NPhi; qx0++) {
+//                for (int qy0=0; qy0<NPhi; qy0++) {
+//                    for (int rundx=-5; rundx<6; rundx++) {
+//                        for (int rundy=-5; rundy<6; rundy++) {
+//                            int qx=qx0+rundx*NPhi, qy=qy0+rundy*NPhi;
+//                            double q2=2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2);
+//                            qtable[qx0][qy0]+=2.*laguerre(n, q2)*exp(-alp*q2);
+//                        }
+//                    }
+//                }
+//            }
+//            
+//            for (int x=0; x<NPhi; x++) for (int y=0; y<NPhi; y++)
+//                for (int qx0=0; qx0<NPhi; qx0++) for (int qy0=0; qy0<NPhi; qy0++)
+//                    laguerretable[n][a][x][y]+=qtable[qx0][qy0]*cos(2.*M_PI*(qx0*y-qy0*x)/NPhi)/(1.*NPhi);
+//            
+//        }
+//    }
+//    
+//    ofstream outfile("pairamplitude/setuplaguerrel_lat");
+//    for (int n=0; n<10; n++)
+//        for (int a=0; a<mlength; a++)
+//            for (int x=0; x<NPhi; x++)
+//                for (int y=0; y<NPhi; y++)
+//                    outfile<<setprecision(26)<<laguerretable[n][a][x][y]<<endl;
+//    
+//    //    cout<<"table outprint"<<endl;
+//    
+//    //    for (int x=0; x<NPhi; x++) {
+//    //        for (int y=0; y<NPhi; y++) {
+//    //            cout<<"x "<<x<<" "<<"y "<<y<<" lagtable="<<laguerretable[1][1][x][y]<<endl;
+//    //        }
+//    //    }
+//    
+//    //    for (int x=0; x<NPhi; x++) {
+//    //        for (int y=0; y<NPhi; y++) {
+//    //            cout<<laguerretable[1][49][x][y]<<" ";
+//    //        }
+//    //        cout<<endl;
+//    //    }
+//    
+//}
+void LATTICE::setup_laguerre() {
+    //    int mlength=50;
+    //    laguerretable=vector<vector<vector<vector<double>>>> (10, vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi))));
+    
+    laguerretable=vector<vector<vector<double>>> (10,vector<vector<double>>(NPhi, vector<double>(NPhi,0.)));
+    
+    
+    //V(x) = \sum_{q\in all lattice} L_n(q^2)*Exp[iq1*x1 + iq2*x2].
+    //     = \sum_{q\in ++  lattice} L_n(q^2)*4*Cos[q1*x1]*Cos[q2*x2].
+    
     for (int n=0; n<10; n++) {
-        for (int a=0; a<mlength; a++) {
-            double alp;
-            if (a==0) {
-                alp=1./sqrt(1.*NPhi);
-            }
-            else alp=1.-log(a+1)/log(mlength);
-            for (int x=0; x<NPhi; x++) {
-                for (int y=0; y<NPhi; y++) {
-                    for (int rundx=-5; rundx<6; rundx++) {
-                        for (int rundy=-5; rundy<6; rundy++) {
-                            double u=2.*norm((x+rundx*NPhi)/(1.*NPhi)*L1 + (y+rundy*NPhi)/(1.*NPhi)*L2);
-                            u*=0.25/alp;
-                            laguerretable[n][a][x][y]+=pow(alp-1,n)/pow(alp,n+1)*laguerre(n,u/(1.-alp))*exp(-u);
-                        }
+        
+        //        vector<vector<double>> qtable=vector<vector<double>>((int)(NPhi/2)+1, vector<double>((int)(NPhi/2)+1,0.));
+        //        for (int qx=0; qx<=(int)(NPhi/2); qx++)
+        //            for (int qy=0; qy<=(int)(NPhi/2); qy++) {
+        //                double q2=2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2);
+        //                qtable[qx][qy]+=laguerre(n, q2);
+        //            }
+        
+        //        for (int qx0=0; qx0<NPhi; qx0++)
+        //            for (int qy0=0; qy0<NPhi; qy0++)
+        //                for (int rundx=-1; rundx<2; rundx++)
+        //                    for (int rundy=-1; rundy<2; rundy++) {
+        //                        int qx=qx0+rundx*NPhi, qy=qy0+rundy*NPhi;
+        //                        double q2=2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2);
+        //                        double alp=0.1;
+        ////                        qtable[qx0][qy0]+=2.*laguerre(n, q2)*exp(-alp*q2);
+        //                        qtable[qx0][qy0]+=2.*laguerre(n, q2);
+        //                    }
+        
+        for (int x=0; x<NPhi; x++)
+            for (int y=0; y<NPhi; y++)
+                for (int qx=0; qx<=(int)(NPhi/2); qx++)
+                    for (int qy=0; qy<=(int)(NPhi/2); qy++) {
+                        //                        laguerretable[n][x][y]+=qtable[qx][qy]*cos(2.*M_PI*(qx*y-qy*x)/NPhi)/(1.*NPhi);
+                        //                        laguerretable[n][x][y]+=(4.*NPhi)/qtable[qx][qy]*cos(2.*M_PI*qx*y/NPhi)*cos(2.*M_PI*qy*x/NPhi);
+                        
+                        if (qx*qy==0 && qx+qy==0)
+                            laguerretable[n][x][y]+=
+                            laguerre(2*n+1, 2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2));
+                        else if (qx*qy==0)
+                            laguerretable[n][x][y]+=
+                            2.*laguerre(2*n+1, 2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2))*cos(2.*M_PI*qx*y/NPhi)*cos(2.*M_PI*qy*x/NPhi);
+                        else
+                            laguerretable[n][x][y]+=
+                            4.*laguerre(2*n+1, 2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2))*cos(2.*M_PI*qx*y/NPhi)*cos(2.*M_PI*qy*x/NPhi);
                     }
-                }
-            }
-        }
     }
     
-    ofstream outfile("pairamplitude/setuplaguerrel_con");
-        for (int n=0; n<10; n++) {
-            for (int a=0; a<mlength; a++) {
-                for (int x=0; x<NPhi; x++) {
-                    for (int y=0; y<NPhi; y++) {
-                        outfile<<setprecision(26)<<laguerretable[n][a][x][y]<<endl;
-                    }
-                }
-            }
-        }
-    
-}
-void LATTICE::setup_laguerre_lat() {
-    int mlength=50;
-    laguerretable=vector<vector<vector<vector<double>>>> (10, vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi))));
-    
-    for (int n=0; n<10; n++) {
-        for (int a=0; a<mlength; a++) {
-            double alp;
-            if (a==0) alp=1./sqrt(1.*NPhi);
-            else alp=1.-log(a+1)/log(mlength);
-            // the first and last element of alpha is 1/sqrt{NPhi} and 0.
-            
-            vector<vector<double>> qtable=vector<vector<double>>(NPhi, vector<double>(NPhi));
-            
-            for (int qx0=0; qx0<NPhi; qx0++) {
-                for (int qy0=0; qy0<NPhi; qy0++) {
-                    for (int rundx=-5; rundx<6; rundx++) {
-                        for (int rundy=-5; rundy<6; rundy++) {
-                            int qx=qx0+rundx*NPhi, qy=qy0+rundy*NPhi;
-                            double q2=2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2);
-                            qtable[qx0][qy0]+=2.*laguerre(n, q2)*exp(-alp*q2);
-                        }
-                    }
-                }
-            }
-            
-            for (int x=0; x<NPhi; x++) for (int y=0; y<NPhi; y++)
-                    for (int qx0=0; qx0<NPhi; qx0++) for (int qy0=0; qy0<NPhi; qy0++)
-                            laguerretable[n][a][x][y]+=qtable[qx0][qy0]*cos(2.*M_PI*(qx0*y-qy0*x)/NPhi)/(1.*NPhi);
-            
-        }
-    }
-
     ofstream outfile("pairamplitude/setuplaguerrel_lat");
     for (int n=0; n<10; n++)
-        for (int a=0; a<mlength; a++)
-            for (int x=0; x<NPhi; x++)
-                for (int y=0; y<NPhi; y++)
-                    outfile<<setprecision(26)<<laguerretable[n][a][x][y]<<endl;
+        for (int x=0; x<NPhi; x++)
+            for (int y=0; y<NPhi; y++)
+                outfile<<setprecision(26)<<laguerretable[n][x][y]<<endl;
     
-//    cout<<"table outprint"<<endl;
+}
+void LATTICE::setup_laguerre2(int n) {
+//    laguerretable=vector<vector<vector<double>>> (10,vector<vector<double>>(NPhi, vector<double>(NPhi,0.)));
+    laguerretable2=vector<vector<double>> (NPhi, vector<double>(NPhi,0.));
+//    vector<vector<double>> qtable = vector<vector<double>>((int)(NPhi/2)+1, vector<double>((int)(NPhi/2)+1,0.));
     
-//    for (int x=0; x<NPhi; x++) {
-//        for (int y=0; y<NPhi; y++) {
-//            cout<<"x "<<x<<" "<<"y "<<y<<" lagtable="<<laguerretable[1][1][x][y]<<endl;
-//        }
-//    }
-    
-//    for (int x=0; x<NPhi; x++) {
-//        for (int y=0; y<NPhi; y++) {
-//            cout<<laguerretable[1][49][x][y]<<" ";
-//        }
-//        cout<<endl;
-//    }
+    for (int x=0; x<NPhi; x++)
+        for (int y=0; y<NPhi; y++)
+            for (int qx=0; qx<=(int)(NPhi/2); qx++)
+                for (int qy=0; qy<=(int)(NPhi/2); qy++) {
+                    if (qx*qy==0 && qx+qy==0)
+                        laguerretable2[x][y]+=
+                        laguerre(n, 2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2));
+                    else if (qx*qy==0)
+                        laguerretable2[x][y]+=
+                        2.*laguerre(n, 2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2))*cos(2.*M_PI*qx*y/NPhi)*cos(2.*M_PI*qy*x/NPhi);
+                    else
+                        laguerretable2[x][y]+=
+                        4.*laguerre(n, 2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2))*cos(2.*M_PI*qx*y/NPhi)*cos(2.*M_PI*qy*x/NPhi);
+                }
+ 
+//    ofstream outfile("pairamplitude/setuplaguerrel_lat");
+//    for (int n=0; n<10; n++)
+//        for (int x=0; x<NPhi; x++)
+//            for (int y=0; y<NPhi; y++)
+//                outfile<<setprecision(26)<<laguerretable[n][x][y]<<endl;
     
 }
 double LATTICE::pairamplitude(int n, int a) {
+    //TODO::pairamplitude monte carlo
     double ret=0.;
     for (int i=0; i<Ne; i++) {
         for (int j=0; j<i; j++) {
             int x=((locs[i][0]-locs[j][0])%NPhi+NPhi)%NPhi;
             int y=((locs[i][1]-locs[j][1])%NPhi+NPhi)%NPhi;
-            ret+=laguerretable[n][a][x][y];
+//            ret+=laguerretable[n][a][x][y];
+            ret+=laguerretable[n][x][y];
         }
     }
     return ret;
 }
+
+//double LATTICE::pairamplitude(int n) {
+//    //TODO::pairamplitude monte carlo
+//    double ret=0.;
+//    for (int i=0; i<Ne; i++) {
+//        for (int j=0; j<i; j++) {
+//            int x=((locs[i][0]-locs[j][0])%NPhi+NPhi)%NPhi;
+//            int y=((locs[i][1]-locs[j][1])%NPhi+NPhi)%NPhi;
+//            ret+=laguerretable[n][x][y];
+//        }
+//    }
+//    return ret;
+//}
+
 complex<double> LATTICE::formfactor(int qx, int qy){
     complex<double> out=0;
     complex<double> temp;
@@ -1207,7 +1308,6 @@ void LATTICE::reset(){
     SMAq=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
     
     check_sanity();
-     
 }
 //same as above, only sets up the starting determinants
 void LATTICE::reset(const vector< vector<int> > &zs){
@@ -1567,24 +1667,24 @@ void LATTICE::print_landautable(){
     }
     outfile.close();
 }
-void LATTICE::print_laguerreltable(){
-    ofstream outfile("pairamplitude/laguerreltable");
-//    laguerretable=vector<vector<vector<vector<double>>>> (10, vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi))));
-    
-//    int m=1;
-    for (int m=0; m<10; m++) {
-        for (int a=0; a<50; a++) {
-            for (int x=0; x<NPhi; x++) {
-                for (int y=0; y<NPhi; y++) {
-                    outfile<< setprecision(26) <<real(laguerretable[m][a][x][y])<<" "<<imag(laguerretable[m][a][x][y])<<" ";
-                }
-            }
-            outfile<<endl;
-        }
-//        outfile<<endl;
-    }
-    outfile.close();
-}
+//void LATTICE::print_laguerreltable(){
+//    ofstream outfile("pairamplitude/laguerreltable");
+////    laguerretable=vector<vector<vector<vector<double>>>> (10, vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi))));
+//    
+////    int m=1;
+//    for (int m=0; m<10; m++) {
+//        for (int a=0; a<50; a++) {
+//            for (int x=0; x<NPhi; x++) {
+//                for (int y=0; y<NPhi; y++) {
+//                    outfile<< setprecision(26) <<real(laguerretable[m][a][x][y])<<" "<<imag(laguerretable[m][a][x][y])<<" ";
+//                }
+//            }
+//            outfile<<endl;
+//        }
+////        outfile<<endl;
+//    }
+//    outfile.close();
+//}
 
 //normalized filled LL wave function
 //made from determinants of single particle wave functions

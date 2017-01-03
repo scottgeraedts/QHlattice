@@ -212,7 +212,184 @@ void single_run(string filename, bool trace){
     eout.close();
     outfile.close();
 }
-void pairamplitude(string filename, bool trace, int num_core, bool pseu, bool mc) {
+//void pairamplitude(string filename, bool trace, int num_core, bool pseu, bool mc) {
+//    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+//    bool testing;
+//    double theta_t, theta, alpha;
+//    string type;
+//    ifstream infile(filename);
+//    infile>>Ne>>invNu>>theta_t>>alpha;
+//    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+//    infile>>seed;
+//    infile>>testing;
+//    infile>>type;
+//    //initialize MC object
+//    theta=theta_t*M_PI;
+//    
+//    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
+//    
+//    omp_set_num_threads(num_core);
+//    
+//    vector<LATTICE> ll(num_core);
+//    for (int i=0; i<num_core; i++) {
+//        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
+//        //        ll[i].setup_laguerre_lat(); //lattice summation version.
+//        ll[i].setup_laguerre_con(); //continuous integral version.
+//        //        ll[i].setup_landautable();
+//    }
+//    //    ll[0].print_laguerreltable();
+//    //    ll[0].print_landautable();
+//    cout<<"\nfinish initialization."<<endl;
+//    
+//    int mlength=50, nlength=10;//m=alpha, n=pair angular momentum.
+//    int NPhi=Ne*invNu;
+//    
+//    //allowed momentum set on torus, got from ed code.
+//    //use this to get matrix element by lattice summation over sigma function.
+//    //    vector<hop> hoplist_ed;//hoplist from ed, amplitude are laugerrel-gaussian with theta function.
+//    
+//    vector<hop> hoplist_lat;//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
+//    //    vector<vector<hop>> hoplist_lat(mlength);//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
+//    
+//    //do this if want to get the lattice-summation version of pseudo-potential for ed use.
+//    if (pseu) {
+//        ifstream hopinfile("pairamplitude/hoplist");
+//        //    vector<complex<double>> total(mlength);//the lattice-sum is 2 large, so normalized it a little bit.
+//        
+//        //        int count=0;
+//        while (!hopinfile.eof()) {
+//            double re,im;
+//            hop tmp;
+//            tmp.list.resize(4);
+//            hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
+//            hopinfile>>re>>im;
+//            
+//            //            count++;
+//            //            cout<<"cout = "<<count<<endl;
+//            //            cout<<"re, im = "<<re<<" "<<im<<endl;
+//            
+//            for (int a=0; a<mlength; a++) {
+//                //                cout<<"a="<<a<<endl;
+//                complex<double> sum;//lattice summation.
+//                for (int x1=0; x1<NPhi*NPhi; x1++) {
+//                    for (int x2=0; x2<NPhi*NPhi; x2++) {
+//                        int x11=x1/NPhi, x12=x1%NPhi, x21=x2/NPhi, x22=x2%NPhi;
+//                        int x = ((x11-x21)%NPhi+NPhi)%NPhi;
+//                        int y = ((x12-x22)%NPhi+NPhi)%NPhi;
+//                        
+//                        int m=3;//just pick the 'm_{th}' pseudo-potential.
+//                        
+//                        sum+=
+//                        0.5*ll[0].laguerretable[m][a][x][y]
+//                        *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+//                        *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+//                        *ll[0].landautable[tmp.list[2]][x21][x22]
+//                        *ll[0].landautable[tmp.list[3]][x11][x12];
+//                        
+//                        sum+=
+//                        0.5*ll[0].laguerretable[m][a][x][y]
+//                        *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+//                        *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+//                        *ll[0].landautable[tmp.list[3]][x21][x22]
+//                        *ll[0].landautable[tmp.list[2]][x11][x12];
+//                        
+//                        sum-=
+//                        0.5*ll[0].laguerretable[m][a][x][y]
+//                        *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+//                        *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+//                        *ll[0].landautable[tmp.list[2]][x21][x22]
+//                        *ll[0].landautable[tmp.list[3]][x11][x12];
+//                        
+//                        sum-=
+//                        0.5*ll[0].laguerretable[m][a][x][y]
+//                        *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+//                        *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+//                        *ll[0].landautable[tmp.list[3]][x21][x22]
+//                        *ll[0].landautable[tmp.list[2]][x11][x12];
+//                    }
+//                }
+//                tmp.ele.push_back(sum);
+//                
+//            }
+//            hoplist_lat.push_back(tmp);
+//        }
+//        hopinfile.close();
+//        cout<<"finish hoplist calculation"<<endl;
+//        
+//        //        for (int a=0; a<mlength; a++) {
+//        //            hoplist_lat[a].pop_back();
+//        //            //output hoplist.
+//        //            ofstream outhop("pairamplitude/hoplist_lat_" + to_string( (long long int)a ));
+//        //            for (int i=0; i<hoplist_lat[a].size(); i++) {
+//        //                outhop<<hoplist_lat[a][i].list[0]<<" "<<hoplist_lat[a][i].list[1]<<" "<<hoplist_lat[a][i].list[2]<<" "<<hoplist_lat[a][i].list[3]<<endl;
+//        //                for (int k=0; k<hoplist_lat[a][i].ele.size(); k++)
+//        //                    outhop<< setprecision(26) <<real(hoplist_lat[a][i].ele[k])<<" "<<imag(hoplist_lat[a][i].ele[k])<<" ";
+//        //                outhop<<endl;
+//        //            }
+//        //            outhop.close();
+//        //
+//        //            if (a==0) {
+//        //                ofstream outhop("pairamplitude/hoplist_lat");
+//        //                for (int i=0; i<hoplist_lat[a].size(); i++) {
+//        //                    outhop<<hoplist_lat[a][i].list[0]<<" "<<hoplist_lat[a][i].list[1]<<" "<<hoplist_lat[a][i].list[2]<<" "<<hoplist_lat[a][i].list[3]<<endl;
+//        //                    for (int k=0; k<hoplist_lat[a][i].ele.size(); k++)
+//        //                        outhop<< setprecision(26) <<real(hoplist_lat[a][i].ele[k])<<" "<<imag(hoplist_lat[a][i].ele[k])<<" ";
+//        //                    outhop<<endl;
+//        //                }
+//        //            }
+//        //            outhop.close();
+//        //        }
+//        
+//        
+//        hoplist_lat.pop_back();
+//        //output hoplist.
+//        ofstream outhop("pairamplitude/hoplist_lat");
+//        for (int i=0; i<hoplist_lat.size(); i++) {
+//            outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
+//            for (int k=0; k<hoplist_lat[i].ele.size(); k++)
+//                outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
+//            outhop<<endl;
+//        }
+//        outhop.close();
+//        
+//        
+//        
+//    }
+//    
+//    //this is for monte-carlo calculation of pair-amplitude.
+//    if (mc) {
+//#pragma omp parallel for
+//        for(int s=0;s<nBins;s++){
+//            int coren=omp_get_thread_num();
+//            //        printf("coren=%d\n",coren);
+//            //        ll[coren].change_dbar_parameter(s*0.1,s*0.1);
+//            ll[coren].reset();
+//            ll[coren].step(nWarmup);
+//            
+//            vector<vector<double>> pair_amp(mlength, vector<double>(nlength, 0.));
+//            ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
+//            
+//            for(int i=0;i<nMeas;i++){
+//                ll[coren].step(nSteps);
+//                //            ll[coren].update_structure_factors();
+//                for (int m=0; m<mlength; m++) {
+//                    for (int n=0; n<nlength; n++) {
+//                        pair_amp[m][n]+=ll[coren].pairamplitude(n, m)/(0.5*nMeas*Ne*(Ne-1));
+//                    }
+//                }
+//            }
+//            //        ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
+//            for (int m=0; m<mlength; m++) {
+//                for (int n=0; n<nlength; n++) {
+//                    pairout<<pair_amp[m][n]<<endl;
+//                }
+//            }
+//            pairout.close();
+//        }
+//    }
+//    
+//}
+void pairamplitude_ED(string filename, bool trace) {
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, theta, alpha;
@@ -225,169 +402,130 @@ void pairamplitude(string filename, bool trace, int num_core, bool pseu, bool mc
     infile>>type;
     //initialize MC object
     theta=theta_t*M_PI;
-    
-    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
-    
-    omp_set_num_threads(num_core);
-    
-    vector<LATTICE> ll(num_core);
-    for (int i=0; i<num_core; i++) {
-        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
-        ll[i].setup_laguerre_lat(); //lattice summation version.
-//        ll[i].setup_laguerre_con(); //continuous integral version.
-        ll[i].setup_landautable();
-    }
-    ll[0].print_laguerreltable();
-    ll[0].print_landautable();
-    cout<<"\nfinish initialization."<<endl;
-    
-    int mlength=50, nlength=10;//m=alpha, n=pair angular momentum.
     int NPhi=Ne*invNu;
     
-    //allowed momentum set on torus, got from ed code.
-    //use this to get matrix element by lattice summation over sigma function.
-//    vector<hop> hoplist_ed;//hoplist from ed, amplitude are laugerrel-gaussian with theta function.
+    cout<<"@@@@@@ pairamplitude 2-particle ED @@@@@@"<<endl;
+    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
     
-    vector<hop> hoplist_lat;//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
-//    vector<vector<hop>> hoplist_lat(mlength);//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
+    LATTICE ll(Ne, invNu, testing, type, 0, 0, theta, alpha);
+    ll.setup_laguerre2(1);
+    ll.setup_landautable();
     
-    //do this if want to get the lattice-summation version of pseudo-potential for ed use.
-    if (pseu) {
-        ifstream hopinfile("pairamplitude/hoplist");
-        //    vector<complex<double>> total(mlength);//the lattice-sum is 2 large, so normalized it a little bit.
+    cout<<"\nfinish initialization."<<endl;
+    
+    vector<hop> hoplist_lat;//hoplist from latsum.
+    
+    ifstream hopinfile("pairamplitude/hoplist");
+    
+    bool flag=true;
+    complex<double> base=1.;
+    while (!hopinfile.eof()) {
+        double re,im;
+        hop tmp;
+        tmp.list.resize(4);
+        hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
+        hopinfile>>re>>im;
         
-//        int count=0;
-        while (!hopinfile.eof()) {
-            double re,im;
-            hop tmp;
-            tmp.list.resize(4);
-            hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
-            hopinfile>>re>>im;
-            
-//            count++;
-//            cout<<"cout = "<<count<<endl;
-//            cout<<"re, im = "<<re<<" "<<im<<endl;
-            
-            for (int a=0; a<mlength; a++) {
-//                cout<<"a="<<a<<endl;
-                complex<double> sum;//lattice summation.
-                for (int x1=0; x1<NPhi*NPhi; x1++) {
-                    for (int x2=0; x2<NPhi*NPhi; x2++) {
-                        int x11=x1/NPhi, x12=x1%NPhi, x21=x2/NPhi, x22=x2%NPhi;
-                        int x = ((x11-x21)%NPhi+NPhi)%NPhi;
-                        int y = ((x12-x22)%NPhi+NPhi)%NPhi;
-                        
-                        int m=3;//just pick the 'm_{th}' pseudo-potential.
-                        
-                        sum+=
-                        0.5*ll[0].laguerretable[m][a][x][y]
-                        *conj(ll[0].landautable[tmp.list[0]][x11][x12])
-                        *conj(ll[0].landautable[tmp.list[1]][x21][x22])
-                        *ll[0].landautable[tmp.list[2]][x21][x22]
-                        *ll[0].landautable[tmp.list[3]][x11][x12];
-                        
-                        sum+=
-                        0.5*ll[0].laguerretable[m][a][x][y]
-                        *conj(ll[0].landautable[tmp.list[1]][x11][x12])
-                        *conj(ll[0].landautable[tmp.list[0]][x21][x22])
-                        *ll[0].landautable[tmp.list[3]][x21][x22]
-                        *ll[0].landautable[tmp.list[2]][x11][x12];
-                        
-                        sum-=
-                        0.5*ll[0].laguerretable[m][a][x][y]
-                        *conj(ll[0].landautable[tmp.list[1]][x11][x12])
-                        *conj(ll[0].landautable[tmp.list[0]][x21][x22])
-                        *ll[0].landautable[tmp.list[2]][x21][x22]
-                        *ll[0].landautable[tmp.list[3]][x11][x12];
-                        
-                        sum-=
-                        0.5*ll[0].laguerretable[m][a][x][y]
-                        *conj(ll[0].landautable[tmp.list[0]][x11][x12])
-                        *conj(ll[0].landautable[tmp.list[1]][x21][x22])
-                        *ll[0].landautable[tmp.list[3]][x21][x22]
-                        *ll[0].landautable[tmp.list[2]][x11][x12];
-                    }
-                }
-                tmp.ele.push_back(sum);
-                
-            }
-            hoplist_lat.push_back(tmp);
-        }
-        hopinfile.close();
-        cout<<"finish hoplist calculation"<<endl;
+        complex<double> sum=0.;//lattice summation.
         
-//        for (int a=0; a<mlength; a++) {
-//            hoplist_lat[a].pop_back();
-//            //output hoplist.
-//            ofstream outhop("pairamplitude/hoplist_lat_" + to_string( (long long int)a ));
-//            for (int i=0; i<hoplist_lat[a].size(); i++) {
-//                outhop<<hoplist_lat[a][i].list[0]<<" "<<hoplist_lat[a][i].list[1]<<" "<<hoplist_lat[a][i].list[2]<<" "<<hoplist_lat[a][i].list[3]<<endl;
-//                for (int k=0; k<hoplist_lat[a][i].ele.size(); k++)
-//                    outhop<< setprecision(26) <<real(hoplist_lat[a][i].ele[k])<<" "<<imag(hoplist_lat[a][i].ele[k])<<" ";
-//                outhop<<endl;
+//        for (int x1=0; x1<NPhi*NPhi; x1++) {
+//            for (int x2=0; x2<NPhi*NPhi; x2++) {
+//                int x11=x1/NPhi, x12=x1%NPhi, x21=x2/NPhi, x22=x2%NPhi;
+//                int x = ((x11-x21)%NPhi+NPhi)%NPhi;
+//                int y = ((x12-x22)%NPhi+NPhi)%NPhi;
+//                
+//                int m=2;//just pick the 'm_{th}' pseudo-potential.
+//                
+//                sum+=
+//                0.5*ll[0].laguerretable[m][x][y]
+//                *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+//                *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+//                *ll[0].landautable[tmp.list[2]][x21][x22]
+//                *ll[0].landautable[tmp.list[3]][x11][x12];
+//                
+//                sum+=
+//                0.5*ll[0].laguerretable[m][x][y]
+//                *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+//                *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+//                *ll[0].landautable[tmp.list[3]][x21][x22]
+//                *ll[0].landautable[tmp.list[2]][x11][x12];
+//                
+//                sum-=
+//                0.5*ll[0].laguerretable[m][x][y]
+//                *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+//                *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+//                *ll[0].landautable[tmp.list[2]][x21][x22]
+//                *ll[0].landautable[tmp.list[3]][x11][x12];
+//                
+//                sum-=
+//                0.5*ll[0].laguerretable[m][x][y]
+//                *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+//                *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+//                *ll[0].landautable[tmp.list[3]][x21][x22]
+//                *ll[0].landautable[tmp.list[2]][x11][x12];
 //            }
-//            outhop.close();
-//            
-//            if (a==0) {
-//                ofstream outhop("pairamplitude/hoplist_lat");
-//                for (int i=0; i<hoplist_lat[a].size(); i++) {
-//                    outhop<<hoplist_lat[a][i].list[0]<<" "<<hoplist_lat[a][i].list[1]<<" "<<hoplist_lat[a][i].list[2]<<" "<<hoplist_lat[a][i].list[3]<<endl;
-//                    for (int k=0; k<hoplist_lat[a][i].ele.size(); k++)
-//                        outhop<< setprecision(26) <<real(hoplist_lat[a][i].ele[k])<<" "<<imag(hoplist_lat[a][i].ele[k])<<" ";
-//                    outhop<<endl;
-//                }
-//            }
-//            outhop.close();
 //        }
         
-        
-        hoplist_lat.pop_back();
-        //output hoplist.
-        ofstream outhop("pairamplitude/hoplist_lat");
-        for (int i=0; i<hoplist_lat.size(); i++) {
-            outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
-            for (int k=0; k<hoplist_lat[i].ele.size(); k++)
-                outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
-            outhop<<endl;
-        }
-        outhop.close();
-        
-        
-        
-    }
-
-  //this is for monte-carlo calculation of pair-amplitude.
-    if (mc) {
-#pragma omp parallel for
-        for(int s=0;s<nBins;s++){
-            int coren=omp_get_thread_num();
-            //        printf("coren=%d\n",coren);
-            //        ll[coren].change_dbar_parameter(s*0.1,s*0.1);
-            ll[coren].reset();
-            ll[coren].step(nWarmup);
-            
-            vector<vector<double>> pair_amp(mlength, vector<double>(nlength, 0.));
-            ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
-            
-            for(int i=0;i<nMeas;i++){
-                ll[coren].step(nSteps);
-                //            ll[coren].update_structure_factors();
-                for (int m=0; m<mlength; m++) {
-                    for (int n=0; n<nlength; n++) {
-                        pair_amp[m][n]+=ll[coren].pairamplitude(n, m)/(0.5*nMeas*Ne*(Ne-1));
+        for (int i1=0; i1<NPhi; i1++)
+            for (int j1=0; j1<NPhi; j1++)
+                for (int i2=0; i2<NPhi; i2++)
+                    for (int j2=0; j2<NPhi; j2++) {
+                        int m1=tmp.list[0], m2=tmp.list[1], m3=tmp.list[2], m4=tmp.list[3];
+                        
+                        sum+=
+                        conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
+                        *
+                        ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
+                        *
+                        ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
+                        
+                        sum+=
+                        conj( ll.landautable[m2][i1][j1] )*conj( ll.landautable[m1][i2][j2] )
+                        *
+                        ll.landautable[m4][i2][j2]*ll.landautable[m3][i1][j1]
+                        *
+                        ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
+                        
+                        sum-=
+                        conj( ll.landautable[m2][i1][j1] )*conj( ll.landautable[m1][i2][j2] )
+                        *
+                        ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
+                        *
+                        ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
+                        
+                        sum-=
+                        conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
+                        *
+                        ll.landautable[m4][i2][j2]*ll.landautable[m3][i1][j1]
+                        *
+                        ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
                     }
-                }
-            }
-            //        ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
-            for (int m=0; m<mlength; m++) {
-                for (int n=0; n<nlength; n++) {
-                    pairout<<pair_amp[m][n]<<endl;
-                }
-            }
-            pairout.close();
+        
+        if (flag) {
+            tmp.ele.push_back(1.);
+            base=sum;
         }
+        else
+            tmp.ele.push_back(sum/base);
+        
+        hoplist_lat.push_back(tmp);
+        flag=false;
     }
+    hopinfile.close();
+    cout<<"finish hoplist calculation"<<endl;
     
+    hoplist_lat.pop_back();
+    //output hoplist.
+    ofstream outhop("pairamplitude/hoplist_lat");
+    for (int i=0; i<hoplist_lat.size(); i++) {
+        outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
+        for (int k=0; k<hoplist_lat[i].ele.size(); k++)
+            outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
+        
+        outhop<<endl;
+    }
+    outhop.close();
+
 }
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;

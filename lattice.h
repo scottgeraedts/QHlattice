@@ -83,11 +83,15 @@ public:
     void print_ws();
     void print_landautable();
     void print_laguerreltable();
-    vector<vector<vector<vector<double>>>> laguerretable;
+//    vector<vector<vector<vector<double>>>> laguerretable;
+    vector<vector<vector<double>>> laguerretable;
+    vector<vector<double>> laguerretable2;
     vector<vector<vector<complex<double>>>> landautable;
     
     void setup_laguerre_con();
     void setup_laguerre_lat();
+    void setup_laguerre();
+    void setup_laguerre2(int);
     void setup_landautable();
 
 	//initialization related functions
