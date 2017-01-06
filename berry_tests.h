@@ -33,9 +33,6 @@ double phasemod(complex<double> in);
 void check_orthogonality(string type);
 void single_run(string filename="params", bool trace=false);
 void structurefactor(string, int num_core=1);
-void pairamplitude(string filename, bool trace, int num_core=1, bool pseu=false, bool mc=true);
-void pairamplitude_new(string filename, bool trace, int num_core=1, bool pseu=false, bool mc=true);
-void pairamplitude_ED(string filename, bool trace);
 
 //Energetics
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename);
@@ -63,5 +60,17 @@ void Explicit();
 
 //...
 void GetCoefficient(vector<int> input);
+
+//pairamplitude (testings)
+inline double Laguerrel(int N, double x);
+complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu);//this gives 'ED interaction matrix' for square torus.
+complex<double> latticepp_M2(LATTICE ll, int m1, int m2, int m3, int m4);//this gives 'sigma function lattice sum interaction matrix'.
+complex<double> latticepp_C2(LATTICE ll, int m1, int m2, int m3, int m4);//this gives 'sigma function lattice sum interaction matrix'. Compatcified.
+complex<double> latticepp_A2(LATTICE ll, int m1, int m2, int m3, int m4);//this gives 'sigma function lattice sum interaction matrix'. Use alpha regularization.
+void testlatticepp();//This function tested that the matrix element V1234 got from 'sigma function lattice sum' is correct.
+//pairamplitude
+void pairamplitude(string filename, bool trace, int num_core=1, bool pseu=false, bool mc=true);
+void pairamplitude_new(string filename, bool trace, int num_core=1, bool pseu=false, bool mc=true);
+void pairamplitude_ED(string, bool);
 
 #endif

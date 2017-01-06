@@ -7,83 +7,12 @@ using namespace std;
 bool IsOdd (int i) {
     return ((i%2)==1);
 }
-
-complex<double> latticepp_M(LATTICE ll, int m1, int m2, int m3, int m4, int m){
-    
-    int NPhi=ll.NPhi;
-    complex<double> ret=0.;
-    for (int i1=0; i1<NPhi; i1++)
-        for (int j1=0; j1<NPhi; j1++)
-            for (int i2=0; i2<NPhi; i2++)
-                for (int j2=0; j2<NPhi; j2++) {
-                    ret+=
-                    conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                    *
-                    ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                    *
-                    ll.laguerretable[m][abs(i1-i2)][abs(j1-j2)];
-                }
-    
-    return ret;
-}
-complex<double> latticepp_M2(LATTICE ll, int m1, int m2, int m3, int m4){
-    
-    int NPhi=ll.NPhi;
-    complex<double> ret=0.;
-    for (int i1=0; i1<NPhi; i1++)
-        for (int j1=0; j1<NPhi; j1++)
-            for (int i2=0; i2<NPhi; i2++)
-                for (int j2=0; j2<NPhi; j2++) {
-                    ret+=
-                    conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                    *
-                    ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                    *
-                    ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                }
-    
-    return ret;
-}
-void testlatticepp(){
-    ifstream inf("para");
-    int Nphi, m1, m2, m3, m4, Kx, Ky, round;
-    double Kq;
-    complex<double> tmp=0.;
-    
-    inf>>Nphi;
-    inf>>m1>>m2>>m3>>m4;
-    inf>>Kx>>Ky>>Kq;
-    inf>>round;
-    
-    cout<<"Nphi="<<Nphi<<" Kx="<<Kx<<" Ky="<<Ky<<" Kq="<<Kq<<" round="<<round<<endl;
-    cout<<"m1,m2,m3,m4="<<m1<<" "<<m2<<" "<<m3<<" "<<m4<<endl;
-    
-    LATTICE ll(Nphi/3, 3, 0, "laughlin", 1, 0, 0.5*M_PI, 1.);
-//    ll.setup_laguerre();
-    ll.setup_laguerre2(1);
-    ll.setup_landautable();
-
-//    for (int i=0; i<round; i++) {
-//        if (i==0) {
-//            tmp=latticepp_M(ll, m1, m2, m3, m4, i);
-//            cout<<"i="<<i<<" "<<1<<endl;
-//        }
-//        else cout<<"i="<<i<<" "<<setprecision(10)<<latticepp_M(ll, m1, m2, m3, m4, i)/tmp<<endl;
-//    }
-    
-    tmp=latticepp_M2(ll, m1, m2, m3, m4);
-    
-    ll.setup_laguerre2(3);
-    cout<<"ratio = "<<latticepp_M2(ll, m1, m2, m3, m4)/tmp<<endl;
-
-}
-
 int main(){
     double theta=0.5*M_PI, alpha=1.0;
     int num_core=2;
     
-//    testlatticepp();
-//    exit(0);
+    testlatticepp();
+    exit(0);
 
 //	ifstream infile("params");
 //	int Ne, invNu, nWarmups, nBins, nMeas, nSteps, seed;
@@ -169,7 +98,27 @@ int main(){
 //    pairamplitude_new("paramsne2new", true, num_core, true, false);//first bool: trace, second bool: pseudo-potential, third bool: monte-carlo.
     
     
-    pairamplitude_ED("paramsne2new" , true);
+//    pairamplitude_ED("pairamplitude/parameters/pped21-1-1", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped21-1-3", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped21-1-5", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped21-2-1", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped21-2-3", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped21-2-5", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped21-2-7", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped21-2-9", false);
+//    
+//    pairamplitude_ED("pairamplitude/parameters/pped30-1-1", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped30-1-3", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped30-1-5", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped30-1-7", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped30-1-9", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped30-2-1", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped30-2-3", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped30-2-5", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped30-2-7", false);
+//    pairamplitude_ED("pairamplitude/parameters/pped30-2-9", false);
+    
+    pairamplitude("paramsne" , true, num_core, true, false);
     
 }
 void outformfactor(){

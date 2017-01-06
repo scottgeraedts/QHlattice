@@ -82,17 +82,21 @@ public:
 	void print_ds();
     void print_ws();
     void print_landautable();
-    void print_laguerreltable();
+    void print_laguerreltable(int);
 //    vector<vector<vector<vector<double>>>> laguerretable;
-    vector<vector<vector<double>>> laguerretable;
-    vector<vector<double>> laguerretable2;
+    vector<vector<vector<double>>> laguerretable;//a, x, y
+    vector<vector<double>> laguerretable2;//x, y. size determined by 'lat_scale'.
+    vector<vector<double>> compac_lagtable;
+    
+    
     vector<vector<vector<complex<double>>>> landautable;
     
-    void setup_laguerre_con();
-    void setup_laguerre_lat();
-    void setup_laguerre();
+//    void setup_laguerre_con();
+//    void setup_laguerre_lat();
+    void setup_laguerre(int);
     void setup_laguerre2(int);
     void setup_landautable();
+    void setup_compac_lagtable(int);
 
 	//initialization related functions
 	void make_fermi_surface(double* center_frac, int N);
@@ -140,6 +144,8 @@ public:
 	static vector<int> random_move(const vector<int> &oldsite, int NPhi_t, MTRand &ran_t);
     
     int trace;
+    int lat_scale;
+    void set_lat_scale(int);
 	
 private:
 	void init(int seed);
