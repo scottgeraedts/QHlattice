@@ -41,7 +41,7 @@ void CFL_ne5_energy_var(int nMeas, int nBins, int num_core=1);
 void findstate();
 
 //Laughlin-Hole Berry Phase
-void laughlinberryphase(string params_name, vector<double> length, double steplength, int change_nMeas, int change_Ne, int num_core, double theta=0.5*M_PI, double alpha=1.0);
+void laughlinberryphase(string input_name, string output_name, vector<double> length, double steplength, int change_nMeas, int change_Ne, int num_core, double theta=0.5*M_PI, double alpha=1.0);
 void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas);
 void two_holes(string str, int nmeasurement, data& test);
 void test_error(int ne, double loop, double steplength, int nMea, int ncore, string test, int num_core);
@@ -64,13 +64,17 @@ void GetCoefficient(vector<int> input);
 //pairamplitude (testings)
 inline double Laguerrel(int N, double x);
 complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu);//this gives 'ED interaction matrix' for square torus.
-complex<double> latticepp_M2(LATTICE ll, int m1, int m2, int m3, int m4);//this gives 'sigma function lattice sum interaction matrix'.
-complex<double> latticepp_C2(LATTICE ll, int m1, int m2, int m3, int m4);//this gives 'sigma function lattice sum interaction matrix'. Compatcified.
-complex<double> latticepp_A2(LATTICE ll, int m1, int m2, int m3, int m4);//this gives 'sigma function lattice sum interaction matrix'. Use alpha regularization.
+complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type);//this gives 'sigma function lattice sum interaction matrix'.
 void testlatticepp();//This function tested that the matrix element V1234 got from 'sigma function lattice sum' is correct.
 //pairamplitude
-void pairamplitude(string filename, bool trace, int num_core=1, bool pseu=false, bool mc=true);
-void pairamplitude_new(string filename, bool trace, int num_core=1, bool pseu=false, bool mc=true);
-void pairamplitude_ED(string, bool);
+void LatticeSumHoplist(string);//generalize hoplist from lattice summation.
+void pairamplitude_MC(string filename, bool trace, int num_core, vector<int> PP);
+void pairamplitude_MC2(string filename, bool trace, int num_core, vector<int> PP, vector<double> Q);
+
+void pairamplitude_ExplicitLatticeSum2();//Comparing it with ED and MC.
+void pairamplitude_ExplicitLatticeSum3();//Comparing it with ED and MC.
+
+//old functions
+void pairamplitudeold(string filename, bool trace, int num_core, bool pseu, bool mc);
 
 #endif

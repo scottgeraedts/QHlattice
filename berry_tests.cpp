@@ -89,10 +89,11 @@ void check_orthogonality(string type){
 void single_run(string filename, bool trace){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
+    double theta_t, alpha_t;
     string type;
-//    ifstream infile("params");
+    
     ifstream infile(filename);
-    infile>>Ne>>invNu;
+    infile>>Ne>>invNu>>theta_t>>alpha_t;
     infile>>nWarmup>>nMeas>>nSteps>>nBins;
     infile>>seed;
     infile>>testing;
@@ -104,9 +105,7 @@ void single_run(string filename, bool trace){
     int NPhi=Ne*invNu;
     if (type=="laughlin-hole") NPhi++;
 
-    double theta, alpha;
-    alpha=1.;
-    theta=0.5*M_PI;
+    double theta=theta_t*M_PI, alpha=alpha_t;
     
 //    LATTICE ds_generator(Ne, invNu, testing, type, seed, gs, theta, alpha);
 //    vector< vector<int> > old_ds=ds_generator.get_ds();
@@ -133,15 +132,14 @@ void single_run(string filename, bool trace){
 //        old_ds.push_back(vector<int>{2,-1});
 //    }
     
-    LATTICE ll(Ne,invNu, testing, type, seed, gs, theta, alpha, trace);
+    LATTICE ll(Ne, invNu, testing, type, seed, gs, theta, alpha, trace);
 //    ll.set_ds(old_ds);
 //    ll.print_ds();
     
     ofstream outfile("out"), eout("energy");
-//    int mlength=11, nlength=10;//m=alpha, n=pair angular momentum.
 
     for(int s=0;s<nBins;s++){
-//        ll.change_dbar_parameter(s*0.1,s*0.1);        
+        //ll.change_dbar_parameter(s*0.1,s*0.1);
         ll.reset();
         
         ll.step(nWarmup);
@@ -153,13 +151,9 @@ void single_run(string filename, bool trace){
         int Ntrack=50;
         vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
         
-//        vector<vector<double>> pair_amp(mlength, vector<double>(nlength, 0.));
-//
-//        ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
-        
         for(int i=0;i<nMeas;i++){
             ll.step(nSteps);
-            e=ll.coulomb_energy();
+            e=ll.coulomb_energy2();
             E+=e;
             E2+=e*e;
             p=ll.running_weight;
@@ -176,27 +170,12 @@ void single_run(string filename, bool trace){
                 e_tracker.pop_back();
                 p_tracker.pop_back();
             }
-            ll.update_structure_factors();
-            
-//            for (int m=0; m<mlength; m++) {
-//                for (int n=0; n<nlength; n++) {
-////                    pair_amp[m][n]+=ll.pairamplitude(n, 0.25*m/NPhi)/(0.5*nMeas*Ne*(Ne-1));
-//                    pair_amp[m][n]+=ll.pairamplitude(n, m)/(0.5*nMeas*Ne*(Ne-1));
-//                }
-//            }
-            
+            //ll.update_structure_factors();
         }
-        ll.print_structure_factors(nMeas, "_"+to_string((long long int)s));
-//        for (int m=0; m<mlength; m++) {
-//            for (int n=0; n<NPhi; n++) {
-//                pairout<<pair_amp[m][n]<<endl;
-//            }
-//        }
-//        pairout.close();
+        //ll.print_structure_factors(nMeas, "_"+to_string((long long int)s));
         
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
-//        cout<<"E="<<E/(1.*nMeas*ll.Ne)<<" var="<<sqrt(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<sqrt(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<endl;
         //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
         cout<<"E="<<E/(1.*nMeas*ll.Ne)<<" var="<<sqrt(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*ll.Ne)<<endl;
         
@@ -204,7 +183,7 @@ void single_run(string filename, bool trace){
         for(int j=0;j<Ntrack;j++){
             auto_out<<j+1<<" ";
             auto_out<<autocorr_e[j]/(1.*(nMeas-Ntrack))<<" "<<pow(E/(1.*nMeas),2)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))<<" ";
-//            auto_out<<autocorr_p[j]/(1.*(nMeas-Ntrack))<<" "<<pow(P/(1.*nMeas),2)<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<" ";
+            //auto_out<<autocorr_p[j]/(1.*(nMeas-Ntrack))<<" "<<pow(P/(1.*nMeas),2)<<" "<<(P2/(1.*nMeas)-pow(P/(1.*nMeas),2))<<" ";
             auto_out<<endl;
         }
     }
@@ -262,8 +241,6 @@ void structurefactor(string intputfilename, int num_core){//fielname='params_sq_
 
 //Energetics.
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename){
-	
-
     ofstream outfile(filename, ios::out| ios::app);//write into the file, write from the end.
     for (int s=0; s<nBins; s++) {
         lattice.reset();
@@ -376,111 +353,8 @@ void CFL_ne5_energy_var(int nMeas, int nBins, int num_core){
     }
     
 }
-void findstate(){
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-    bool testing;
-    string type;
-    ifstream infile("params");
-    infile>>Ne>>invNu;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    //initialize MC object
-    
-    ifstream dslist("dslist");
-    
-    vector<oneconfig> configurations;
-    string tmp, ds;
-    vector<string> dss;
-    bool deorad=0;
-    vector<int> d(2);
-    int num=0;
-    while (getline(dslist, tmp)) {
-        oneconfig conf;
-        deorad=0;
-        istringstream record(tmp);
-        while (record>>ds) {
-            if (ds=="//") {deorad=1; continue;}
-            if (!deorad) {
-                d[0]=stoi(ds); record>>ds; d[1]=stoi(ds);
-                conf.deletelist.push_back(d);
-            }
-            else {
-                d[0]=stoi(ds); record>>ds; d[1]=stoi(ds);
-                conf.addlist.push_back(d);
-            }
-        }
-        conf.num=(num++);
-        configurations.push_back(conf);
-    }
-    //    for (int i=0; i<configurations.size(); i++) {
-    //        cout<<"num = "<<configurations[i].num<<endl;
-    //        cout<<"deletelist = ";
-    //        for (int j=0; j<configurations[i].deletelist.size(); j++) {
-    //            cout<<configurations[i].deletelist[j][0]<<" "<<configurations[i].deletelist[j][1]<<", ";
-    //        }
-    //        cout<<endl<<"addlist = ";
-    //        for (int j=0; j<configurations[i].addlist.size(); j++) {
-    //            cout<<configurations[i].addlist[j][0]<<" "<<configurations[i].addlist[j][1]<<", ";
-    //        }
-    //        cout<<endl<<endl;
-    //    }
-    
-    int gs=0;
-    LATTICE ds_generator(9,2,testing,type,seed,0);
-    vector< vector<int> > old_ds, old_ds2=ds_generator.get_ds();
-    vector<int> temp_ds(2);
-    
-    LATTICE ll(Ne,invNu, testing, type, seed, gs);
-    
-    ofstream outfile("ds_energys");
-    for (int k=0; k<(signed)configurations.size(); k++) {
-        old_ds=old_ds2;
-        vector<vector<int> > deletelist=configurations[k].deletelist;
-        vector<vector<int> > addlist=configurations[k].addlist;
-        for (int i=0; i<(signed)deletelist.size(); i++) {
-            temp_ds[0]=deletelist[i][0]; temp_ds[1]=deletelist[i][1];
-            old_ds.erase(remove(old_ds.begin(),old_ds.end(),temp_ds),old_ds.end());
-            outfile<<deletelist[i][0]<<" "<<deletelist[i][1]<<" ";
-        }
-        outfile<<"// ";
-        for (int i=0; i<(signed)addlist.size(); i++) {
-            temp_ds[0]=addlist[i][0]; temp_ds[1]=addlist[i][1];
-            old_ds.push_back(temp_ds);
-            outfile<<addlist[i][0]<<" "<<addlist[i][1]<<" ";
-        }
-        outfile<<endl;
-        
-        ll.set_ds(old_ds);
-        //    ll.print_ds();
-        
-        for(int s=0;s<nBins;s++){
-            ll.reset();
-            ll.step(nWarmup);
-            double E=0,E2=0;
-            //double P=0,P2=0,three=0;
-            double e; //,p;
-            complex<double> berry_phase(0,0);
-            deque<double> e_tracker, p_tracker;
-            int Ntrack=10;
-            vector<double> autocorr_e(Ntrack,0), autocorr_p(Ntrack,0);
-            for(int i=0;i<nMeas;i++){
-                ll.step(nSteps);
-                e=ll.coulomb_energy();
-                E+=e;
-                E2+=e*e;
-            }
-            outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" ";
-            //            cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
-        }
-        outfile<<endl<<endl;
-    }
-    outfile.close();
-}
-
 //laughlin-hole berry phase.
-void laughlinberryphase(string output_name, vector<double> length, double steplength, int change_nMeas, int change_Ne, int num_core, double theta, double alpha){
+void laughlinberryphase(string input_name, string output_name, vector<double> length, double steplength, int change_nMeas, int change_Ne, int num_core, double theta, double alpha){
     //input file is 'params_name'.
     //For some Ne, kind specifies certain type of berry phase loops.
     vector<data> datas;
@@ -488,16 +362,17 @@ void laughlinberryphase(string output_name, vector<double> length, double steple
     //The first contains phase, amp, energy for each step each bin, and final berry matrix.
     //The second is same as the first, but in a format friend to Mathematica.
     //The third is matrix element in each step each bin.
-    ofstream outfile(output_name.c_str());
-    string outfile2name=output_name+"_Mathmatica";//output data in format easy for Mathematica to deal with.
-    ofstream outfile2(outfile2name.c_str());
-    string outfile3name=output_name+"_Matrix";//output matrix element in each step.
-    ofstream outfile3(outfile3name.c_str());
+    
+//    ofstream outfile(output_name.c_str());
+//    string outfile2name=output_name+"_Mathmatica";//output data in format easy for Mathematica to deal with.
+//    ofstream outfile2(outfile2name.c_str());
+//    string outfile3name=output_name+"_Matrix";//output matrix element in each step.
+//    ofstream outfile3(outfile3name.c_str());
     
     int Ne,Ne_t,invNu,nWarmup,nMeas,nMeas_t,nSteps,nBins,seed;
     bool testing;
     string type;
-    ifstream infile("params_lau");
+    ifstream infile(input_name);
     infile>>Ne_t>>invNu;
     infile>>nWarmup>>nMeas_t>>nSteps>>nBins;
     infile>>seed;
@@ -529,10 +404,13 @@ void laughlinberryphase(string output_name, vector<double> length, double steple
     vector<vector<LATTICE> > ll(num_core, vector<LATTICE>(invNu)), pp(num_core, vector<LATTICE>(invNu));//do this to avoid wrong memory access since openmp share memory.
     for (int k=0; k<num_core; k++) for (int i=0; i<invNu; i++) {ll[k][i]=LATTICE(Ne, invNu, testing, type, seed, i, theta, alpha); pp[k][i]=LATTICE(Ne, invNu, testing, type, seed, i, theta, alpha);}
     
+    vector<double> trace_phase(nBins,0.);
+    
     for (int nbin=0; nbin<nBins; nbin++) {
         //parallel programming begin.
 #pragma omp parallel for
         for(int b=0; b<nds; b++) {
+            
             int coren = omp_get_thread_num();
             for (int i=0; i<invNu; i++) {
                 ll[coren][i].set_hole(holes[b]);
@@ -562,6 +440,7 @@ void laughlinberryphase(string output_name, vector<double> length, double steple
             hermitianize(overlaps[b][2]);
         }
         //parallel programming end.
+
         
         vector<Eigen::MatrixXcd> berrymatrix_step(nds);
         for (int b=0; b<nds; b++) berrymatrix_step[b] = overlaps[b][2].inverse() * overlaps[b][0];
@@ -596,49 +475,46 @@ void laughlinberryphase(string output_name, vector<double> length, double steple
         double avephase=0.;
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
         
-        //write into outfile.
-        outfile<<"----------\nnBin="<<nbin<<" theta, alpha="<<theta/M_PI<<"pi, "<<alpha<<endl;
-        outfile<<"Ne="<<Ne<<" nMea="<<nMeas<<" length="<<length[0]<<" "<<length[1]<<" ncore="<<num_core<<endl;
-        for (int b=0; b<nds; b++) {
-            outfile<<b<<" phases = "; for (int i=0; i<invNu; i++) outfile<<datas[b].ang[i]<<" ";
-            outfile<<endl;
-            outfile<<b<<" amplitude = "; for (int i=0; i<invNu; i++) outfile<<datas[b].amp[i]<<" ";
-            outfile<<endl;
-            //                outfile<<"\n          energy = "<<energy[b]/(1.*nMeas*Ne)<<endl;
-        }
-        outfile<<"phase sum = "; for (int i=0; i<invNu; i++) {outfile<<phases[i]<<" "; avephase+=phases[i]/(1.*invNu);} outfile<<"\nphase average = "<<avephase<<endl;
-        
-        datas[0].ang_trace = arg(berrymatrix_integral.trace());
-        //    datas[0].det = arg(berrymatrix_integral.determinant());
-        outfile<<endl;
-        outfile<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
-        outfile<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) outfile<<abs(es.eigenvalues()[i])<<" "; outfile<<endl;
-        outfile<<"arg(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) outfile<<arg(es.eigenvalues()[i])<<" "; outfile<<endl;
-        avephase=0.; for (int i=0; i<invNu; i++) avephase+=arg(es.eigenvalues()[i])/(1.*invNu); outfile<<"ave arg(berrymatrix_integral.eigenvalue) = "<<avephase<<endl;
-        outfile<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
-        outfile<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
-        outfile<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl<<endl;
-        
-        //write into outfile2. Same data, just for Mathematica convenience.
-        outfile2<<"nBin="<<nbin<<", Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<" theta, alpha="<<theta/M_PI<<"pi, "<<alpha<<endl;
-        for (int b=0; b<nds; b++) {
-            for (int i=0; i<invNu; i++) outfile2<<datas[b].ang[i]<<" ";//output phases in each step.
-            outfile2<<endl;
-            for (int i=0; i<invNu; i++) outfile2<<datas[b].amp[i]<<" ";//output amplitude in each step.
-            outfile2<<endl;
-            //                outfile2<<energy[b]/(1.*nMeas*Ne)<<endl;
-        }
-        
-        //write into outfile3. Matrix Element in each step.
-        outfile3<<"nBin="<<nbin<<", Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<" theta, alpha="<<theta/M_PI<<"pi, "<<alpha<<endl;
-        for (int b=0; b<nds; b++) {
-            outfile3<<b<<" "<<real(berrymatrix_step[b](0,0))<<" "<<imag(berrymatrix_step[b](0,0))<<" "<<real(berrymatrix_step[b](1,1))<<" "<<imag(berrymatrix_step[b](1,1))<<" "<<real(berrymatrix_step[b](1,0))<<" "<<imag(berrymatrix_step[b](1,0))<<" "<<real(berrymatrix_step[b](0,1))<<" "<<imag(berrymatrix_step[b](0,1))<<endl;
-        }
-        
-    }
-    
-//    double avephase;
-//    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
+//        //write into outfile.
+//        outfile<<"----------\nnBin="<<nbin<<" theta, alpha="<<theta/M_PI<<"pi, "<<alpha<<endl;
+//        outfile<<"Ne="<<Ne<<" nMea="<<nMeas<<" length="<<length[0]<<" "<<length[1]<<" ncore="<<num_core<<endl;
+//        for (int b=0; b<nds; b++) {
+//            outfile<<b<<" phases = "; for (int i=0; i<invNu; i++) outfile<<datas[b].ang[i]<<" ";
+//            outfile<<endl;
+//            outfile<<b<<" amplitude = "; for (int i=0; i<invNu; i++) outfile<<datas[b].amp[i]<<" ";
+//            outfile<<endl;
+//            //                outfile<<"\n          energy = "<<energy[b]/(1.*nMeas*Ne)<<endl;
+//        }
+//        outfile<<"phase sum = "; for (int i=0; i<invNu; i++) {outfile<<phases[i]<<" "; avephase+=phases[i]/(1.*invNu);} outfile<<"\nphase average = "<<avephase<<endl;
+//        
+//        datas[0].ang_trace = arg(berrymatrix_integral.trace());
+//        //    datas[0].det = arg(berrymatrix_integral.determinant());
+//        outfile<<endl;
+//        outfile<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
+//        outfile<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) outfile<<abs(es.eigenvalues()[i])<<" "; outfile<<endl;
+//        outfile<<"arg(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) outfile<<arg(es.eigenvalues()[i])<<" "; outfile<<endl;
+//        avephase=0.; for (int i=0; i<invNu; i++) avephase+=arg(es.eigenvalues()[i])/(1.*invNu); outfile<<"ave arg(berrymatrix_integral.eigenvalue) = "<<avephase<<endl;
+//        outfile<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
+//        outfile<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
+//        outfile<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl<<endl;
+//        
+//        //write into outfile2. Same data, just for Mathematica convenience.
+//        outfile2<<"nBin="<<nbin<<", Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<" theta, alpha="<<theta/M_PI<<"pi, "<<alpha<<endl;
+//        for (int b=0; b<nds; b++) {
+//            for (int i=0; i<invNu; i++) outfile2<<datas[b].ang[i]<<" ";//output phases in each step.
+//            outfile2<<endl;
+//            for (int i=0; i<invNu; i++) outfile2<<datas[b].amp[i]<<" ";//output amplitude in each step.
+//            outfile2<<endl;
+//            //                outfile2<<energy[b]/(1.*nMeas*Ne)<<endl;
+//        }
+//        
+//        //write into outfile3. Matrix Element in each step.
+//        outfile3<<"nBin="<<nbin<<", Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<" theta, alpha="<<theta/M_PI<<"pi, "<<alpha<<endl;
+//        for (int b=0; b<nds; b++) {
+//            outfile3<<b<<" "<<real(berrymatrix_step[b](0,0))<<" "<<imag(berrymatrix_step[b](0,0))<<" "<<real(berrymatrix_step[b](1,1))<<" "<<imag(berrymatrix_step[b](1,1))<<" "<<real(berrymatrix_step[b](1,0))<<" "<<imag(berrymatrix_step[b](1,0))<<" "<<real(berrymatrix_step[b](0,1))<<" "<<imag(berrymatrix_step[b](0,1))<<endl;
+//        }
+
+        //output (not ofstream)
 //    datas[0].ang_trace = arg(berrymatrix_integral.trace());
 //    datas[0].det = arg(berrymatrix_integral.determinant());
 //    cout<<"\n\n Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
@@ -650,10 +526,26 @@ void laughlinberryphase(string output_name, vector<double> length, double steple
 //    cout<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
 //    cout<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
 //    cout<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl;
-
-    outfile.close();
-    outfile2.close();
-    outfile3.close();
+        
+        if (arg(berrymatrix_integral.trace())<0)
+            trace_phase[nbin]=arg(berrymatrix_integral.trace())+2.*M_PI;
+        else
+            trace_phase[nbin]=arg(berrymatrix_integral.trace());
+        
+    }
+    
+    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
+    
+    double phase_mean=0., phase2_mean=0.;
+    for (int nbin=0; nbin<nBins; nbin++) {
+        phase_mean+=trace_phase[nbin]/(1.*nBins);
+        phase2_mean+=trace_phase[nbin]*trace_phase[nbin]/(1.*nBins);
+    }
+    cout<<"phase mean:\nphase std:\n"<<phase_mean<<"\n"<<sqrt( phase2_mean-pow(phase_mean,2) )/sqrt(1.*nBins)<<endl;
+    
+//    outfile.close();
+//    outfile2.close();
+//    outfile3.close();
 }
 void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
@@ -732,7 +624,7 @@ void two_holes(string str, int nmeasurement, data& test){
     vector<vector<double> > holes;
     double x=0.;
     vector<double> a(2);
-    while (x<0.05) {
+    while (x<0.1) {
         a[0]=x; a[1]=0.;
         holes.push_back(a);
         x+=0.005;
@@ -744,11 +636,11 @@ void two_holes(string str, int nmeasurement, data& test){
         nds=1;
     }
     
-    ofstream bout("twoholelaughlinnew");
+    ofstream bout("twoholelaughlinnew"+to_string((long int)invNu));
     vector<LATTICE> ll(invNu),ll2(invNu);//ll is psi(x), ll2 is psi(x).
     vector<vector<Eigen::MatrixXcd> > overlaps;
     //overlaps[b][0]=<psi(0)|psi(xb)>, overlaps[b][1]=<|<psi(0)|psi(xb)>|^2>.
-    for (int b=0; b<nds; b++) {
+    for(int b=0; b<nds; b++){
         vector<Eigen::MatrixXcd> aa;
         Eigen::MatrixXcd a = Eigen::MatrixXcd::Zero(3,3);
         aa.push_back(a); aa.push_back(a);
@@ -761,66 +653,79 @@ void two_holes(string str, int nmeasurement, data& test){
         ll2[gs]=LATTICE(Ne,invNu,testing,type,seed,gs);
     }
     
-    for(int gs1=0;gs1<invNu;gs1++){
+//    for(int gs1=0;gs1<invNu;gs1++){
+//        ll[gs1].reset();
+//        ll[gs1].step(nWarmup);
+//        for(int i=0;i<nMeas;i++){
+//            ll[gs1].step(nSteps);
+//            for(int gs2=0;gs2<invNu;gs2++){
+//                for(int b=0;b<nds;b++){
+//                    ll2[gs2].set_hole(holes[b]);
+//                    ll2[gs2].reset();
+//                    complex<double> temp=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
+//                    overlaps[b][0](gs1,gs2)+=temp;
+//                    overlaps[b][1](gs1,gs2)+=norm(temp);
+//                }
+//            }
+//        }
+//    }
+    
+    for (int round=0; round<nBins; round++) {
+        int gs1=0, gs2=0;
+        
+        for (int b=0; b<nds; b++) {
+            overlaps[b][0](gs1,gs2)=0.;
+            overlaps[b][1](gs1,gs2)=0.;
+        }
+        
         ll[gs1].reset();
         ll[gs1].step(nWarmup);
         for(int i=0;i<nMeas;i++){
             ll[gs1].step(nSteps);
-            for(int gs2=0;gs2<invNu;gs2++){
-                for(int b=0;b<nds;b++){
-                    ll2[gs2].set_hole(holes[b]);
-                    ll2[gs2].reset();
-                    complex<double> temp=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
-                    overlaps[b][0](gs1,gs2)+=temp;
-                    overlaps[b][1](gs1,gs2)+=norm(temp);
-                }
+            for(int b=0;b<nds;b++){
+                ll2[gs2].set_hole(holes[b]);
+                ll2[gs2].reset();
+                complex<double> temp=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
+                overlaps[b][0](gs1,gs2)+=temp;
+                overlaps[b][1](gs1,gs2)+=norm(temp);
             }
         }
-    }
-    
-    /*
-     for (int b=0; b<nds; b++) {
-     for (int gs1=0;gs1<invNu;gs1++) {
-     ll[gs1].reset();
-     ll[gs1].step(nWarmup);
-     for (int gs2=0; gs2<invNu; gs2++) {
-     ll2[gs2].set_hole(holes[b]);
-     ll2[gs2].reset();
-     for (int i=0;i<nMeas;i++) {
-     ll[gs1].step(nSteps);
-     complex<double> temp=ll2[gs2].get_wf(ll[gs1].get_locs())/ll[gs1].get_wf(ll[gs1].get_locs());
-     overlaps[b][0](gs1,gs2)+=temp;
-     overlaps[b][1](gs1,gs2)+=norm(temp);
-     }
-     }
-     }
-     }
-     cout<<"\noverlaps[10][0]=\n"<<overlaps[10][0]<<endl;
-     cout<<"\noverlaps[10][1]=\n"<<overlaps[10][1]<<endl;
-     */
-    
-    Eigen::Matrix3cd berryloop = Eigen::Matrix3cd::Identity(3,3);
-    for (int b=0; b<nds; b++) {
-        for (int l=0; l<2; l++) overlaps[b][l]/=(1.*nMeas);
-        for (int gs1=0; gs1<invNu; gs1++) {
-            for (int gs2=0; gs2<invNu; gs2++) {
-                overlaps[b][0](gs1,gs2)/=sqrt(abs(overlaps[b][1](gs1,gs2)));
-            }
+        for (int b=0; b<nds; b++) {
+            overlaps[b][0](gs1,gs2)/=(1.*nMeas);
+            overlaps[b][1](gs1,gs2)/=(1.*nMeas);
+            overlaps[b][0](gs1,gs2)/=sqrt(abs(overlaps[b][1](gs1,gs2)));
+            bout<<abs(overlaps[b][0](0,0))<<" "<<arg(overlaps[b][0](0,0))<<endl;
         }
-        berryloop*=overlaps[b][0];
+//        cout<<"round="<<round<<endl;
     }
     
-    //    cout<<"\nberryloop=\n"<<berryloop<<endl;
-    //    cout<<"determinant=\n"<<arg(berryloop.determinant())<<endl;
+////    Eigen::Matrix3cd berryloop = Eigen::Matrix3cd::Identity(3,3);
+//    for (int b=0; b<nds; b++) {
+//        for (int l=0; l<2; l++) overlaps[b][l]/=(1.*nMeas);
+//        for (int gs1=0; gs1<invNu; gs1++) {
+//            for (int gs2=0; gs2<invNu; gs2++) {
+//                overlaps[b][0](gs1,gs2)/=sqrt(abs(overlaps[b][1](gs1,gs2)));
+//            }
+//        }
+////        berryloop*=overlaps[b][0];
+//        
+//        //output the amplitude and phase of each step.
+//        bout<<abs(overlaps[b][0](0,0))<<" "<<arg(overlaps[b][0](0,0))<<endl;
+//    }
+//    bout.close();
     
-    for (int b=0; b<nds; b++) {
-        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b][2]);
-        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<abs(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[1])<<" "<<abs(es.eigenvalues()[2])<<" "<<arg(es.eigenvalues()[2])<<endl;
-        //        for (int i=0; i<3; i++) {
-        //            test.amp[i]=abs(es.eigenvalues()[i]);
-        //            test.ang[i]=arg(es.eigenvalues()[i]);
-        //        }
-    }
+    
+//        cout<<"\nberryloop=\n"<<berryloop<<endl;
+//        cout<<"determinant=\n"<<arg(berryloop.determinant())<<endl;
+//    
+//    for (int b=0; b<nds; b++) {
+//        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b][2]);//TODO:what is overlap[][2] anyway?
+//        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<abs(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[1])<<" "<<abs(es.eigenvalues()[2])<<" "<<arg(es.eigenvalues()[2])<<endl;
+//        //        for (int i=0; i<3; i++) {
+//        //            test.amp[i]=abs(es.eigenvalues()[i]);
+//        //            test.ang[i]=arg(es.eigenvalues()[i]);
+//        //        }
+//    }
     
 }
 /*
@@ -2788,53 +2693,40 @@ complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu
                 }
     return k;
 }
-complex<double> latticepp_M2(LATTICE ll, int m1, int m2, int m3, int m4){
-    int N=ll.NPhi*ll.lat_scale;
+complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type) {
     complex<double> ret=0.;
-    for (int i1=0; i1<N; i1++)
-        for (int j1=0; j1<N; j1++)
-            for (int i2=0; i2<N; i2++)
-                for (int j2=0; j2<N; j2++) {
-                    ret+=
-                    conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                    *
-                    ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                    *
-                    ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                }
+    int N=ll.NPhi*ll.lat_scale;
     
-    return ret;
-}
-complex<double> latticepp_C2(LATTICE ll, int m1, int m2, int m3, int m4){
-    int N=ll.NPhi*ll.lat_scale;
-    complex<double> ret=0.;
     for (int i1=0; i1<N; i1++)
         for (int j1=0; j1<N; j1++)
             for (int i2=0; i2<N; i2++)
                 for (int j2=0; j2<N; j2++) {
-                    ret+=
-                    conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                    *
-                    ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                    *
-                    ll.compac_lagtable[abs(i1-i2)][abs(j1-j2)];
-                }
-    return ret;
-}
-complex<double> latticepp_A2(LATTICE ll, int m1, int m2, int m3, int m4){
-    ll.set_lat_scale(1);
-    int N=ll.NPhi*ll.lat_scale;
-    complex<double> ret=0.;
-    for (int i1=0; i1<N; i1++)
-        for (int j1=0; j1<N; j1++)
-            for (int i2=0; i2<N; i2++)
-                for (int j2=0; j2<N; j2++) {
-                    ret+=
-                    conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                    *
-                    ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                    *
-                    ll.laguerretable[0][abs(i1-i2)][abs(j1-j2)];
+                    
+                    if (type=="BZ") {
+                        ret+=
+                        conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
+                        *
+                        ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
+                        *
+                        ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
+                    }
+                    else if (type=="COMP") {
+                        ret+=
+                        conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
+                        *
+                        ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
+                        *
+                        ll.compac_lagtable[abs(i1-i2)][abs(j1-j2)];
+                    }
+                    else if (type=="Alp") {
+                        ret+=
+                        conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
+                        *
+                        ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
+                        *
+                        ll.laguerretable[0][abs(i1-i2)][abs(j1-j2)];
+                    }
+                    else {cout<<"unrecognized type."<<endl; exit(0);}
                 }
     return ret;
 }
@@ -2852,235 +2744,67 @@ void testlatticepp(){
     inf>>lat_scale;
     
     LATTICE ll(Nphi, 1, 0, "laughlin", 1, 0, 0.5*M_PI, 1.);
-    ll.set_lat_scale(lat_scale);
-    ll.setup_landautable();
-    
+    ll.setup_compac_lagtable(2);
+    ll.setup_laguerre2(2);
+    ll.print_laguerreltable();
+    ll.print_laguerreltableBZ();
     
     vector<double> exactret, latsum, latsumcom, latsumalp;
-    
+    //get V1234 for ED.
     for (int i=0; i<round; i++) {
         vector<double> vp=vector<double>(i,0.); vp.push_back(1.);
         if (i==0) {
             tmp=interaction(m1, m3, m4, Nphi, vp);
             exactret.push_back(1.);
         }
-        else {
-            exactret.push_back(real(interaction(m1, m3, m4, Nphi, vp)/tmp));
-            }
+        else exactret.push_back(real(interaction(m1, m3, m4, Nphi, vp)/tmp));
     }
-    
-    for (int i=0; i<round; i++) {
-        ll.setup_laguerre2(i);
-        if (i==0) {
-            tmp=latticepp_M2(ll, m1, m2, m3, m4);
-            latsum.push_back(1.);
-        }
-        else {
-            latsum.push_back(real(latticepp_M2(ll, m1, m2, m3, m4)/tmp));
-        }
-    }
-    
-    for (int i=0; i<round; i++) {
-        ll.setup_compac_lagtable(i);
-        if (i==0) {
-            tmp=latticepp_C2(ll, m1, m2, m3, m4);
-            latsumcom.push_back(1.);
-        }
-        else {
-            latsumcom.push_back(real(latticepp_C2(ll, m1, m2, m3, m4)/tmp));
-        }
-    }
-    
+    //get V1234 from alpha regularization.
+    ll.set_lat_scale(1);
+    ll.setup_landautable();
     for (int i=0; i<round; i++) {
         ll.setup_laguerre(i);
         if (i==0) {
-            tmp=latticepp_A2(ll, m1, m2, m3, m4);
+            tmp=latticepp(ll, m1, m2, m3, m4, "Alp");
             latsumalp.push_back(1.);
         }
-        else {
-            latsumalp.push_back(real(latticepp_A2(ll, m1, m2, m3, m4)/tmp));
-        }
+        else latsumalp.push_back(real(latticepp(ll, m1, m2, m3, m4, "Alp")/tmp));
+//        else latsumalp.push_back(real(latticepp(ll, m1, m2, m3, m4, "Alp")));
     }
-    
+    //get V1234 from lattice sum.
+    //1 BZ summation
+    ll.set_lat_scale(lat_scale);
+    ll.setup_landautable();
+    for (int i=0; i<round; i++) {
+        ll.setup_laguerre2(i);
+        if (i==0) {
+            tmp=latticepp(ll, m1, m2, m3, m4, "BZ");
+            latsum.push_back(1.);
+        }
+        else latsum.push_back(real(latticepp(ll, m1, m2, m3, m4, "BZ")/tmp));
+//        else latsum.push_back(real(latticepp(ll, m1, m2, m3, m4, "BZ")));
+    }
+    //compactified
+    for (int i=0; i<round; i++) {
+        ll.setup_compac_lagtable(i);
+        if (i==0) {
+            tmp=latticepp(ll, m1, m2, m3, m4, "COMP");
+            latsumcom.push_back(1.);
+        }
+        else latsumcom.push_back(real(latticepp(ll, m1, m2, m3, m4, "COMP")/tmp));
+//        else latsumcom.push_back(real(latticepp(ll, m1, m2, m3, m4, "COMP")));
+    }
+    //output
     cout<<"Nphi="<<Nphi<<" round="<<round<<endl;
     cout<<"m1,m2,m3,m4="<<m1<<" "<<m2<<" "<<m3<<" "<<m4<<endl;
     cout<<"lat_scale="<<lat_scale<<endl;
     cout<<"output V_{m1m2,m3m4} with m1="<<m1<<" m2="<<m2<<" m3="<<m3<<" m4="<<m4<<endl;
     cout<<setw(30)<<" "<<"VED"<<setw(30)<<"VBZ/VED-1"<<setw(30)<<"VC/VED-1"<<setw(30)<<"Valp/VED-1"<<endl;
     for (int i=0; i<round; i++) {
-        
         cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsum[i]/exactret[i]-1<<setw(30)<<latsumcom[i]/exactret[i]-1<<setw(30)<<latsumalp[i]/exactret[i]-1<<endl;
     }
-    
-    cout<<endl<<endl;
-    
-    cout<<"Nphi="<<Nphi<<" round="<<round<<endl;
-    cout<<"m1,m2,m3,m4="<<m1<<" "<<m2<<" "<<m3<<" "<<m4<<endl;
-    cout<<"lat_scale="<<lat_scale<<endl;
-    cout<<"output V_{m1m2,m3m4} with m1="<<m1<<" m2="<<m2<<" m3="<<m3<<" m4="<<m4<<endl;
-    cout<<setw(30)<<" "<<"VED"<<setw(30)<<"VBZ/VED-1"<<setw(30)<<"VC/VED-1"<<endl;
-    for (int i=0; i<round; i++) {
-        
-        cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsum[i]/exactret[i]-1<<setw(30)<<latsumcom[i]/exactret[i]-1<<endl;
-    }
-    
 }
-
-void pairamplitude(string filename, bool trace, int num_core, bool pseu, bool mc) {
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed,lat_scale,pp;
-    bool testing;
-    double theta_t, theta, alpha;
-    string type;
-    ifstream infile(filename);
-    infile>>Ne>>invNu>>theta_t>>alpha;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    infile>>lat_scale;
-    infile>>pp;
-    infile.close();
-    //initialize MC object
-    theta=theta_t*M_PI;
-
-    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
-    cout<<"lat_scale="<<lat_scale<<",   pp="<<pp<<endl;
-    
-    omp_set_num_threads(num_core);
-
-    vector<LATTICE> ll(num_core);
-    for (int i=0; i<num_core; i++) {
-        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
-        ll[i].set_lat_scale(1);//force lat_scale=1.
-        ll[i].setup_laguerre(pp);
-        ll[i].setup_landautable();
-    }
-    cout<<"\nfinish initialization."<<endl;
-
-    int mlength=50;//mlength:number of alphas.
-    int NPhi=Ne*invNu;
-
-    //allowed momentum set on torus, got from ed code.
-    //use this to get matrix element by lattice summation over sigma function.
-    vector<hop> hoplist_lat;//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
-//    vector<vector<hop>> hoplist_lat(mlength);//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
-
-    //do this if want to get the lattice-summation version of pseudo-potential for ed use.
-    if (pseu) {
-        ifstream hopinfile("pairamplitude/hoplist_"+to_string((long long int)NPhi));
-        
-        bool flag=true;
-        complex<double> base=0.;
-        while (!hopinfile.eof()) {
-            double re,im;
-            hop tmp;
-            tmp.list.resize(4);
-            hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
-            hopinfile>>re>>im;
-            
-            for (int a=0; a<mlength; a++) {
-                complex<double> sum;
-                for (int i1=0; i1<NPhi; i1++)
-                    for (int j1=0; j1<NPhi; j1++)
-                        for (int i2=0; i2<NPhi; i2++)
-                            for (int j2=0; j2<NPhi; j2++) {
-                                int m1=tmp.list[0], m2=tmp.list[1], m3=tmp.list[2], m4=tmp.list[3];
-                                
-                                sum+=
-                                conj( ll[0].landautable[m1][i1][j1] )*conj( ll[0].landautable[m2][i2][j2] )
-                                *
-                                ll[0].landautable[m3][i2][j2]*ll[0].landautable[m4][i1][j1]
-                                *
-                                ll[0].laguerretable[a][abs(i1-i2)][abs(j1-j2)];
-                                
-                                if (flag) {
-                                    base+=
-                                    conj( ll[0].landautable[m1][i1][j1] )*conj( ll[0].landautable[m2][i2][j2] )
-                                    *
-                                    ll[0].landautable[m3][i2][j2]*ll[0].landautable[m4][i1][j1]
-                                    *
-                                    ll[0].laguerretable[a][abs(i1-i2)][abs(j1-j2)];
-                                    //I want an regularized two body energy.
-                                }
-                                
-                                sum+=
-                                conj( ll[0].landautable[m2][i1][j1] )*conj( ll[0].landautable[m1][i2][j2] )
-                                *
-                                ll[0].landautable[m4][i2][j2]*ll[0].landautable[m3][i1][j1]
-                                *
-                                ll[0].laguerretable[a][abs(i1-i2)][abs(j1-j2)];
-                                
-                                sum-=
-                                conj( ll[0].landautable[m2][i1][j1] )*conj( ll[0].landautable[m1][i2][j2] )
-                                *
-                                ll[0].landautable[m3][i2][j2]*ll[0].landautable[m4][i1][j1]
-                                *
-                                ll[0].laguerretable[a][abs(i1-i2)][abs(j1-j2)];
-                                
-                                sum-=
-                                conj( ll[0].landautable[m1][i1][j1] )*conj( ll[0].landautable[m2][i2][j2] )
-                                *
-                                ll[0].landautable[m4][i2][j2]*ll[0].landautable[m3][i1][j1]
-                                *
-                                ll[0].laguerretable[a][abs(i1-i2)][abs(j1-j2)];
-                            }
-                if (abs(base)<pow(10.,-10)) base=pow(10, 20);//TODO:find a better base;
-                tmp.ele.push_back(sum/abs(base));
-                flag=false;
-            }
-            
-            hoplist_lat.push_back(tmp);
-        }
-        hopinfile.close();
-        hoplist_lat.pop_back();
-//        cout<<"finish hoplist calculation"<<endl;
-        
-        //output hoplist.
-        ofstream outhop(filename+"_hoplat");
-        for (int i=0; i<hoplist_lat.size(); i++) {
-            outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
-            for (int k=0; k<hoplist_lat[i].ele.size(); k++)
-                outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
-            outhop<<endl;
-        }
-        outhop.close();
-    }
-
-    //this is for monte-carlo calculation of pair-amplitude.
-    if (mc) {
-        int nlength=10;
-#pragma omp parallel for
-        for(int s=0;s<nBins;s++){
-            int coren=omp_get_thread_num();
-            //        printf("coren=%d\n",coren);
-            //        ll[coren].change_dbar_parameter(s*0.1,s*0.1);
-            ll[coren].reset();
-            ll[coren].step(nWarmup);
-
-            vector<vector<double>> pair_amp(mlength, vector<double>(nlength, 0.));
-            ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
-
-            for(int i=0;i<nMeas;i++){
-                ll[coren].step(nSteps);
-                //            ll[coren].update_structure_factors();
-                for (int m=0; m<mlength; m++) {
-                    for (int n=0; n<nlength; n++) {
-                        pair_amp[m][n]+=ll[coren].pairamplitude(n, m)/(0.5*nMeas*Ne*(Ne-1));
-                    }
-                }
-            }
-            //        ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
-            for (int m=0; m<mlength; m++) {
-                for (int n=0; n<nlength; n++) {
-                    pairout<<pair_amp[m][n]<<endl;
-                }
-            }
-            pairout.close();
-        }
-    }
-
-}
-void pairamplitude_ED(string filename, bool trace) {//readhoplist="pairamplitude/hoplist"
+void LatticeSumHoplist(string filename) {//readhoplist="pairamplitude/hoplist"
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed,lat_scale,pp;
     bool testing;
     double theta_t, theta, alpha;
@@ -3103,10 +2827,24 @@ void pairamplitude_ED(string filename, bool trace) {//readhoplist="pairamplitude
     cout<<"lat_scale="<<lat_scale<<",   pp="<<pp<<endl;
     
     LATTICE ll(Ne, invNu, testing, type, 0, 0, theta, alpha);
-    ll.set_lat_scale(lat_scale);
+    ll.set_lat_scale(1);//lat_scale=1.
     
-    ll.setup_laguerre2(pp);
-    //The mth pseudo potential.
+//    ll.setup_laguerre2(vector<int>{1,3});
+//    //The mth pseudo potential.
+    
+    int mlength=50;
+    int n=5;//PA.
+    double Q=50., alp;
+    vector<vector<vector<double>>> Lag_Tables = vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi)));
+    for (int a=0; a<mlength; a++) {
+        ll.compac_lagtable.clear();
+        
+        if (a==0) alp=1./sqrt(1.*NPhi);
+        else alp=1.-log(a+1)/log(mlength);
+        
+        ll.setup_compac_lagtable(n, Q, alp);
+        Lag_Tables[a]=ll.compac_lagtable;
+    }
     
     ll.setup_landautable();
     
@@ -3116,7 +2854,14 @@ void pairamplitude_ED(string filename, bool trace) {//readhoplist="pairamplitude
     
     ifstream hopinfile("pairamplitude/hoplist_"+to_string((long long int)NPhi));
     
-    bool flag=true;
+    double normalization=0.;
+    for (int i=0; i<NPhi*lat_scale; i++) {
+        for (int j=0; j<NPhi*lat_scale; j++) {
+            normalization+=real(conj( ll.landautable[0][i][j] )*ll.landautable[0][i][j]);
+        }
+    }
+    
+    bool flag=false;//turn off two-body energy regularization.
     complex<double> base=0.;
     while (!hopinfile.eof()) {
         double re,im;
@@ -3125,56 +2870,64 @@ void pairamplitude_ED(string filename, bool trace) {//readhoplist="pairamplitude
         hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
         hopinfile>>re>>im;
         
-        complex<double> sum=0.;//lattice summation.
-        
-        for (int i1=0; i1<NPhi*lat_scale; i1++)
-            for (int j1=0; j1<NPhi*lat_scale; j1++)
-                for (int i2=0; i2<NPhi*lat_scale; i2++)
-                    for (int j2=0; j2<NPhi*lat_scale; j2++) {
-                        int m1=tmp.list[0], m2=tmp.list[1], m3=tmp.list[2], m4=tmp.list[3];
-                        
-                        sum+=
-                        conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                        *
-                        ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                        *
-                        ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                        
-                        if (flag) {
-                            base+=
+        for (int a=0; a<mlength; a++) {
+            complex<double> sum=0.;//lattice summation.
+            for (int i1=0; i1<NPhi*lat_scale; i1++)
+                for (int j1=0; j1<NPhi*lat_scale; j1++)
+                    for (int i2=0; i2<NPhi*lat_scale; i2++)
+                        for (int j2=0; j2<NPhi*lat_scale; j2++) {
+                            int m1=tmp.list[0], m2=tmp.list[1], m3=tmp.list[2], m4=tmp.list[3];
+                            
+                            sum+=
                             conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
                             *
                             ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
                             *
-                            ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                            //I want an regularized two body energy.
+                            Lag_Tables[a][abs(i1-i2)][abs(j1-j2)];
+                            //ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
+                            
+                            if (flag) {
+                                base+=
+                                conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
+                                *
+                                ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
+                                *
+                                //ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
+                                Lag_Tables[a][abs(i1-i2)][abs(j1-j2)];
+                                //I want an regularized two body energy.
+                            }
+                            
+                            sum+=
+                            conj( ll.landautable[m2][i1][j1] )*conj( ll.landautable[m1][i2][j2] )
+                            *
+                            ll.landautable[m4][i2][j2]*ll.landautable[m3][i1][j1]
+                            *
+                            //ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
+                            Lag_Tables[a][abs(i1-i2)][abs(j1-j2)];
+                            
+                            sum-=
+                            conj( ll.landautable[m2][i1][j1] )*conj( ll.landautable[m1][i2][j2] )
+                            *
+                            ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
+                            *
+                            //ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
+                            Lag_Tables[a][abs(i1-i2)][abs(j1-j2)];
+                            
+                            sum-=
+                            conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
+                            *
+                            ll.landautable[m4][i2][j2]*ll.landautable[m3][i1][j1]
+                            *
+                            //ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
+                            Lag_Tables[a][abs(i1-i2)][abs(j1-j2)];
                         }
-                        
-                        sum+=
-                        conj( ll.landautable[m2][i1][j1] )*conj( ll.landautable[m1][i2][j2] )
-                        *
-                        ll.landautable[m4][i2][j2]*ll.landautable[m3][i1][j1]
-                        *
-                        ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                        
-                        sum-=
-                        conj( ll.landautable[m2][i1][j1] )*conj( ll.landautable[m1][i2][j2] )
-                        *
-                        ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                        *
-                        ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                        
-                        sum-=
-                        conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                        *
-                        ll.landautable[m4][i2][j2]*ll.landautable[m3][i1][j1]
-                        *
-                        ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                    }
-        
-        if (abs(base)<pow(10.,-10)) base=pow(10, 20);//TODO:find a better base;
-        
-        tmp.ele.push_back(sum/abs(base));
+            
+            if (abs(base)<pow(10.,-10)) base=pow(10, 20);//TODO:find a better base;
+            
+            //tmp.ele.push_back(sum/abs(base));
+            tmp.ele.push_back(sum/(normalization*normalization));
+            //tmp.ele.push_back(sum);
+        }
         
         hoplist_lat.push_back(tmp);
         flag=false;
@@ -3193,5 +2946,397 @@ void pairamplitude_ED(string filename, bool trace) {//readhoplist="pairamplitude
         outhop<<endl;
     }
     outhop.close();
+}
+void pairamplitude_MC(string filename, bool trace, int num_core, vector<int> PP) {
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed,lat_scale,pp;
+    bool testing;
+    double theta_t, theta, alpha;
+    string type;
+    ifstream infile(filename);
+    infile>>Ne>>invNu>>theta_t>>alpha;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    infile>>lat_scale;
+    infile>>pp;
+    infile.close();
+    //initialize MC object
+    theta=theta_t*M_PI;
+    
+    int NPhi=Ne*invNu;
+    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
+    cout<<"alpha="<<alpha<<" theta="<<theta/M_PI<<endl;
+    
+    omp_set_num_threads(num_core);
+    vector<LATTICE> ll(num_core);
+    for (int i=0; i<num_core; i++) {
+        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
+        ll[i].set_lat_scale(1);//force lattice sum on Nphi*Nphi lattice.
+        ll[i].setup_LagTable(PP);
+    }
+    cout<<"\nfinish initialization."<<endl;
+    
+    //    for (int i=0; i<ll[0].LagTable[0].size(); i++) {
+    //        for (int j=0; j<ll[0].LagTable[0][i].size(); j++) {
+    //            cout<<ll[0].LagTable[0][i][j]<<" ";
+    //        }
+    //        cout<<endl;
+    //    }
+    
+#pragma omp parallel for
+    for(int s=0;s<nBins;s++){
+        double e=0.,e2=0.;
+        vector<double> pair_amp (PP.size(), 0.);
+        vector<double> pair_amp2(PP.size(), 0.);
+        
+        int coren=omp_get_thread_num();
+        ll[coren].reset();
+        ll[coren].step(nWarmup);
+        
+        ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
+        
+        for(int i=0;i<nMeas;i++){
+            ll[coren].step(nSteps);
+            //            e+=ll[coren].coulomb_energy();
+            //            e2+=ll[coren].coulomb_energy()*ll[coren].coulomb_energy();
+            
+            for (int j=0; j<PP.size(); j++) {
+                pair_amp[j]+=ll[coren].pairamplitude(j);
+                pair_amp2[j]+=pow(ll[coren].pairamplitude(j), 2);
+                //                cout<<ll[coren].pairamplitude(j)<<endl;
+            }
+        }
+        
+        for (int j=0; j<PP.size(); j++)
+            pairout<<pair_amp[j]/(1.*nMeas)<<endl;
+        //TODO::L2 PA should be strictly zero. Solve this TODAY!!!
+        
+        //        pairout<<endl;
+        //        pairout<<e/(1.*nMeas*Ne)<<endl<<(e2/(1.*nMeas)-pow(e/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+        
+        pairout.close();
+    }
+}
+void pairamplitude_MC2(string filename, bool trace, int num_core, vector<int> PP, vector<double> QQ) {
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed,lat_scale,pp;
+    bool testing;
+    double theta_t, theta, alpha;
+    string type;
+    ifstream infile(filename);
+    infile>>Ne>>invNu>>theta_t>>alpha;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    infile>>lat_scale;
+    infile>>pp;
+    infile.close();
+    //initialize MC object
+    theta=theta_t*M_PI;
+    
+    int NPhi=Ne*invNu;
+    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
+    cout<<"alpha="<<alpha<<" theta="<<theta/M_PI<<endl;
+    
+    complex<double> L1,L2;
+    L1=sqrt(1.*M_PI*NPhi/sin(theta))*alpha;
+    L2=sqrt(1.*M_PI*NPhi/sin(theta))/alpha*polar(1.,theta);
+    
+    
+    if (PP.size()!=QQ.size()) {
+        cout<<"PP.size()!=QQ.size()."<<endl;
+        exit(0);
+    }
+    
+    omp_set_num_threads(num_core);
+    vector<LATTICE> ll(num_core);
+    for (int i=0; i<num_core; i++) {
+        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
+        ll[i].set_lat_scale(1);//force lattice sum on Nphi*Nphi lattice.
+        ll[i].setup_LagTable(PP,QQ);
+    }
+    cout<<"\nfinish initialization."<<endl;
+    
+    vector<double> xiint(QQ.size());//xi = xi^mc + xi^integral. the latter is evaluated by approximating s(q)-\nu as gaussian.
+    for (int i=0; i<QQ.size(); i++) {
+        for (int qx=0; qx<NPhi; qx++)
+            for (int qy=0; qy<NPhi; qy++) {
+                double q2=2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2);
+                if (q2>QQ[i]*QQ[i])
+                    xiint[i]+=-2.*Laguerrel(PP[i],q2)*exp(-0.5*q2)/(1.*NPhi*(NPhi-invNu)*invNu*invNu);
+            }
+    }
+    
+#pragma omp parallel for
+    for(int s=0;s<nBins;s++){
+        double e=0.,e2=0.;
+        vector<double> pair_amp (PP.size(), 0.);
+        vector<double> pair_amp2(PP.size(), 0.);
+        
+        int coren=omp_get_thread_num();
+        ll[coren].reset();
+        ll[coren].step(nWarmup);
+        
+        ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
+        
+        for(int i=0;i<nMeas;i++){
+            ll[coren].step(nSteps);
+            //e+=ll[coren].coulomb_energy();
+            //e2+=ll[coren].coulomb_energy()*ll[coren].coulomb_energy();
+            
+            for (int j=0; j<PP.size(); j++) {
+                pair_amp[j]+=ll[coren].pairamplitude(j);
+                pair_amp2[j]+=pow(ll[coren].pairamplitude(j), 2);
+                //cout<<ll[coren].pairamplitude(j)<<endl;
+            }
+        }
+        
+        for (int j=0; j<PP.size(); j++)
+            pairout<<pair_amp[j]/(1.*nMeas)<<endl;
+            //pairout<<pair_amp[j]/(1.*nMeas)+xiint[j]<<endl;
+        //TODO::L2 PA should be strictly zero. Solve this TODAY!!!
+        
+        //pairout<<endl;
+        //pairout<<e/(1.*nMeas*Ne)<<endl<<(e2/(1.*nMeas)-pow(e/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+        
+        pairout.close();
+    }
+}
+void pairamplitude_ExplicitLatticeSum2() {
+    //TODO::two particle laughlin state explicit lattice summation.
+    int Ne=2, invNu=5, NPhi=Ne*invNu;
+    LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0);
+    vector<int> PP=vector<int>{1,2,3,5}; vector<double> PA(PP.size(),0.);
+    
+    vector<vector<complex<double>>> wfTable = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
+    for (int i=0; i<NPhi*NPhi; i++) {
+        for (int j=0; j<NPhi*NPhi; j++) {
+            vector<vector<int>> zs(Ne,vector<int>(2));
+            zs[0][0]=i%NPhi; zs[0][1]=i/NPhi; zs[1][0]=j%NPhi; zs[1][1]=j/NPhi;
+            
+            wfTable[i][j]=ll.get_wf(zs);
+        }
+    }
+    
+    ll.setup_LagTable(PP); double normalization=0.;
+    
+    cout<<"Nphi="<<NPhi<<endl;
+    for (int n=0; n<PP.size(); n++) {
+        cout<<"PP[n]="<<PP[n]<<endl;
+        for (int i=0; i<NPhi; i++) {
+            cout<<ll.LagTable[n][i][0]<<" ";
+        }
+        cout<<endl<<endl;
+    }
+    
+    ofstream outfile("data");
+    ofstream outfile2("data2");
+    
+    for (int i=0; i<NPhi*NPhi; i++) {
+        for (int j=0; j<NPhi*NPhi; j++) {
+            int x=abs(i%NPhi-j%NPhi), y=abs(i/NPhi-j/NPhi);
+            for (int k=0; k<PA.size(); k++) {
+                PA[k]+=real(conj(wfTable[i][j])*wfTable[i][j]*ll.LagTable[k][x][y]);
+            }
+            outfile<<real(conj(wfTable[i][j])*wfTable[i][j]*ll.LagTable[0][x][y])<<endl;
+            outfile2<<real(conj(wfTable[i][j])*wfTable[i][j])<<endl;
+            normalization+=real(conj(wfTable[i][j])*wfTable[i][j]);
+        }
+    }
+    
+    for (int i=0; i<PA.size(); i++) {
+        cout<<PA[i]/normalization<<endl;
+    }
+    
+}
+void pairamplitude_ExplicitLatticeSum3() {
+    //TODO::two particle laughlin state explicit lattice summation.
+    int Ne=3, invNu=5, NPhi=Ne*invNu;
+    LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0);
+    vector<int> PP=vector<int>{1,3,5,7,9,11}; vector<double> PA(PP.size(),0.);
+    
+    vector<vector<vector<complex<double>>>> wfTable=vector<vector<vector<complex<double>>>>(NPhi*NPhi,vector<vector<complex<double>>>(NPhi*NPhi,vector<complex<double>>(NPhi*NPhi,0.)));
+    
+    for (int i=0; i<NPhi*NPhi; i++) {
+        for (int j=0; j<NPhi*NPhi; j++) {
+            for (int k=0; k<NPhi*NPhi; k++) {
+                vector<vector<int>> zs(Ne,vector<int>(2));
+                zs[0][0]=i%NPhi; zs[0][1]=i/NPhi; zs[1][0]=j%NPhi; zs[1][1]=j/NPhi; zs[2][0]=k%NPhi; zs[2][1]=k/NPhi;
+                wfTable[i][j][k]=ll.get_wf(zs);
+            }
+        }
+    }
+    ll.setup_LagTable(PP); double normalization=0.;
+//    cout<<"Nphi="<<NPhi<<endl;
+//    for (int n=0; n<PP.size(); n++) {
+//        cout<<"PP[n]="<<PP[n]<<endl;
+//        for (int i=0; i<NPhi; i++) {
+//            cout<<ll.LagTable[n][i][0]<<" ";
+//        }
+//        cout<<endl<<endl;
+//    }
+//    ofstream outfile("data");
+//    ofstream outfile2("data2");
+    
+    for (int i=0; i<NPhi*NPhi; i++) {
+        for (int j=0; j<NPhi*NPhi; j++) {
+            for (int k=0; k<NPhi*NPhi; k++) {
+                for (int l=0; l<PA.size(); l++) {
+                    double val=0.;
+                    val=ll.LagTable[l][abs(i%NPhi-j%NPhi)][abs(i/NPhi-j/NPhi)]
+                       +ll.LagTable[l][abs(i%NPhi-k%NPhi)][abs(i/NPhi-k/NPhi)]
+                       +ll.LagTable[l][abs(k%NPhi-j%NPhi)][abs(k/NPhi-j/NPhi)];
+                    
+                    PA[l]+=real(conj(wfTable[i][j][k])*wfTable[i][j][k]*val)*4./(1.*NPhi*Ne*(Ne-1));
+                }
+                normalization+=real(conj(wfTable[i][j][k])*wfTable[i][j][k]);
+            }
+        }
+    }
+    for (int i=0; i<PA.size(); i++) {
+        cout<<PA[i]/normalization<<endl;
+    }
+}
+
+//old functions
+void pairamplitudeold(string filename, bool trace, int num_core, bool pseu, bool mc) {
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    double theta_t, theta, alpha;
+    string type;
+    ifstream infile(filename);
+    infile>>Ne>>invNu>>theta_t>>alpha;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    theta=theta_t*M_PI;
+    
+    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
+    
+    omp_set_num_threads(num_core);
+    
+    vector<LATTICE> ll(num_core);
+    for (int i=0; i<num_core; i++) {
+        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
+        ll[i].setup_laguerre_lat(); //lattice summation version.
+        //ll[i].setup_laguerre_con(); //continuous integral version.
+        ll[i].setup_landautable();
+    }
+    cout<<"\nfinish initialization."<<endl;
+    
+    int mlength=50, nlength=10;//m=alpha, n=pair angular momentum.
+    int NPhi=Ne*invNu;
+    
+    //allowed momentum set on torus, got from ed code.
+    //use this to get matrix element by lattice summation over sigma function.
+    //vector<hop> hoplist_ed;//hoplist from ed, amplitude are laugerrel-gaussian with theta function.
+    
+    vector<hop> hoplist_lat;//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
+    //vector<vector<hop>> hoplist_lat(mlength);//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
+    
+    //do this if want to get the lattice-summation version of pseudo-potential for ed use.
+    if (pseu) {
+        ifstream hopinfile("pairamplitude/hoplist_"+to_string((long long int)NPhi));
+        //vector<complex<double>> total(mlength);//the lattice-sum is 2 large, so normalized it a little bit.
+        
+        //int count=0;
+        while (!hopinfile.eof()) {
+            double re,im;
+            hop tmp;
+            tmp.list.resize(4);
+            hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
+            hopinfile>>re>>im;
+            
+            //count++;
+            //cout<<"cout = "<<count<<endl;
+            //cout<<"re, im = "<<re<<" "<<im<<endl;
+            
+            for (int a=0; a<mlength; a++) {
+                //cout<<"a="<<a<<endl;
+                complex<double> sum;//lattice summation.
+                for (int x1=0; x1<NPhi*NPhi; x1++) {
+                    for (int x2=0; x2<NPhi*NPhi; x2++) {
+                        int x11=x1/NPhi, x12=x1%NPhi, x21=x2/NPhi, x22=x2%NPhi;
+                        int x = ((x11-x21)%NPhi+NPhi)%NPhi;
+                        int y = ((x12-x22)%NPhi+NPhi)%NPhi;
+                        
+                        int m=3;//just pick the 'm_{th}' pseudo-potential.
+                        
+                        sum+=
+                        0.5*ll[0].laguerretables[m][a][x][y]
+                        *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+                        *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+                        *ll[0].landautable[tmp.list[2]][x21][x22]
+                        *ll[0].landautable[tmp.list[3]][x11][x12];
+                        
+                        sum+=
+                        0.5*ll[0].laguerretables[m][a][x][y]
+                        *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+                        *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+                        *ll[0].landautable[tmp.list[3]][x21][x22]
+                        *ll[0].landautable[tmp.list[2]][x11][x12];
+                        
+                        sum-=
+                        0.5*ll[0].laguerretables[m][a][x][y]
+                        *conj(ll[0].landautable[tmp.list[1]][x11][x12])
+                        *conj(ll[0].landautable[tmp.list[0]][x21][x22])
+                        *ll[0].landautable[tmp.list[2]][x21][x22]
+                        *ll[0].landautable[tmp.list[3]][x11][x12];
+                        
+                        sum-=
+                        0.5*ll[0].laguerretables[m][a][x][y]
+                        *conj(ll[0].landautable[tmp.list[0]][x11][x12])
+                        *conj(ll[0].landautable[tmp.list[1]][x21][x22])
+                        *ll[0].landautable[tmp.list[3]][x21][x22]
+                        *ll[0].landautable[tmp.list[2]][x11][x12];
+                    }
+                }
+                tmp.ele.push_back(sum);
+                
+            }
+            hoplist_lat.push_back(tmp);
+        }
+        hopinfile.close();
+        cout<<"finish hoplist calculation"<<endl;
+        
+        //        for (int a=0; a<mlength; a++) {
+        //            hoplist_lat[a].pop_back();
+        //            //output hoplist.
+        //            ofstream outhop("pairamplitude/hoplist_lat_" + to_string( (long long int)a ));
+        //            for (int i=0; i<hoplist_lat[a].size(); i++) {
+        //                outhop<<hoplist_lat[a][i].list[0]<<" "<<hoplist_lat[a][i].list[1]<<" "<<hoplist_lat[a][i].list[2]<<" "<<hoplist_lat[a][i].list[3]<<endl;
+        //                for (int k=0; k<hoplist_lat[a][i].ele.size(); k++)
+        //                    outhop<< setprecision(26) <<real(hoplist_lat[a][i].ele[k])<<" "<<imag(hoplist_lat[a][i].ele[k])<<" ";
+        //                outhop<<endl;
+        //            }
+        //            outhop.close();
+        //
+        //            if (a==0) {
+        //                ofstream outhop("pairamplitude/hoplist_lat");
+        //                for (int i=0; i<hoplist_lat[a].size(); i++) {
+        //                    outhop<<hoplist_lat[a][i].list[0]<<" "<<hoplist_lat[a][i].list[1]<<" "<<hoplist_lat[a][i].list[2]<<" "<<hoplist_lat[a][i].list[3]<<endl;
+        //                    for (int k=0; k<hoplist_lat[a][i].ele.size(); k++)
+        //                        outhop<< setprecision(26) <<real(hoplist_lat[a][i].ele[k])<<" "<<imag(hoplist_lat[a][i].ele[k])<<" ";
+        //                    outhop<<endl;
+        //                }
+        //            }
+        //            outhop.close();
+        //        }
+        
+        
+        hoplist_lat.pop_back();
+        //output hoplist.
+        ofstream outhop(filename+"_hoplat");
+        for (int i=0; i<hoplist_lat.size(); i++) {
+            outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
+            for (int k=0; k<hoplist_lat[i].ele.size(); k++)
+                outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
+            outhop<<endl;
+        }
+        outhop.close();
+    }
     
 }

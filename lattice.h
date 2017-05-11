@@ -81,22 +81,30 @@ public:
 	//utility functions
 	void print_ds();
     void print_ws();
-    void print_landautable();
-    void print_laguerreltable(int);
-//    vector<vector<vector<vector<double>>>> laguerretable;
-    vector<vector<vector<double>>> laguerretable;//a, x, y
-    vector<vector<double>> laguerretable2;//x, y. size determined by 'lat_scale'.
-    vector<vector<double>> compac_lagtable;
-    
-    
+//    void print_landautable();
+//    void print_laguerreltable(int);
+    void print_laguerreltable();
+    void print_laguerreltableBZ();
+    vector<vector<vector<double>>> laguerretable;//laguerre table regularized by alpha.
+    vector<vector<double>> laguerretable2;//laguerre table for 1BZ.
+    vector<vector<double>> compac_lagtable;//compactified laguerre table.
+    vector<vector<vector<double>>> LagTable;//element is the compac_lagtable of given order.
     vector<vector<vector<complex<double>>>> landautable;
     
-//    void setup_laguerre_con();
-//    void setup_laguerre_lat();
     void setup_laguerre(int);
     void setup_laguerre2(int);
+    void setup_laguerre2(vector<int>);
     void setup_landautable();
     void setup_compac_lagtable(int);
+    void setup_compac_lagtable(int, double);
+    void setup_compac_lagtable(int, double, double);
+    void setup_LagTable(vector<int>);
+    void setup_LagTable(vector<int>, vector<double>);
+    
+    //TODO::old functions;
+    void setup_laguerre_lat();
+    vector<vector<vector<vector<double>>>> laguerretables;
+    double pairamplitude(int n, int a);
 
 	//initialization related functions
 	void make_fermi_surface(double* center_frac, int N);
@@ -118,11 +126,11 @@ public:
 
 	//measurement related functions
 	double coulomb_energy();
+    double coulomb_energy2();
 	double threebody();
 	void update_structure_factors();
 	void print_structure_factors(int nMeas, string filename="");
-//    double pairamplitude(int n, double alpha);
-    double pairamplitude(int n, int a);
+    double pairamplitude(int n);
     
 	vector <vector<int> > get_locs();
 	complex<double> formfactor(int qx, int qy);
@@ -153,6 +161,7 @@ private:
     double in_determinant_rescaling;
 	void sum_locs(int []);
 	void setup_coulomb();
+    void setup_coulomb2();
     
 	int simple_update();// returns '1' if updated, '0' if not updated.
 	complex<double> modded_lattice_z(int x, int y);
@@ -170,7 +179,7 @@ private:
     int gs;
     double theta, alpha;
     vector <double> pair_amp;
-	vector <vector <double> > coulomb_table, sq2, sq2_mqy;
+	vector <vector <double> > coulomb_table, coulomb_table2, sq2, sq2_mqy;
 	vector <vector <complex<double> > > sq, sq_mqy;//'minus qy', qy<=0.
 	vector <vector <vector <vector< complex<double> > > > > sq3;
     vector <vector <double> > SMAq;
