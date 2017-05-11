@@ -43,7 +43,7 @@ void findstate();
 //Laughlin-Hole Berry Phase
 void laughlinberryphase(string input_name, string output_name, vector<double> length, double steplength, int change_nMeas, int change_Ne, int num_core, double theta=0.5*M_PI, double alpha=1.0);
 void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas);
-void two_holes(string str, int nmeasurement, data& test);
+void two_holes(string input_name, string str, int nmeasurement, data& test);
 void test_error(int ne, double loop, double steplength, int nMea, int ncore, string test, int num_core);
 
 //CFL Berry Phase

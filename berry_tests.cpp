@@ -609,11 +609,11 @@ void laughlin_bp_single_state(int gs, vector<double> length, double steplength, 
     cout<<endl;
     
 }
-void two_holes(string str, int nmeasurement, data& test){
+void two_holes(string input_name, string str, int nmeasurement, data& test){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     string type;
-    ifstream infile("params");
+    ifstream infile(input_name);
     infile>>Ne>>invNu;
     infile>>nWarmup>>nMeas>>nSteps>>nBins;
     infile>>seed;
