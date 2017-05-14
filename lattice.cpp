@@ -148,11 +148,17 @@ double LATTICE::get_in_det_rescaling(int Ne, int invNu){
             if (Ne<35) {
                 rescaling=0.87;
             }
-//            else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
+            else if (Ne==50) {
+                rescaling=0.9;
+            }
+            else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
         }
         if (invNu==5) {
             if (Ne<=20) {
                 rescaling=0.7;
+            }
+            else if (Ne==50) {
+                rescaling=0.812;
             }
             else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
         }
