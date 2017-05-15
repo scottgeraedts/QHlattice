@@ -24,6 +24,7 @@ LATTICE::LATTICE(LATTICE_PARAMS params){
 	w_delta=params.w_delta;
 	dbar_delta=params.dbar_delta;
 	testing=params.testing;
+	in_determinant_rescaling=params.rescale;
 
 	init(params.seed);
 }
@@ -64,7 +65,7 @@ void LATTICE::init(int seed){
     
     //set in_determinant_rescaling.
     //It has been set for more Ne for invNu=2, some Ne for invNu=4.
-    in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
+//    in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
     
 	ran.seed(seed);
 	fermions=true;

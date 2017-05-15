@@ -35,7 +35,7 @@ extern"C"{
 class LATTICE_PARAMS{
 public:
 	int Ne, invNu, seed, gs;
-	double theta, alpha;
+	double theta, alpha, rescale;
 	complex<double> w_delta, dbar_delta;
 	bool testing, trace;
 	string type;
@@ -51,6 +51,7 @@ public:
 		type="CFL";
 		w_delta=0;
 		dbar_delta=0;
+		rescale=1;
 	}
 };
 	
@@ -70,6 +71,7 @@ public:
     vector<double> hole;
     bool fermions,holes_set;
     
+    double in_determinant_rescaling;
 	//stepping functions
     vector<double> dbar_parameter;
 	bool testing;
@@ -141,7 +143,6 @@ public:
 private:
 	void init(int seed);
     double get_in_det_rescaling(int Ne, int invNu);
-    double in_determinant_rescaling;
 	void sum_locs(int []);
 	void setup_coulomb();
     
