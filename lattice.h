@@ -131,6 +131,7 @@ public:
 	void update_structure_factors();
 	void print_structure_factors(int nMeas, string filename="");
     double pairamplitude(int n);
+    double check_duncan_coulomb(int m, int n, double a);
     
 	vector <vector<int> > get_locs();
 	complex<double> formfactor(int qx, int qy);

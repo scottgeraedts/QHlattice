@@ -79,6 +79,7 @@ function new_v_coulomb(norb,m,n, l1,l2) result(v)
 
   real(kind=dp):: v1,v2
   real(kind=dp), parameter :: a = 1.0_dp
+  !write(*,*) "a=", a
  
   call coulomb_1(m,n,norb,l1,l2,a,v1,v2)
   v = v1+v2
@@ -248,6 +249,7 @@ end subroutine coulomb_setup
     
     alpha = sqrt(norb*a**2)/rt2
     v2 = - (2/rtpi)*alpha
+    
     i = 0
     do
        if(test) write(6,'("q: i=",i12)') i
@@ -278,6 +280,10 @@ end subroutine coulomb_setup
        enddo
     enddo
     v2 = v2*(2*pi/area)
+    
+    write(*,*) v1
+    write(*,*) v2
+    
     return
   end subroutine coulomb_1
 

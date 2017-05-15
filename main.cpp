@@ -35,20 +35,30 @@ int main(){
 //    pairamplitude_MC2("paramsne", false, num_core, vector<int>{1,3,5,7,9}, vector<double>{4,4,4,4,4});
 //    pairamplitude_MC("paramsne", false, num_core, vector<int>{1,3,5,7,9});
     
-//    testlatticepp();
-    
-//    single_run("params", false);
     
 //    data test;
 //    two_holes("params_lau", "", 5000, test);
 //    vector<data> datas;
-    double stplength=0.1;
-    for (int i=1; i<6; i++) {
-        laughlinberryphase("params_lau" ,"", vector<double>{0.5, 0.1*i}, stplength, 0, 0, 2);
-    }
     
-//    single_run();
     
+//    //the laughlin-hole part
+//    string inputfile="params_lau5";
+//    double leg=0.3;
+//    
+//    //data test;
+//    //two_holes(inputfile ,"", 5000, test);
+//    
+//    vector<data> datas;
+//    for (int i=5; i<6; i++) {
+//        double steplength=0.05;
+//        int ncore=5;
+//        cout<<"stplength="<<steplength<<" length="<<leg<<"*"<<0.1*i<<" (i="<<i<<")."<<endl;
+//        laughlinberryphase(inputfile ,"", vector<double>{leg, 0.1*i}, steplength, 0, 0, ncore);
+//    }
+//    //the laughlin-hole part ends.
+    
+    
+    single_run();
     
 //    LatticeSumHoplist("paramsne");
 //

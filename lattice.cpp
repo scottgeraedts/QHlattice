@@ -107,6 +107,10 @@ void LATTICE::init(int seed){
 	//*****some counters
 //	setup_coulomb();
 //    setup_coulomb2();
+    check_duncan_coulomb(0,0,sqrt(1.*NPhi));
+//    check_duncan_coulomb(1,1,sqrt(2.*NPhi));
+    exit(0);
+    
     omega=vector<complex<double>>(2*NPhi);
 	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi));
 
@@ -836,16 +840,79 @@ vector< vector<int> > LATTICE::get_ds(){return ds;}//'ds' are private, so call '
 //		}	
 //	}
 //}
+double LATTICE::check_duncan_coulomb(int m, int n, double a) {
+//    cout<<(conj(L1)*L2-conj(L2)*L1)/(2.*M_PI*NPhi)<<endl;
+    
+    double Es=0., El=0.;
+    int round1, round2, round=20;
+    round1=round; round2=round;
+    
+    if (2*m>NPhi) m-=NPhi;
+    if (2*n>NPhi) n-=NPhi;
+    
+    complex<double> z = m/(1.*NPhi)*L1+n/(1.*NPhi)*L2;
+    double x=sqrt(2.)*abs(z);
+    
+    //short range Es. It is the non-singular part of Sum_{L} V(x+L).
+    if (m==0 && n==0) Es = -sqrt(2.)/sqrt(1.*M_PI)/a;//This is the limit value of V(x->0).
+    else Es = erfc(x/(sqrt(2.)*a))/x;
+    
+    for (int i=-round1; i<=round1; i++) {
+        for (int j=-round2; j<=round2; j++) {
+            if (i==0 && j==0) {
+                continue;
+            }
+            complex<double> z = (m+i*NPhi)/(1.*NPhi)*L1+(n+j*NPhi)/(1.*NPhi)*L2;
+            double x=sqrt(2.)*abs(z);
+            Es+=erfc(x/(sqrt(2.)*a))/x;
+        }
+    }
+    
+    //range range El. It is the non-singular part of Sum_{q} V(q) e^{-iqx}.
+    vector<vector<double>> vq=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
+    El=-a*sqrt(2.)/sqrt(1.*M_PI)/(1.*NPhi);//This is the limit value of V(q->0)/(NPhi).
+    
+    for (int qm=-round1*NPhi; qm<=round1*NPhi; qm++) {
+        for (int qn=-round2*NPhi; qn<=round2*NPhi; qn++) {
+            if (qm==0 && qn==0) continue;
+            
+            complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
+            double x=sqrt(2.)*abs(z);
+            El+=erfc(x/(sqrt(2.)/a))/x*cos( (2.*M_PI)/(1.*NPhi)*(qm*n-qn*m) )/(1.*NPhi);
+        }
+    }
+    
+    cout<<"short range V = "<<setprecision(12)<<Es<<endl;
+    cout<<"long range V  = "<<setprecision(12)<<El<<endl;
+    cout<<"sum of them   = "<<setprecision(12)<<Es+El<<endl;
+    
+    //output coulomb from fortran.
+    cout<<"Coulomb from Fortran. Turn out to be the same."<<endl;
+    complex<double> eL1=L1;
+    complex<double> eL2=L2;
+    cout<<"fortran Coulomb="<<endl;
+    cout<<"total="<<new_v_coulomb_(&NPhi,&m,&n,&eL1,&eL2)<<endl;
+    cout<<endl;
+    
+    return Es+El;
+}
 void LATTICE::setup_coulomb(){
 	coulomb_table=vector<vector<double> >(NPhi,vector<double>(NPhi,0));
 	//coulomb_table[0][0]=v_coulomb_(&NPhi,&NPhi,&NPhi,&L1,&L2);
-	complex<double> eL1=L1*sqrt(2.);
-	complex<double> eL2=L2*sqrt(2.);
+    complex<double> eL1=L1;
+    complex<double> eL2=L2;
 	for(int m=0;m<NPhi;m++){
 		for(int n=0;n<NPhi;n++){
 			coulomb_table[m][n]=new_v_coulomb_(&NPhi,&m,&n,&eL1,&eL2);
 		}
 	}
+    
+//    cout<<"output coulomb_table"<<endl;
+//    for (int m=0; m<NPhi; m++) {
+//        for (int n=0; n<NPhi; n++) {
+//            cout<<"m,n="<<m<<" "<<n<<" "<<setprecision(12)<<coulomb_table[m][n]<<endl;
+//        }
+//    }
 }
 double LATTICE::coulomb_energy(){
 	double out=0.5*Ne*coulomb_table[0][0];
@@ -862,6 +929,7 @@ double LATTICE::coulomb_energy(){
 }
 //TODO::Fill in setup_coulomb2.
 void LATTICE::setup_coulomb2(){
+    cout<<"setup coulomb2"<<endl;
     vector<vector<complex<double>>> Vq = vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0.));
     for (int m=0; m<NPhi; m++) {
         for (int n=0; n<NPhi; n++) {
@@ -873,57 +941,67 @@ void LATTICE::setup_coulomb2(){
         }
     }
     
-    //output Duncan's Vq.
-    ofstream output1("out_coul_dun");
+    cout<<"Check Duncan Coulomb Self Dual"<<endl;
+    cout<<"It turns to be EXACTLY self dual, no large NPhi required."<<endl;
     for (int m=0; m<NPhi; m++) {
         for (int n=0; n<NPhi; n++) {
-            output1<<real(Vq[m][n])<<endl;
+            cout<<"m,n="<<m<<" "<<n<<" ratio=";
+            cout<<real(Vq[m][n]/coulomb_table[m][n])<<endl;
         }
     }
-    output1.close();
+    cout<<"Finish Check Duncan Coulomb Self Dual"<<endl<<endl;
     
-    //output Duncan's Vx.
-    ofstream output_dunx("out_coul_dunx");
-    for (int m=0; m<NPhi; m++) {
-        for (int n=0; n<NPhi; n++) {
-            output_dunx<<coulomb_table[m][n]<<endl;
-        }
-    }
-    output_dunx.close();
+//    //output Duncan's Vq.
+//    ofstream output1("out_coul_dun");
+//    for (int m=0; m<NPhi; m++) {
+//        for (int n=0; n<NPhi; n++) {
+//            output1<<real(Vq[m][n])<<endl;
+//        }
+//    }
+//    output1.close();
+//    
+//    //output Duncan's Vx.
+//    ofstream output_dunx("out_coul_dunx");
+//    for (int m=0; m<NPhi; m++) {
+//        for (int n=0; n<NPhi; n++) {
+//            output_dunx<<coulomb_table[m][n]<<endl;
+//        }
+//    }
+//    output_dunx.close();
     
-    //output periodic 1/q.
-    vector<vector<double>> oneoverq=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
-    ofstream outputjie("out_coul_jie");
-    for (int m=0; m<NPhi; m++) {
-        for (int n=0; n<NPhi; n++) {
-            double temp=1.;
-            
-            for (int round1=-1249; round1<1250; round1++) {
-                for (int round2=-1249; round2<1250; round2++) {
-                    int m1=m+round1*NPhi;
-                    int n1=n+round2*NPhi;
-                    
-                    double q2=sqrt( 2.*M_PI/(1.*NPhi) * (m1*m1+n1*n1) );
-                    oneoverq[m][n]+=1./q2/(1.*NPhi);
-//                    oneoverq[m][n]+=1./q2*exp(-0.5*q2*q2)/(1.*NPhi);
-//                    temp+=exp(-0.5*q2*q2);
-                }
-                
-            }
-            outputjie<<oneoverq[m][n]/temp<<endl;
-        }
-    }
-    outputjie.close();
+//    //output periodic 1/q.
+//    vector<vector<double>> oneoverq=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
+//    ofstream outputjie("out_coul_jie");
+//    for (int m=0; m<NPhi; m++) {
+//        for (int n=0; n<NPhi; n++) {
+//            double temp=1.;
+//            
+//            for (int round1=-1249; round1<1250; round1++) {
+//                for (int round2=-1249; round2<1250; round2++) {
+//                    int m1=m+round1*NPhi;
+//                    int n1=n+round2*NPhi;
+//                    
+//                    double q2=sqrt( 2.*M_PI/(1.*NPhi) * (m1*m1+n1*n1) );
+//                    oneoverq[m][n]+=1./q2/(1.*NPhi);
+////                    oneoverq[m][n]+=1./q2*exp(-0.5*q2*q2)/(1.*NPhi);
+////                    temp+=exp(-0.5*q2*q2);
+//                }
+//                
+//            }
+//            outputjie<<oneoverq[m][n]/temp<<endl;
+//        }
+//    }
+//    outputjie.close();
     
-    //compare the difference of Duncan's vq and oneoverq.
-    cout<<"difference"<<endl;
-    for (int m=0; m<NPhi; m++) {
-        for (int n=0; n<NPhi; n++) {
-            cout<<oneoverq[m][n]-real(coulomb_table[m][n])<<endl;
-        }
-    }
-    
-    exit(0);
+//    //compare the difference of Duncan's vq and oneoverq.
+//    cout<<"difference"<<endl;
+//    for (int m=0; m<NPhi; m++) {
+//        for (int n=0; n<NPhi; n++) {
+//            cout<<oneoverq[m][n]-real(coulomb_table[m][n])<<endl;
+//        }
+//    }
+//    
+//    exit(0);
     
 }
 double LATTICE::coulomb_energy2(){
