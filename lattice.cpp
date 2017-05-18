@@ -105,11 +105,12 @@ void LATTICE::init(int seed){
     //To Avoid Bugs, 'set_ws' must be followed by 'set_ds', 'change_dbar_parameter' must following 'set_ds'.
 
 	//*****some counters
-//	setup_coulomb();
-//    setup_coulomb2();
-    check_duncan_coulomb(0,0,sqrt(1.*NPhi));
+	setup_coulomb();
+    setup_coulomb2();
+//    check_duncan_coulomb(1,2,sqrt(1.*NPhi));
 //    check_duncan_coulomb(1,1,sqrt(2.*NPhi));
-    exit(0);
+    //TODO:Here.
+//    exit(0);
     
     omega=vector<complex<double>>(2*NPhi);
 	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi));
@@ -869,7 +870,6 @@ double LATTICE::check_duncan_coulomb(int m, int n, double a) {
     }
     
     //range range El. It is the non-singular part of Sum_{q} V(q) e^{-iqx}.
-    vector<vector<double>> vq=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
     El=-a*sqrt(2.)/sqrt(1.*M_PI)/(1.*NPhi);//This is the limit value of V(q->0)/(NPhi).
     
     for (int qm=-round1*NPhi; qm<=round1*NPhi; qm++) {
@@ -882,17 +882,66 @@ double LATTICE::check_duncan_coulomb(int m, int n, double a) {
         }
     }
     
-    cout<<"short range V = "<<setprecision(12)<<Es<<endl;
-    cout<<"long range V  = "<<setprecision(12)<<El<<endl;
-    cout<<"sum of them   = "<<setprecision(12)<<Es+El<<endl;
-    
-    //output coulomb from fortran.
-    cout<<"Coulomb from Fortran. Turn out to be the same."<<endl;
-    complex<double> eL1=L1;
-    complex<double> eL2=L2;
-    cout<<"fortran Coulomb="<<endl;
-    cout<<"total="<<new_v_coulomb_(&NPhi,&m,&n,&eL1,&eL2)<<endl;
+    cout<<"short range:"<<setprecision(12)<<Es<<endl;
+    cout<<"rangl range:"<<El<<endl;
+    cout<<"Coulomb from CPP: "<<Es+El<<endl;
+    cout<<"Coulomb from F90: "<<new_v_coulomb_(&NPhi,&m,&n,&L1,&L2)<<endl;
     cout<<endl;
+    
+    
+    //check if fortran coulomb = 1/q.
+    double Ell=0.;
+    round=500;
+    round1=round; round2=round;
+    for (int qm=-round1*NPhi; qm<=round1*NPhi; qm++) {
+        for (int qn=-round2*NPhi; qn<=round2*NPhi; qn++) {
+            if (qm==0 && qn==0) continue;
+            
+            complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
+            double x=sqrt(2.)*abs(z);
+            Ell+=1./x*cos( (2.*M_PI)/(1.*NPhi)*(qm*n-qn*m) )/(1.*NPhi);
+            
+        }
+    }
+    cout<<"1/q Coulomb 1/q:"<<Ell<<endl;
+    
+//    //check if fortran coulomb = [1/q*f]/[f].
+//    Ell=0.;
+//    round=500;
+//    round1=round; round2=round;
+//    vector<vector<double>> vq=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
+//    for (int qm=-round1*NPhi; qm<=round1*NPhi; qm++) {
+//        for (int qn=-round2*NPhi; qn<=round2*NPhi; qn++) {
+//            if (qm==0 && qn==0) continue;
+//            
+//            complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
+//            double x=sqrt(2.)*abs(z);
+//            Ell+=1./x*exp(-0.5*x*x)*cos( (2.*M_PI)/(1.*NPhi)*(qm*n-qn*m) )/(1.*NPhi);
+//            
+//        }
+//    }
+//    cout<<"1/q Coulomb [1/q*f]/[f]:"<<Ell<<endl;
+    
+    //see if high LL coulomb div.
+    Ell=0.;
+    round=500;
+    round1=round; round2=round;
+    for (int qm=-round1*NPhi; qm<=round1*NPhi; qm++) {
+        for (int qn=-round2*NPhi; qn<=round2*NPhi; qn++) {
+            if (qm==0 && qn==0) continue;
+            
+            complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
+            double x=sqrt(2.)*abs(z);
+            Ell+=1./x*pow(laguerre(1,x*x*0.5),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*n-qn*m) )/(1.*NPhi);
+            
+        }
+    }
+    cout<<"\nround="<<round1<<endl;
+    cout<<"1/qL^2 Coulomb:"<<Ell<<endl;
+    cout<<"n=1 LL bare Coulomb Divergent! (without form factor)"<<endl;
+    
+    
+    
     
     return Es+El;
 }
@@ -929,28 +978,131 @@ double LATTICE::coulomb_energy(){
 }
 //TODO::Fill in setup_coulomb2.
 void LATTICE::setup_coulomb2(){
-    cout<<"setup coulomb2"<<endl;
-    vector<vector<complex<double>>> Vq = vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0.));
+//    cout<<"setup coulomb2"<<endl;
+//    vector<vector<complex<double>>> Vq = vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0.));
+//    for (int m=0; m<NPhi; m++) {
+//        for (int n=0; n<NPhi; n++) {
+//            for (int m1=0; m1<NPhi; m1++) {
+//                for (int n1=0; n1<NPhi; n1++) {
+//                    Vq[m][n]+=coulomb_table[m1][n1]*polar(1., -2.*M_PI*(n*m1-m*n1)/(1.*NPhi))/(1.*NPhi);
+//                }
+//            }
+//        }
+//    }
+//    
+//    cout<<"Check Duncan Coulomb Self Dual"<<endl;
+//    cout<<"It turns to be EXACTLY self dual, no large NPhi required."<<endl;
+//    for (int m=0; m<NPhi; m++) {
+//        for (int n=0; n<NPhi; n++) {
+//            cout<<"m,n="<<m<<" "<<n<<" ratio=";
+//            cout<<real(Vq[m][n]/coulomb_table[m][n])<<endl;
+//        }
+//    }
+//    cout<<"Finish Check Duncan Coulomb Self Dual"<<endl<<endl;
+    
+    //generate high landau level coulomb table.
+//    coulomb_table2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
+//    vector<vector<double>> fn=vector<vector<double>> (NPhi, vector<double>(NPhi,0.));
+//    vector<vector<double>> f0=vector<vector<double>> (NPhi, vector<double>(NPhi,0.));
+    
+//    //n=1 LL stuff.
+//    int Landau_n=1;
+//    int round=5;
+//    vector<vector<double>> Lag2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
+////    cout<<"output Ln^2"<<endl;
+//    for (int i=0; i<NPhi; i++) {
+//        for (int j=0; j<NPhi; j++) {
+//            int m=i, n=j;
+//            if (2*m<NPhi) {
+//                m-=NPhi;
+//            }
+//            if (2*n<NPhi) {
+//                n-=NPhi;
+//            }
+//            
+//            complex<double> z=1.*m*L1/(1.*NPhi)+1.*n*L2/(1.*NPhi);
+//            double x=sqrt(2.)*abs(z);
+//            Lag2[i][j]=laguerre(Landau_n, 0.5*x*x)*laguerre(Landau_n, 0.5*x*x);
+//        }
+//    }
+    
+//    for (int m=-round*NPhi; m<=round*NPhi; m++) {
+//        for (int n=-round*NPhi; n<=round*NPhi; n++) {
+//            complex<double> z = 1.*m*L1/(1.*NPhi)+1.*n*L2/(1.*NPhi);
+//            double x= sqrt(2.)*abs(z);
+//            fn[ (m%NPhi+NPhi)%NPhi ][ (n%NPhi+NPhi)%NPhi ] += exp(-0.5*x*x)*laguerre(Landau_n,0.5*x*x)*laguerre(Landau_n,0.5*x*x);
+//            f0[ (m%NPhi+NPhi)%NPhi ][ (n%NPhi+NPhi)%NPhi ] += exp(-0.5*x*x);
+//        }
+//    }
+//    cout<<"output fn,f0,fn/f0,L2"<<endl;
+//    for (int i=0; i<NPhi; i++) {
+//        for (int j=0; j<NPhi; j++) {
+//            cout<<i<<" "<<j<<" "<<fn[i][j]<<" "<<f0[i][j]<<" "<<fn[i][j]/f0[i][j]<<" "<<Lag2[i][j]<<endl;
+//        }
+//    }
+    //The compactified [fn]/[f0] is smaller than fn/f0.
+    
+//    for (int i=0; i<NPhi; i++) {
+//        for (int j=0; j<NPhi; j++) {
+//            coulomb_table2[i][j]=fn[i][j]/f0[i][j]*coulomb_table[i][j];
+//        }
+//    }
+    
+    
+    
+    //Compare 3 ways of LLL coulomb.
+    //coulomb_table : fortran coulomb.
+    //coulomb_table2: 1/q in the first BZ.
+    //coulomb_table3: 1/q in the q-lattice.
+    
+    coulomb_table2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
+    //sum over the first BZ only.
     for (int m=0; m<NPhi; m++) {
         for (int n=0; n<NPhi; n++) {
-            for (int m1=0; m1<NPhi; m1++) {
-                for (int n1=0; n1<NPhi; n1++) {
-                    Vq[m][n]+=coulomb_table[m1][n1]*polar(1., -2.*M_PI*(n*m1-m*n1)/(1.*NPhi))/(1.*NPhi);
+            int qm=m,qn=n;
+            
+            if (m==0 && n==0) continue;
+            if (2*qm>NPhi) qm-=NPhi;
+            if (2*qn>NPhi) qn-=NPhi;
+            
+            complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
+            double x=sqrt(2.)*abs(z);
+            
+            for (int i=0; i<NPhi; i++) {
+                for (int j=0; j<NPhi; j++) {
+                    coulomb_table2[i][j]+=1./x*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
                 }
             }
         }
     }
+//    vector<vector<double>> coulomb_table3=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
+//    round=500;
+//    for (int qm=-round*NPhi; qm<=round*NPhi; qm++) {
+//        for (int qn=-round*NPhi; qn<=round*NPhi; qn++) {
+//            if (qm==0 && qn==0) continue;
+//            
+//            complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
+//            double x=sqrt(2.)*abs(z);
+//            
+//            for (int i=0; i<NPhi; i++) {
+//                for (int j=0; j<NPhi; j++) {
+//                    coulomb_table3[i][j]+=1./x*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
+//                }
+//            }
+//        }
+//    }
+//    
+//    
+//    
+//    for (int i=0; i<NPhi; i++) {
+//        for (int j=0; j<NPhi; j++) {
+//            cout<<i<<" "<<j<<" "<<coulomb_table2[i][j]/coulomb_table[i][j]<<" "<<coulomb_table3[i][j]/coulomb_table[i][j]<<endl;
+//        }
+//    }
     
-    cout<<"Check Duncan Coulomb Self Dual"<<endl;
-    cout<<"It turns to be EXACTLY self dual, no large NPhi required."<<endl;
-    for (int m=0; m<NPhi; m++) {
-        for (int n=0; n<NPhi; n++) {
-            cout<<"m,n="<<m<<" "<<n<<" ratio=";
-            cout<<real(Vq[m][n]/coulomb_table[m][n])<<endl;
-        }
-    }
-    cout<<"Finish Check Duncan Coulomb Self Dual"<<endl<<endl;
     
+    
+    //TODO:DO the high landau level Coulomb energy.
 //    //output Duncan's Vq.
 //    ofstream output1("out_coul_dun");
 //    for (int m=0; m<NPhi; m++) {

@@ -144,8 +144,9 @@ void single_run(string filename, bool trace){
         
         ll.step(nWarmup);
         double E=0,E2=0;
+        double EE=0, EE2=0;
         double P=0;
-        double e ,p;
+        double e,ee,p;
         complex<double> berry_phase(0,0);
         deque<double> e_tracker, p_tracker;
         int Ntrack=50;
@@ -153,9 +154,9 @@ void single_run(string filename, bool trace){
         
         for(int i=0;i<nMeas;i++){
             ll.step(nSteps);
-            e=ll.coulomb_energy2();
-            E+=e;
-            E2+=e*e;
+            e=ll.coulomb_energy();ee=ll.coulomb_energy2();
+            E+=e;EE+=ee;
+            E2+=e*e;EE2+=ee*ee;
             p=ll.running_weight;
             P+=p;
             eout<<e<<endl;
@@ -177,7 +178,10 @@ void single_run(string filename, bool trace){
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
         //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
+        cout<<"n=0 Landau Level, coulomb1"<<endl;
         cout<<"E="<<E/(1.*nMeas*ll.Ne)<<" var="<<sqrt(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*ll.Ne)<<endl;
+        cout<<"n=0 Landau Level, coulomb2"<<endl;
+        cout<<"E="<<EE/(1.*nMeas*ll.Ne)<<" var="<<sqrt(EE2/(1.*nMeas)-pow(EE/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*ll.Ne)<<endl;
         
         ofstream auto_out("auto");
         for(int j=0;j<Ntrack;j++){

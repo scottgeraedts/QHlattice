@@ -281,8 +281,8 @@ end subroutine coulomb_setup
     enddo
     v2 = v2*(2*pi/area)
     
-    write(*,*) v1
-    write(*,*) v2
+    !write(*,*) v1
+    !write(*,*) v2
     
     return
   end subroutine coulomb_1
