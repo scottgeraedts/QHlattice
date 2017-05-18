@@ -255,9 +255,9 @@ void parallel_energy(int ncore, string filename){
     //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
     nMeas*=nBins;
     cout<<"n=0 Landau Level, coulomb1"<<endl;
-    cout<<"E="<<Etotal/(1.*nMeas*Ne)<<" var="<<sqrt(E2total/(1.*nMeas)-pow(Etotal/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    cout<<"E="<<setprecision(10)<<Etotal/(1.*nMeas*Ne)<<" var="<<sqrt(E2total/(1.*nMeas)-pow(Etotal/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     cout<<"n=0 Landau Level, coulomb2"<<endl;
-    cout<<"E="<<EEtotal/(1.*nMeas*Ne)<<" var="<<sqrt(EE2total/(1.*nMeas)-pow(EEtotal/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    cout<<"E="<<setprecision(10)<<EEtotal/(1.*nMeas*Ne)<<" var="<<sqrt(EE2total/(1.*nMeas)-pow(EEtotal/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     
 }
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.

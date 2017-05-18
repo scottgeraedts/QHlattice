@@ -100,6 +100,7 @@ public:
     void setup_compac_lagtable(int, double, double);
     void setup_LagTable(vector<int>);
     void setup_LagTable(vector<int>, vector<double>);
+    void test_coulomb();
     
     //TODO::old functions;
     void setup_laguerre_lat();
