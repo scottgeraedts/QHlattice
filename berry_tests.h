@@ -32,6 +32,7 @@ double phasemod(complex<double> in);
 //Some Checkings, including ortho, auto-correlation
 void check_orthogonality(string type);
 void single_run(string filename="params", bool trace=false);
+void parallel_energy(int ncore, string filename="params");
 void structurefactor(string, int num_core=1);
 
 //Energetics

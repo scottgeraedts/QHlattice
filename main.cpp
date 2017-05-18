@@ -58,7 +58,8 @@ int main(){
 //    //the laughlin-hole part ends.
     
     
-    single_run();
+//    single_run();
+    parallel_energy(2);
     
 //    LatticeSumHoplist("paramsne");
 //

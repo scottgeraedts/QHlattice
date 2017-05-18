@@ -195,6 +195,71 @@ void single_run(string filename, bool trace){
     eout.close();
     outfile.close();
 }
+void parallel_energy(int ncore, string filename){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    double theta_t, alpha_t;
+    string type;
+    
+    ifstream infile(filename);
+    infile>>Ne>>invNu>>theta_t>>alpha_t;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<" nBins="<<nBins<<" ncore="<<ncore<<endl;
+    
+    int gs=0;
+    int NPhi=Ne*invNu;
+    if (type=="laughlin-hole") NPhi++;
+    
+    double theta=theta_t*M_PI, alpha=alpha_t;
+    
+    
+    vector<LATTICE> ll(ncore);
+    for (int i=0; i<ncore; i++) {
+        seed=i;
+        ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, false);
+    }
+    
+    vector<double> E(nBins,0.), EE(nBins,0.), E2(nBins,0.), EE2(nBins,0.);
+    
+    omp_set_num_threads(ncore);
+#pragma omp parallel for
+    for(int s=0;s<nBins;s++){
+        int coren=omp_get_thread_num();
+        ll[coren].reset();
+        ll[coren].step(nWarmup);
+
+        for(int i=0;i<nMeas;i++){
+            ll[coren].step(nSteps);
+            double e,ee;
+            e=ll[coren].coulomb_energy();
+            ee=ll[coren].coulomb_energy2();
+            E[s]+=e;
+            EE[s]+=ee;
+            E2[s]+=e*e;
+            EE2[s]+=ee*ee;
+        }
+    }
+    
+    double Etotal=0., E2total=0., EEtotal=0., EE2total=0.;
+    for (int s=0; s<nBins; s++) {
+        Etotal+=E[s];
+        EEtotal+=EE[s];
+        E2total+=E2[s];
+        EE2total+=EE2[s];
+    }
+    
+    //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
+    nMeas*=nBins;
+    cout<<"n=0 Landau Level, coulomb1"<<endl;
+    cout<<"E="<<Etotal/(1.*nMeas*Ne)<<" var="<<sqrt(E2total/(1.*nMeas)-pow(Etotal/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    cout<<"n=0 Landau Level, coulomb2"<<endl;
+    cout<<"E="<<EEtotal/(1.*nMeas*Ne)<<" var="<<sqrt(EE2total/(1.*nMeas)-pow(EEtotal/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    
+}
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
