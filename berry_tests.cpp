@@ -223,7 +223,10 @@ void parallel_energy(int ncore, string filename){
         ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, false);
     }
     
-    vector<double> E(nBins,0.), EE(nBins,0.), E2(nBins,0.), EE2(nBins,0.);
+//    vector<double> E(nBins,0.), EE(nBins,0.), E2(nBins,0.), EE2(nBins,0.);
+    
+    int Coul_type=6;
+    vector<vector<double>> E(Coul_type, vector<double>(nBins,0.)), EE(Coul_type, vector<double>(nBins,0.));
     
     omp_set_num_threads(ncore);
 #pragma omp parallel for
@@ -234,31 +237,62 @@ void parallel_energy(int ncore, string filename){
 
         for(int i=0;i<nMeas;i++){
             ll[coren].step(nSteps);
-            double e,ee;
+            double e;
+            
             e=ll[coren].coulomb_energy();
-            ee=ll[coren].coulomb_energy2();
-            E[s]+=e;
-            EE[s]+=ee;
-            E2[s]+=e*e;
-            EE2[s]+=ee*ee;
+            E[0][s]+=e;
+            EE[0][s]+=e*e;
+            
+            e=ll[coren].coulomb_energy1();
+            E[1][s]+=e;
+            EE[1][s]+=e*e;
+            
+            e=ll[coren].coulomb_energy2();
+            E[2][s]+=e;
+            EE[2][s]+=e*e;
+            
+            e=ll[coren].coulomb_energy3();
+            E[3][s]+=e;
+            EE[3][s]+=e*e;
+            
+            e=ll[coren].coulomb_energy4();
+            E[4][s]+=e;
+            EE[4][s]+=e*e;
+            
+            e=ll[coren].coulomb_energy5();
+            E[5][s]+=e;
+            EE[5][s]+=e*e;
+            
         }
     }
     
-    double Etotal=0., E2total=0., EEtotal=0., EE2total=0.;
+//    double Etotal=0., E2total=0., EEtotal=0., EE2total=0.;
+    
+    vector<double> Etotal(Coul_type,0.), EEtotal(Coul_type,0.);
+    
     for (int s=0; s<nBins; s++) {
-        Etotal+=E[s];
-        EEtotal+=EE[s];
-        E2total+=E2[s];
-        EE2total+=EE2[s];
+        for (int i=0; i<Coul_type; i++) {
+            Etotal[i]+=E[i][s];
+            EEtotal[i]+=EE[i][s];
+        }
     }
     
     //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
+    ofstream outfile("out_"+filename);
+    outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
     nMeas*=nBins;
-    cout<<"n=0 Landau Level, coulomb1"<<endl;
-    cout<<"E="<<setprecision(10)<<Etotal/(1.*nMeas*Ne)<<" var="<<sqrt(E2total/(1.*nMeas)-pow(Etotal/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    cout<<"n=0 Landau Level, coulomb2"<<endl;
-    cout<<"E="<<setprecision(10)<<EEtotal/(1.*nMeas*Ne)<<" var="<<sqrt(EE2total/(1.*nMeas)-pow(EEtotal/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    
+    outfile<<"n=0 Landau Level, coulomb"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[0]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[0]/(1.*nMeas)-pow(Etotal[0]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    outfile<<"n=0 Landau Level, coulomb1"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[1]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[1]/(1.*nMeas)-pow(Etotal[1]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    outfile<<"n=1 Landau Level, coulomb2"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    outfile<<"n=1 Landau Level, coulomb3"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[3]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[3]/(1.*nMeas)-pow(Etotal[3]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    outfile<<"n=1 Landau Level, coulomb4"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[4]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[4]/(1.*nMeas)-pow(Etotal[4]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    outfile<<"n=1 Landau Level, coulomb5"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[5]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[5]/(1.*nMeas)-pow(Etotal[5]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
 }
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;

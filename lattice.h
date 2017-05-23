@@ -127,7 +127,12 @@ public:
 
 	//measurement related functions
 	double coulomb_energy();
+    double coulomb_energy1();
     double coulomb_energy2();
+    double coulomb_energy3();
+    double coulomb_energy4();
+    double coulomb_energy5();
+    
 	double threebody();
 	void update_structure_factors();
 	void print_structure_factors(int nMeas, string filename="");
@@ -181,7 +186,7 @@ private:
     int gs;
     double theta, alpha;
     vector <double> pair_amp;
-	vector <vector <double> > coulomb_table, coulomb_table2, sq2, sq2_mqy;
+	vector <vector <double> > coulomb_table, coulomb_table1, coulomb_table2, coulomb_table3, coulomb_table4, coulomb_table5, sq2, sq2_mqy;
 	vector <vector <complex<double> > > sq, sq_mqy;//'minus qy', qy<=0.
 	vector <vector <vector <vector< complex<double> > > > > sq3;
     vector <vector <double> > SMAq;

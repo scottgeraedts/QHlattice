@@ -1052,38 +1052,50 @@ void LATTICE::setup_coulomb2(){
     
     
     
-    //Compare 3 ways of LLL coulomb.
-    //coulomb_table : fortran coulomb.
+    //Compare different ways of LLL coulomb.
+    //coulomb_table : fortran coulomb.(n=0)
+    //coulomb_table1: 1/q in the first BZ.(n=0)
     //coulomb_table2: 1/q in the first BZ.
-    //coulomb_table3: 1/q in the q-lattice.
+    //coulomb_table3: [1/q*f^2]/[f^2].
+    //coulomb_table4: [1/q*f^2]/[f]^2.
+    //coulomb_table5: [1/q*f^2]/f^2.
     
+    //coulomb_table1,2:
+    coulomb_table1=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
     coulomb_table2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
     int LL_ind=1;
-    //sum over the first BZ only.
-    for (int m=0; m<NPhi; m++) {
-        for (int n=0; n<NPhi; n++) {
+    //sum over the first BZ only. k=1.
+    int k=1;
+    for (int m=0; m<k*NPhi; m++) {
+        for (int n=0; n<k*NPhi; n++) {
             int qm=m,qn=n;
             
             if (m==0 && n==0) continue;
-            if (2*qm>NPhi) qm-=NPhi;
-            if (2*qn>NPhi) qn-=NPhi;
+            
+            if (2*qm>k*NPhi) qm-=k*NPhi;
+            if (2*qn>k*NPhi) qn-=k*NPhi;
             
             complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
             double x=sqrt(2.)*abs(z);
             
             for (int i=0; i<NPhi; i++) {
                 for (int j=0; j<NPhi; j++) {
+                    coulomb_table1[i][j]+=1./x*pow(laguerre(0     ,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
                     coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
                 }
             }
         }
     }
     
-    //compactified sum [1/q*f]/[f]
+    //coulomb_table3,4,5:
     LL_ind=1;
-    vector<vector<double>> coulomb_table_comp=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
+    coulomb_table3=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
+    coulomb_table4=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
+    coulomb_table5=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
+    
     vector<vector<double>> vq=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
     vector<vector<double>> f0=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
+    vector<vector<double>> f00=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
     int round=5;
     for (int m=-round*NPhi; m<=round*NPhi; m++) {
         for (int n=-round*NPhi; n<=round*NPhi; n++) {
@@ -1093,8 +1105,9 @@ void LATTICE::setup_coulomb2(){
             complex<double> z=m/(1.*NPhi)*L1+n/(1.*NPhi)*L2;
             double x=sqrt(2.)*abs(z);
             
-            vq[(m%NPhi+NPhi)%NPhi][(n%NPhi+NPhi)%NPhi]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*exp(-0.5*x*x);
-            f0[(m%NPhi+NPhi)%NPhi][(n%NPhi+NPhi)%NPhi]+=     exp(-0.25*x*x);
+            vq[supermod(m,NPhi)][supermod(n,NPhi)] += 1./x*pow(laguerre(LL_ind,0.5*x*x),2)*exp(-0.5*x*x);
+            f0[supermod(m,NPhi)][supermod(n,NPhi)] += exp(-0.5*x*x);
+            f00[supermod(m,NPhi)][supermod(n,NPhi)]+= exp(-0.5*0.5*x*x);
         }
     }
     
@@ -1103,23 +1116,66 @@ void LATTICE::setup_coulomb2(){
         for (int n=0; n<NPhi; n++) {
             for (int i=0; i<NPhi; i++) {
                 for (int j=0; j<NPhi; j++) {
+                    if (m==0 && n==0) continue;
                     
                     int qm=m,qn=n;
                     if (2*qm>NPhi) qm-=NPhi; if (2*qn>NPhi) qn-=NPhi;
                     complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
                     double x=sqrt(2.)*abs(z);
-                    double f0=exp(-0.5*x*x);
                     
-                    coulomb_table_comp[i][j]+=vq[m][n]/f0*cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
+                    coulomb_table3[i][j]+=vq[m][n]/f0[m][n]            *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
+                    coulomb_table4[i][j]+=vq[m][n]/f00[m][n]/f00[m][n] *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
+                    coulomb_table5[i][j]+=vq[m][n]/exp(-0.5*x*x)       *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
                 }
             }
         }
     }
     
-    
-    
-//    coulomb_table2=coulomb_table_comp;
-    
+//    cout<<"output: vq, f0, f00"<<endl;
+//    for (int m=0; m<NPhi; m++) {
+//        for (int n=0; n<NPhi; n++) {
+//            if (m==0 && n==0) continue;
+//            int qm=m, qn=n;
+//            
+//            if (2*qm>NPhi) qm-=NPhi;
+//            if (2*qn>NPhi) qn-=NPhi;
+//            
+//            complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
+//            double x=sqrt(2.)*abs(z);
+//            
+//            double a=1./x*pow(laguerre(LL_ind,0.5*x*x),2);
+//            double b=vq[m][n]/f0[m][n];
+//            double c=vq[m][n]/exp(-0.5*x*x);
+//            double d=exp(-0.5*x*x);
+//            cout<<setprecision(6)<<m<<" "<<n<<" "<<setw(15)<<a<<" "<<setw(15)<<(a-b)/a<<" "<<setw(15)<<(a-c)/a<<endl;
+//            cout<<setprecision(6)<<m<<" "<<n<<" "<<setw(15)<<f0[m][n]<<" "<<setw(15)<<(-d+f0[m][n])/d<<" "<<setw(15)<<(b-a)/a<<" "<<setw(15)<<(c-a)/a<<endl;
+//        }
+//    }
+//    exit(0);    
+//    for (int m=0; m<NPhi; m++) {
+//        for (int n=0; n<NPhi; n++) {
+//            if (m==0 && n==0) continue;
+//            int qm=m, qn=n;
+//            
+//            if (2*qm>NPhi) qm-=NPhi;
+//            if (2*qn>NPhi) qn-=NPhi;
+//            complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
+//            double x=sqrt(2.)*abs(z);
+//            
+//            double a=coulomb_table2[m][n];
+//            double b=coulomb_table3[m][n];
+//            double c=coulomb_table5[m][n];
+//            
+//            double a1=1./x*pow(laguerre(LL_ind,0.5*x*x),2);
+//            double b1=vq[m][n]/f0[m][n];
+//            double c1=vq[m][n]/exp(-0.5*x*x);;
+//            
+//            cout<<setprecision(6)<<m<<" "<<n<<" "<<setw(15)<<a1<<" "<<setw(15)<<(b1-a1)/a1<<" "<<setw(15)<<(c1-a1)/a1<<endl;
+//            cout<<setprecision(6)<<m<<" "<<n<<" "<<setw(15)<<a<<" "<<setw(15)<<(b-a)/a<<" "<<setw(15)<<(c-a)/a<<endl;
+//            cout<<endl;
+//        }
+//    }
+//    exit(0);
     
 //    vector<vector<double>> coulomb_table3=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
 //    round=500;
@@ -1202,6 +1258,20 @@ void LATTICE::setup_coulomb2(){
 //    exit(0);
     
 }
+double LATTICE::coulomb_energy1(){
+    double out=0.5*Ne*coulomb_table[0][0];
+    out=0.;
+    int m,n;
+    for(int i=0;i<Ne;i++){
+        for(int j=0;j<i;j++){
+            m=((locs[i][0]-locs[j][0])%NPhi+NPhi)%NPhi;
+            n=((locs[i][1]-locs[j][1])%NPhi+NPhi)%NPhi;
+            
+            out+=coulomb_table1[m][n];
+        }
+    }
+    return out;
+}
 double LATTICE::coulomb_energy2(){
     double out=0.5*Ne*coulomb_table[0][0];
     out=0.;
@@ -1210,8 +1280,50 @@ double LATTICE::coulomb_energy2(){
         for(int j=0;j<i;j++){
             m=((locs[i][0]-locs[j][0])%NPhi+NPhi)%NPhi;
             n=((locs[i][1]-locs[j][1])%NPhi+NPhi)%NPhi;
-            //			cout<<m<<" "<<n<<endl;
+            
             out+=coulomb_table2[m][n];
+        }
+    }
+    return out;
+}
+double LATTICE::coulomb_energy3(){
+    double out=0.5*Ne*coulomb_table[0][0];
+    out=0.;
+    int m,n;
+    for(int i=0;i<Ne;i++){
+        for(int j=0;j<i;j++){
+            m=((locs[i][0]-locs[j][0])%NPhi+NPhi)%NPhi;
+            n=((locs[i][1]-locs[j][1])%NPhi+NPhi)%NPhi;
+            
+            out+=coulomb_table3[m][n];
+        }
+    }
+    return out;
+}
+double LATTICE::coulomb_energy4(){
+    double out=0.5*Ne*coulomb_table[0][0];
+    out=0.;
+    int m,n;
+    for(int i=0;i<Ne;i++){
+        for(int j=0;j<i;j++){
+            m=((locs[i][0]-locs[j][0])%NPhi+NPhi)%NPhi;
+            n=((locs[i][1]-locs[j][1])%NPhi+NPhi)%NPhi;
+            
+            out+=coulomb_table4[m][n];
+        }
+    }
+    return out;
+}
+double LATTICE::coulomb_energy5(){
+    double out=0.5*Ne*coulomb_table[0][0];
+    out=0.;
+    int m,n;
+    for(int i=0;i<Ne;i++){
+        for(int j=0;j<i;j++){
+            m=((locs[i][0]-locs[j][0])%NPhi+NPhi)%NPhi;
+            n=((locs[i][1]-locs[j][1])%NPhi+NPhi)%NPhi;
+            
+            out+=coulomb_table5[m][n];
         }
     }
     return out;

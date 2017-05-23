@@ -59,7 +59,21 @@ int main(){
     
     
 //    single_run();
-    parallel_energy(2);
+//    parallel_energy(2);
+    
+    
+//    parallel_energy(2, "params_ne2");
+//    parallel_energy(2, "params_ne3");
+    parallel_energy(2, "params_ne4");
+//    parallel_energy(2, "params_ne5");
+//    parallel_energy(2, "params_ne2_1");
+//    parallel_energy(2, "params_ne3_1");
+//    parallel_energy(2, "params_ne4_1");
+//    parallel_energy(2, "params_ne5_1");
+    
+    
+//    parallel_energy(2, "params_ne6");
+//    parallel_energy(2, "params_ne7");
     
 //    LatticeSumHoplist("paramsne");
 //
