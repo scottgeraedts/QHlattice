@@ -24,6 +24,7 @@ LATTICE::LATTICE(LATTICE_PARAMS params){
 	w_delta=params.w_delta;
 	dbar_delta=params.dbar_delta;
 	testing=params.testing;
+	in_determinant_rescaling=params.rescale;
 
 	init(params.seed);
 }
@@ -63,7 +64,7 @@ void LATTICE::init(int seed){
     
     //set in_determinant_rescaling.
     //It has been set for more Ne for invNu=2, some Ne for invNu=4.
-    in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
+//    in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
     
 	ran.seed(seed);
 	fermions=true;
@@ -410,7 +411,6 @@ complex<double> LATTICE::update_weight(const vector< vector<int> > &zs, int elec
             out*=abs(pow(temp,vandermonde_exponent));
         }
     }
-
     //***************COM PART
     int oldCOM[2]={0,0}, newCOM[2];
     for(auto it=zs.begin(); it!=zs.end(); ++it){
@@ -713,7 +713,6 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                     out*=pow(lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one), vandermonde_exponent);
                     
                     if (type=="laughlin"||type=="laughlin-hole") {
-                        //                        out*=pow(in_determinant_rescaling, vandermonde_exponent*(Ne-1));
                         out*=pow(in_determinant_rescaling, Ne-1);
                     }
                 }
@@ -803,7 +802,6 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
             detSolver.compute(M);
             
             newDeterminant=detSolver.determinant();
-//            out=out*detSolver.determinant();
 			out=out*newDeterminant;
             //        cout<<"det piece = "<<detSolver.determinant()<<endl;
         }

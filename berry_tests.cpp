@@ -1314,10 +1314,18 @@ void ParticleHoleSym2(){
     //initialize MC object
     
     //this parameter object will be used to initialize LATTICE
-    LATTICE_PARAMS params(Ne/invNu);
-    double temp;
-    infile>>temp;
-    params.w_delta=complex<double>(temp,0);
+    LATTICE_PARAMS params(Ne/invNu), paramsLL(Ne);
+	paramsLL.invNu=1;
+	paramsLL.testing=true;
+	
+    double CFLrescale,LLrescale;
+    infile>>CFLrescale;
+	params.rescale=CFLrescale;
+	infile>>LLrescale;
+	paramsLL.rescale=LLrescale;
+	paramsLL.type="laughlin";
+
+	
     params.testing=testing;
     params.seed=seed;
 
@@ -1334,9 +1342,8 @@ void ParticleHoleSym2(){
 	
 	wfs[1]=vector<wf_info>(1);
 	wfs[1][0]=wf_info(false, false, 0, Ne, 1);
-	wfs[1][0].wf=LATTICE(Ne, 1, testing, "laughlin", seed, 0);
+	wfs[1][0].wf=LATTICE(paramsLL);
 
-	LATTICE FLL(Ne, 1, testing, "laughlin", seed, 0);
 	LATTICE_WRAPPER ll(Ne, wfs, seed, testing);
 
     //monte carlo.
