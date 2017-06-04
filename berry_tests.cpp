@@ -285,6 +285,8 @@ void parallel_energy(int ncore, string filename){
     outfile<<"E="<<setprecision(10)<<Etotal[0]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[0]/(1.*nMeas)-pow(Etotal[0]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     outfile<<"n=0 Landau Level, coulomb1"<<endl;
     outfile<<"E="<<setprecision(10)<<Etotal[1]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[1]/(1.*nMeas)-pow(Etotal[1]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    
+    outfile<<endl;
     outfile<<"n=1 Landau Level, coulomb2"<<endl;
     outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     outfile<<"n=1 Landau Level, coulomb3"<<endl;

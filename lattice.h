@@ -166,6 +166,7 @@ private:
 	void init(int seed);
     double get_in_det_rescaling(int Ne, int invNu);
     double in_determinant_rescaling;
+    double shift;
 	void sum_locs(int []);
 	void setup_coulomb();
     void setup_coulomb2();

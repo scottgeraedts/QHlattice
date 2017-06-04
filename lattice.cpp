@@ -94,6 +94,13 @@ void LATTICE::init(int seed){
         ws0[i][0]=((i+0.5)/(1.*invNu)-0.5)+real(w_delta)*lil_sign(gs)*lil_sign(i);
         ws0[i][1]=gs/(1.*invNu)+imag(w_delta)*lil_sign(gs)*lil_sign(i);
     }
+    
+//    shift=0.5/(1.*NPhi);
+//    for (int i=0; i<invNu; i++) {
+//        ws0[i][0]+=shift;
+//        ws0[i][1]+=shift;
+//    }
+    
     //alternatively, in the CFL case we can access different ground states by moving the ds (to do this uncomment the next line)
    // if(type=="CFL") for(int i=0; i<Ne; i++) ds[i][1]+=gs;
     if (type=="CFL" or type=="doubledCFL") set_ds(ds);//set ds, and reset ws.
@@ -107,11 +114,10 @@ void LATTICE::init(int seed){
 //    test_coulomb();
 	//*****some counters
 	setup_coulomb();
+//    cout<<setprecision(10)<<"Ne="<<Ne<<" Medlung Energy="<<0.5*Ne*coulomb_table[0][0]<<endl;exit(0);
     setup_coulomb2();
 //    check_duncan_coulomb(1,2,sqrt(1.*NPhi));
 //    check_duncan_coulomb(1,1,sqrt(2.*NPhi));
-    //TODO:Here.
-//    exit(0);
     
     omega=vector<complex<double>>(2*NPhi);
 	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi));
@@ -1064,8 +1070,7 @@ void LATTICE::setup_coulomb2(){
     coulomb_table1=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
     coulomb_table2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
     int LL_ind=1;
-    //sum over the first BZ only. k=1.
-    int k=1;
+    int k=1;//how many BZ to sum over. k=1, 1st BZ.
     for (int m=0; m<k*NPhi; m++) {
         for (int n=0; n<k*NPhi; n++) {
             int qm=m,qn=n;
@@ -1081,14 +1086,28 @@ void LATTICE::setup_coulomb2(){
             for (int i=0; i<NPhi; i++) {
                 for (int j=0; j<NPhi; j++) {
                     coulomb_table1[i][j]+=1./x*pow(laguerre(0     ,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
-                    coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
+                    
+                    coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*exp(-x*x/sqrt(1.*NPhi))*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
+                    
+                    if (abs(qm)>NPhi/3 && abs(qn)>NPhi/3 && abs(qm)<NPhi/2 && abs(qn)<NPhi/2) {
+//                        coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
+                    }
+                    
+                    if (abs(qm)<NPhi/3 && abs(qn)<NPhi/3) {
+//                        coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
+                    }
+                    
+                    if (abs(qm)==NPhi/2 && abs(qn)==NPhi/2) {
+//                        coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
+//                        coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*(j+shift*NPhi)-qn*(i+shift*NPhi)) )/(1.*NPhi);
+                    }
+
                 }
             }
         }
     }
     
     //coulomb_table3,4,5:
-    LL_ind=1;
     coulomb_table3=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
     coulomb_table4=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
     coulomb_table5=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
@@ -1124,8 +1143,10 @@ void LATTICE::setup_coulomb2(){
                     double x=sqrt(2.)*abs(z);
                     
                     coulomb_table3[i][j]+=vq[m][n]/f0[m][n]            *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
-                    coulomb_table4[i][j]+=vq[m][n]/f00[m][n]/f00[m][n] *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
-                    coulomb_table5[i][j]+=vq[m][n]/exp(-0.5*x*x)       *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
+//                    coulomb_table4[i][j]+=vq[m][n]/f00[m][n]/f00[m][n] *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
+//                    coulomb_table5[i][j]+=vq[m][n]/exp(-0.5*x*x)       *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
+                    
+                    
                 }
             }
         }
