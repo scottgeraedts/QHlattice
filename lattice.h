@@ -161,6 +161,13 @@ public:
     int trace;
     int lat_scale;
     void set_lat_scale(int);
+    
+    
+    
+    //high LL Coulomb energy things.
+    double truncation();
+    int LL_ind;
+    vector<double> cutoff;//cutoff for Coulomb energy BZ.
 	
 private:
 	void init(int seed);
@@ -211,6 +218,8 @@ private:
 //    vector< complex<double> > omegasq;
     
     vector<vector<int> > ds;//an integer defined on an Ne lattice
+    
+    
     
 };
 

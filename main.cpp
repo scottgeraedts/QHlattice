@@ -4,6 +4,7 @@ using namespace std;
 #include "lattice.h"
 #include "berry_tests.h"
 
+
 bool IsOdd (int i) {
     return ((i%2)==1);
 }
@@ -62,6 +63,9 @@ int main(){
 //    parallel_energy(2);
     
     parallel_energy(2, "params");
+    
+//    cout<<"truncation="<<truncation(30,3,2,3,complex<double>(sqrt(2*M_PI*30),0),complex<double>(0,sqrt(2*M_PI*30)))<<endl;
+    
 //    parallel_energy(2, "params_ne2");
 //    parallel_energy(2, "params_ne3");
 //    parallel_energy(2, "params_ne4");

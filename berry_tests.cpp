@@ -288,13 +288,15 @@ void parallel_energy(int ncore, string filename){
     
     outfile<<endl;
     outfile<<"n=1 Landau Level, coulomb2"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)+ll[0].truncation()<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     outfile<<"n=1 Landau Level, coulomb3"<<endl;
     outfile<<"E="<<setprecision(10)<<Etotal[3]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[3]/(1.*nMeas)-pow(Etotal[3]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     outfile<<"n=1 Landau Level, coulomb4"<<endl;
     outfile<<"E="<<setprecision(10)<<Etotal[4]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[4]/(1.*nMeas)-pow(Etotal[4]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     outfile<<"n=1 Landau Level, coulomb5"<<endl;
     outfile<<"E="<<setprecision(10)<<Etotal[5]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[5]/(1.*nMeas)-pow(Etotal[5]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    
+    cout<<"truncation error="<<ll[0].truncation()<<endl;
 }
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
