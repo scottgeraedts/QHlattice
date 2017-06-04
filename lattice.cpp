@@ -1069,8 +1069,12 @@ void LATTICE::setup_coulomb2(){
     //coulomb_table1,2:
     coulomb_table1=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
     coulomb_table2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
-    int LL_ind=1;
+    int LL_ind=0;
     int k=1;//how many BZ to sum over. k=1, 1st BZ.
+    
+    //The largest zero for the first 5 Laguerrel functions (except for 0 && 1). Used to determined BZ cut-off.
+    vector<double> laguerrelzero = vector<double>{2.*M_PI*NPhi, 2.*M_PI*NPhi, 3.414213562373, 6.289945082937, 9.395070912301, 12.640800844276};
+    
     for (int m=0; m<k*NPhi; m++) {
         for (int n=0; n<k*NPhi; n++) {
             int qm=m,qn=n;
@@ -1087,23 +1091,17 @@ void LATTICE::setup_coulomb2(){
                 for (int j=0; j<NPhi; j++) {
                     coulomb_table1[i][j]+=1./x*pow(laguerre(0     ,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
                     
-                    coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*exp(-x*x/sqrt(1.*NPhi))*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
-                    
-                    if (abs(qm)>NPhi/3 && abs(qn)>NPhi/3 && abs(qm)<NPhi/2 && abs(qn)<NPhi/2) {
-//                        coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
-                    }
-                    
-                    if (abs(qm)<NPhi/3 && abs(qn)<NPhi/3) {
-//                        coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
-                    }
-                    
-                    if (abs(qm)==NPhi/2 && abs(qn)==NPhi/2) {
-//                        coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
-//                        coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*(j+shift*NPhi)-qn*(i+shift*NPhi)) )/(1.*NPhi);
-                    }
+                    //coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*exp(-x*x/sqrt(1.*NPhi))*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
 
+                    if (LL_ind>5) {
+                        cout<<"cannot calculate LL_ind>5 Coulomb energy."<<endl;
+                        exit(0);
+                    }
+                    else if (x*x/2.<laguerrelzero[LL_ind]) coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
+                    
                 }
             }
+            
         }
     }
     
