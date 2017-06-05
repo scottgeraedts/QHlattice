@@ -996,15 +996,18 @@ void LATTICE::setup_coulomb2(){
     coulomb_table1=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
     coulomb_table2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
     
-    LL_ind=2;
-    
-    int k=1;//how many BZ to sum over. k=1, 1st BZ.
+    //set Landau level index.
+    LL_ind=0;
     
     //The largest zero for the first 5 Laguerrel functions (except for 0 && 1). Used to determined BZ cut-off.
-    vector<double> laguerrelzero = vector<double>{3., 0.5*M_PI*NPhi, 3.414213562373, 6.289945082937, 9.395070912301, 12.640800844276};
+    vector<double> laguerrelzero = vector<double>{0.5*M_PI*NPhi, 0.5*M_PI*NPhi, 3.414213562373, 6.289945082937, 9.395070912301, 12.640800844276};
+    laguerrelzero = vector<double>{5, 5., 5., 5., 5., 5.};
     cutoff.resize(laguerrelzero.size());
-    for (int i=0; i<laguerrelzero.size(); i++) cutoff[i]=sqrt(2.*laguerrelzero[i]);
+    for (int i=0; i<laguerrelzero.size(); i++)
+//        cutoff[i]=sqrt(2.*laguerrelzero[i]);
+        cutoff[i]=laguerrelzero[i];
     
+    int k=1;//how many BZ to sum over. k=1, 1st BZ.
     for (int m=0; m<k*NPhi; m++) {
         for (int n=0; n<k*NPhi; n++) {
             int qm=m,qn=n;
@@ -1038,7 +1041,6 @@ void LATTICE::setup_coulomb2(){
     coulomb_table4=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
     coulomb_table5=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
     
-    /*
     vector<vector<double>> vq=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
     vector<vector<double>> f0=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
     vector<vector<double>> f00=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
@@ -1076,7 +1078,7 @@ void LATTICE::setup_coulomb2(){
             }
         }
     }
-    */
+    
 }
 double LATTICE::coulomb_energy1(){
     double out=0.5*Ne*coulomb_table[0][0];
@@ -2225,7 +2227,7 @@ double LATTICE::pairamplitude(int n, int a) {
     
     return ret;
 }
-double LATTICE::truncation() {
+double LATTICE::shortrange_coulomb() {
     double value=0;
     
     for (int qx=0; qx<NPhi; qx++)
@@ -2235,7 +2237,7 @@ double LATTICE::truncation() {
             
             if (x>=cutoff[LL_ind]) {
                 double temp = pow(laguerre(LL_ind, x*x/2.),2)*exp(-x*x/2.)/x;
-                value+=temp*(-1./invNu/NPhi);
+                value+=temp*(-2.*invNu*invNu);
             }
             
         }

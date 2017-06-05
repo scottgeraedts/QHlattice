@@ -165,7 +165,7 @@ public:
     
     
     //high LL Coulomb energy things.
-    double truncation();
+    double shortrange_coulomb();
     int LL_ind;
     vector<double> cutoff;//cutoff for Coulomb energy BZ.
 	
