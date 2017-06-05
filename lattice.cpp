@@ -997,7 +997,7 @@ void LATTICE::setup_coulomb2(){
     coulomb_table2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
     
     //set Landau level index.
-    LL_ind=1;
+    LL_ind=2;
     
     //The largest zero for the first 5 Laguerrel functions (except for 0 && 1). Used to determined BZ cut-off.
 //    vector<double> laguerrelzero = vector<double>{0.5*M_PI*NPhi, 0.5*M_PI*NPhi, 3.414213562373, 6.289945082937, 9.395070912301, 12.640800844276};
@@ -2228,19 +2228,20 @@ double LATTICE::pairamplitude(int n, int a) {
 double LATTICE::shortrange_coulomb() {
     double value=0;
     
-    for (int qx=0; qx<NPhi; qx++)
-        for (int qy=0; qy<NPhi; qy++) {
+    int k=1;
+    for (int qx=0; qx<k*NPhi; qx++)
+        for (int qy=0; qy<k*NPhi; qy++) {
             
             int Qx=qx, Qy=qy;
-            if (2*Qx>NPhi) Qx-=NPhi;
-            if (2*Qy>NPhi) Qy-=NPhi;
+            if (2*Qx>k*NPhi) Qx-=k*NPhi;
+            if (2*Qy>k*NPhi) Qy-=k*NPhi;
             
             complex<double> z=Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
             double x=sqrt(2.)*abs(z);
             
             if (x>=cutoff[LL_ind]) {
                 double temp = pow(laguerre(LL_ind, x*x/2.),2)*exp(-x*x/2.)/x;
-                value+=temp*(-0.5*invNu*invNu);
+                value+=temp/(-2.*invNu*invNu);
             }
             
         }
