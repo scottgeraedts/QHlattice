@@ -997,15 +997,13 @@ void LATTICE::setup_coulomb2(){
     coulomb_table2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
     
     //set Landau level index.
-    LL_ind=0;
+    LL_ind=1;
     
     //The largest zero for the first 5 Laguerrel functions (except for 0 && 1). Used to determined BZ cut-off.
-    vector<double> laguerrelzero = vector<double>{0.5*M_PI*NPhi, 0.5*M_PI*NPhi, 3.414213562373, 6.289945082937, 9.395070912301, 12.640800844276};
-    laguerrelzero = vector<double>{5, 5., 5., 5., 5., 5.};
+//    vector<double> laguerrelzero = vector<double>{0.5*M_PI*NPhi, 0.5*M_PI*NPhi, 3.414213562373, 6.289945082937, 9.395070912301, 12.640800844276};
+    vector<double> laguerrelzero = vector<double>{5., 5., 5., 5., 5., 5.};
     cutoff.resize(laguerrelzero.size());
-    for (int i=0; i<laguerrelzero.size(); i++)
-//        cutoff[i]=sqrt(2.*laguerrelzero[i]);
-        cutoff[i]=laguerrelzero[i];
+    for (int i=0; i<laguerrelzero.size(); i++) cutoff[i]=laguerrelzero[i];
     
     int k=1;//how many BZ to sum over. k=1, 1st BZ.
     for (int m=0; m<k*NPhi; m++) {
@@ -2232,12 +2230,17 @@ double LATTICE::shortrange_coulomb() {
     
     for (int qx=0; qx<NPhi; qx++)
         for (int qy=0; qy<NPhi; qy++) {
-            complex<double> z=qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2;
+            
+            int Qx=qx, Qy=qy;
+            if (2*Qx>NPhi) Qx-=NPhi;
+            if (2*Qy>NPhi) Qy-=NPhi;
+            
+            complex<double> z=Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
             double x=sqrt(2.)*abs(z);
             
             if (x>=cutoff[LL_ind]) {
                 double temp = pow(laguerre(LL_ind, x*x/2.),2)*exp(-x*x/2.)/x;
-                value+=temp*(-2.*invNu*invNu);
+                value+=temp*(-0.5*invNu*invNu);
             }
             
         }
