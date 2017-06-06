@@ -285,14 +285,23 @@ void parallel_energy(int ncore, string filename){
     outfile<<"E="<<setprecision(10)<<Etotal[0]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[0]/(1.*nMeas)-pow(Etotal[0]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     outfile<<"n=0 Landau Level, coulomb1"<<endl;
     outfile<<"E="<<setprecision(10)<<Etotal[1]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[1]/(1.*nMeas)-pow(Etotal[1]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    outfile<<"n=1 Landau Level, coulomb2"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    outfile<<"n=1 Landau Level, coulomb3"<<endl;
+    
+    outfile<<endl;
+    outfile<<"high Landau Level, coulomb2"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    
+    outfile<<"high Landau Level, coulomb3"<<endl;
     outfile<<"E="<<setprecision(10)<<Etotal[3]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[3]/(1.*nMeas)-pow(Etotal[3]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    outfile<<"n=1 Landau Level, coulomb4"<<endl;
+    outfile<<"high Landau Level, coulomb4"<<endl;
     outfile<<"E="<<setprecision(10)<<Etotal[4]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[4]/(1.*nMeas)-pow(Etotal[4]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    outfile<<"n=1 Landau Level, coulomb5"<<endl;
+    outfile<<"high Landau Level, coulomb5"<<endl;
     outfile<<"E="<<setprecision(10)<<Etotal[5]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[5]/(1.*nMeas)-pow(Etotal[5]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    
+    outfile<<endl;
+    outfile<<"LL_ind="<<ll[0].LL_ind<<endl;
+    outfile<<"cutoff="<<ll[0].cutoff[ll[0].LL_ind]<<endl;
+    outfile<<"truncated energy="<<ll[0].shortrange_coulomb()<<endl;
+
 }
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;

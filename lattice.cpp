@@ -32,7 +32,7 @@ LATTICE::LATTICE(LATTICE_PARAMS params){
 LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t, bool trace_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t),trace(trace_t){
 
  	init(seed);
-
+  in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
 }
 void LATTICE::init(int seed){
 
@@ -62,9 +62,6 @@ void LATTICE::init(int seed){
 //	cout<<"starting weight "<<running_weight<<endl;
     delete [] sl2z; 
     
-    //set in_determinant_rescaling.
-    //It has been set for more Ne for invNu=2, some Ne for invNu=4.
-//    in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
     
 	ran.seed(seed);
 	fermions=true;
@@ -95,6 +92,13 @@ void LATTICE::init(int seed){
         ws0[i][0]=((i+0.5)/(1.*invNu)-0.5)+real(w_delta)*lil_sign(gs)*lil_sign(i);
         ws0[i][1]=gs/(1.*invNu)+imag(w_delta)*lil_sign(gs)*lil_sign(i);
     }
+    
+//    shift=0.5/(1.*NPhi);
+//    for (int i=0; i<invNu; i++) {
+//        ws0[i][0]+=shift;
+//        ws0[i][1]+=shift;
+//    }
+    
     //alternatively, in the CFL case we can access different ground states by moving the ds (to do this uncomment the next line)
    // if(type=="CFL") for(int i=0; i<Ne; i++) ds[i][1]+=gs;
     if (type=="CFL" or type=="doubledCFL") set_ds(ds);//set ds, and reset ws.
@@ -108,11 +112,10 @@ void LATTICE::init(int seed){
 //    test_coulomb();
 	//*****some counters
 	setup_coulomb();
+//    cout<<setprecision(10)<<"Ne="<<Ne<<" Medlung Energy="<<0.5*Ne*coulomb_table[0][0]<<endl;exit(0);
     setup_coulomb2();
 //    check_duncan_coulomb(1,2,sqrt(1.*NPhi));
 //    check_duncan_coulomb(1,1,sqrt(2.*NPhi));
-    //TODO:Here.
-//    exit(0);
     
     omega=vector<complex<double>>(2*NPhi);
 	for(int i=0;i<2*NPhi;i++) omega[i]=polar(1.,M_PI*i/(1.*NPhi));
@@ -976,81 +979,7 @@ double LATTICE::coulomb_energy(){
 	}
 	return out;
 }
-//TODO::Fill in setup_coulomb2.
 void LATTICE::setup_coulomb2(){
-//    cout<<"setup coulomb2"<<endl;
-//    vector<vector<complex<double>>> Vq = vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0.));
-//    for (int m=0; m<NPhi; m++) {
-//        for (int n=0; n<NPhi; n++) {
-//            for (int m1=0; m1<NPhi; m1++) {
-//                for (int n1=0; n1<NPhi; n1++) {
-//                    Vq[m][n]+=coulomb_table[m1][n1]*polar(1., -2.*M_PI*(n*m1-m*n1)/(1.*NPhi))/(1.*NPhi);
-//                }
-//            }
-//        }
-//    }
-//    
-//    cout<<"Check Duncan Coulomb Self Dual"<<endl;
-//    cout<<"It turns to be EXACTLY self dual, no large NPhi required."<<endl;
-//    for (int m=0; m<NPhi; m++) {
-//        for (int n=0; n<NPhi; n++) {
-//            cout<<"m,n="<<m<<" "<<n<<" ratio=";
-//            cout<<real(Vq[m][n]/coulomb_table[m][n])<<endl;
-//        }
-//    }
-//    cout<<"Finish Check Duncan Coulomb Self Dual"<<endl<<endl;
-    
-    //generate high landau level coulomb table.
-//    coulomb_table2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
-//    vector<vector<double>> fn=vector<vector<double>> (NPhi, vector<double>(NPhi,0.));
-//    vector<vector<double>> f0=vector<vector<double>> (NPhi, vector<double>(NPhi,0.));
-    
-//    //n=1 LL stuff.
-//    int Landau_n=1;
-//    int round=5;
-//    vector<vector<double>> Lag2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
-////    cout<<"output Ln^2"<<endl;
-//    for (int i=0; i<NPhi; i++) {
-//        for (int j=0; j<NPhi; j++) {
-//            int m=i, n=j;
-//            if (2*m<NPhi) {
-//                m-=NPhi;
-//            }
-//            if (2*n<NPhi) {
-//                n-=NPhi;
-//            }
-//            
-//            complex<double> z=1.*m*L1/(1.*NPhi)+1.*n*L2/(1.*NPhi);
-//            double x=sqrt(2.)*abs(z);
-//            Lag2[i][j]=laguerre(Landau_n, 0.5*x*x)*laguerre(Landau_n, 0.5*x*x);
-//        }
-//    }
-    
-//    for (int m=-round*NPhi; m<=round*NPhi; m++) {
-//        for (int n=-round*NPhi; n<=round*NPhi; n++) {
-//            complex<double> z = 1.*m*L1/(1.*NPhi)+1.*n*L2/(1.*NPhi);
-//            double x= sqrt(2.)*abs(z);
-//            fn[ (m%NPhi+NPhi)%NPhi ][ (n%NPhi+NPhi)%NPhi ] += exp(-0.5*x*x)*laguerre(Landau_n,0.5*x*x)*laguerre(Landau_n,0.5*x*x);
-//            f0[ (m%NPhi+NPhi)%NPhi ][ (n%NPhi+NPhi)%NPhi ] += exp(-0.5*x*x);
-//        }
-//    }
-//    cout<<"output fn,f0,fn/f0,L2"<<endl;
-//    for (int i=0; i<NPhi; i++) {
-//        for (int j=0; j<NPhi; j++) {
-//            cout<<i<<" "<<j<<" "<<fn[i][j]<<" "<<f0[i][j]<<" "<<fn[i][j]/f0[i][j]<<" "<<Lag2[i][j]<<endl;
-//        }
-//    }
-    //The compactified [fn]/[f0] is smaller than fn/f0.
-    
-//    for (int i=0; i<NPhi; i++) {
-//        for (int j=0; j<NPhi; j++) {
-//            coulomb_table2[i][j]=fn[i][j]/f0[i][j]*coulomb_table[i][j];
-//        }
-//    }
-    
-    
-    
-    //Compare different ways of LLL coulomb.
     //coulomb_table : fortran coulomb.(n=0)
     //coulomb_table1: 1/q in the first BZ.(n=0)
     //coulomb_table2: 1/q in the first BZ.
@@ -1061,9 +990,17 @@ void LATTICE::setup_coulomb2(){
     //coulomb_table1,2:
     coulomb_table1=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
     coulomb_table2=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
-    int LL_ind=1;
-    //sum over the first BZ only. k=1.
-    int k=1;
+    
+    //set Landau level index.
+    LL_ind=2;
+    
+    //The largest zero for the first 5 Laguerrel functions (except for 0 && 1). Used to determined BZ cut-off.
+//    vector<double> laguerrelzero = vector<double>{0.5*M_PI*NPhi, 0.5*M_PI*NPhi, 3.414213562373, 6.289945082937, 9.395070912301, 12.640800844276};
+    vector<double> laguerrelzero = vector<double>{5., 5., 5., 5., 5., 5.};
+    cutoff.resize(laguerrelzero.size());
+    for (int i=0; i<laguerrelzero.size(); i++) cutoff[i]=laguerrelzero[i];
+    
+    int k=1;//how many BZ to sum over. k=1, 1st BZ.
     for (int m=0; m<k*NPhi; m++) {
         for (int n=0; n<k*NPhi; n++) {
             int qm=m,qn=n;
@@ -1079,14 +1016,20 @@ void LATTICE::setup_coulomb2(){
             for (int i=0; i<NPhi; i++) {
                 for (int j=0; j<NPhi; j++) {
                     coulomb_table1[i][j]+=1./x*pow(laguerre(0     ,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
-                    coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
+
+                    if (LL_ind>5) {
+                        cout<<"cannot calculate LL_ind>5 Coulomb energy."<<endl;
+                        exit(0);
+                    }
+                    else if (x<cutoff[LL_ind]) coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
+                    
                 }
             }
+            
         }
     }
     
     //coulomb_table3,4,5:
-    LL_ind=1;
     coulomb_table3=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
     coulomb_table4=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
     coulomb_table5=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
@@ -1109,7 +1052,6 @@ void LATTICE::setup_coulomb2(){
         }
     }
     
-    
     for (int m=0; m<NPhi; m++) {
         for (int n=0; n<NPhi; n++) {
             for (int i=0; i<NPhi; i++) {
@@ -1124,136 +1066,11 @@ void LATTICE::setup_coulomb2(){
                     coulomb_table3[i][j]+=vq[m][n]/f0[m][n]            *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
                     coulomb_table4[i][j]+=vq[m][n]/f00[m][n]/f00[m][n] *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
                     coulomb_table5[i][j]+=vq[m][n]/exp(-0.5*x*x)       *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
+                    
                 }
             }
         }
     }
-    
-//    cout<<"output: vq, f0, f00"<<endl;
-//    for (int m=0; m<NPhi; m++) {
-//        for (int n=0; n<NPhi; n++) {
-//            if (m==0 && n==0) continue;
-//            int qm=m, qn=n;
-//            
-//            if (2*qm>NPhi) qm-=NPhi;
-//            if (2*qn>NPhi) qn-=NPhi;
-//            
-//            complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
-//            double x=sqrt(2.)*abs(z);
-//            
-//            double a=1./x*pow(laguerre(LL_ind,0.5*x*x),2);
-//            double b=vq[m][n]/f0[m][n];
-//            double c=vq[m][n]/exp(-0.5*x*x);
-//            double d=exp(-0.5*x*x);
-//            cout<<setprecision(6)<<m<<" "<<n<<" "<<setw(15)<<a<<" "<<setw(15)<<(a-b)/a<<" "<<setw(15)<<(a-c)/a<<endl;
-//            cout<<setprecision(6)<<m<<" "<<n<<" "<<setw(15)<<f0[m][n]<<" "<<setw(15)<<(-d+f0[m][n])/d<<" "<<setw(15)<<(b-a)/a<<" "<<setw(15)<<(c-a)/a<<endl;
-//        }
-//    }
-//    exit(0);    
-//    for (int m=0; m<NPhi; m++) {
-//        for (int n=0; n<NPhi; n++) {
-//            if (m==0 && n==0) continue;
-//            int qm=m, qn=n;
-//            
-//            if (2*qm>NPhi) qm-=NPhi;
-//            if (2*qn>NPhi) qn-=NPhi;
-//            complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
-//            double x=sqrt(2.)*abs(z);
-//            
-//            double a=coulomb_table2[m][n];
-//            double b=coulomb_table3[m][n];
-//            double c=coulomb_table5[m][n];
-//            
-//            double a1=1./x*pow(laguerre(LL_ind,0.5*x*x),2);
-//            double b1=vq[m][n]/f0[m][n];
-//            double c1=vq[m][n]/exp(-0.5*x*x);;
-//            
-//            cout<<setprecision(6)<<m<<" "<<n<<" "<<setw(15)<<a1<<" "<<setw(15)<<(b1-a1)/a1<<" "<<setw(15)<<(c1-a1)/a1<<endl;
-//            cout<<setprecision(6)<<m<<" "<<n<<" "<<setw(15)<<a<<" "<<setw(15)<<(b-a)/a<<" "<<setw(15)<<(c-a)/a<<endl;
-//            cout<<endl;
-//        }
-//    }
-//    exit(0);
-    
-//    vector<vector<double>> coulomb_table3=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
-//    round=500;
-//    for (int qm=-round*NPhi; qm<=round*NPhi; qm++) {
-//        for (int qn=-round*NPhi; qn<=round*NPhi; qn++) {
-//            if (qm==0 && qn==0) continue;
-//            
-//            complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
-//            double x=sqrt(2.)*abs(z);
-//            
-//            for (int i=0; i<NPhi; i++) {
-//                for (int j=0; j<NPhi; j++) {
-//                    coulomb_table3[i][j]+=1./x*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
-//                }
-//            }
-//        }
-//    }
-//    
-//    
-//    
-//    for (int i=0; i<NPhi; i++) {
-//        for (int j=0; j<NPhi; j++) {
-//            cout<<i<<" "<<j<<" "<<coulomb_table2[i][j]/coulomb_table[i][j]<<" "<<coulomb_table3[i][j]/coulomb_table[i][j]<<endl;
-//        }
-//    }
-    
-    
-    
-    //TODO:DO the high landau level Coulomb energy.
-//    //output Duncan's Vq.
-//    ofstream output1("out_coul_dun");
-//    for (int m=0; m<NPhi; m++) {
-//        for (int n=0; n<NPhi; n++) {
-//            output1<<real(Vq[m][n])<<endl;
-//        }
-//    }
-//    output1.close();
-//    
-//    //output Duncan's Vx.
-//    ofstream output_dunx("out_coul_dunx");
-//    for (int m=0; m<NPhi; m++) {
-//        for (int n=0; n<NPhi; n++) {
-//            output_dunx<<coulomb_table[m][n]<<endl;
-//        }
-//    }
-//    output_dunx.close();
-    
-//    //output periodic 1/q.
-//    vector<vector<double>> oneoverq=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
-//    ofstream outputjie("out_coul_jie");
-//    for (int m=0; m<NPhi; m++) {
-//        for (int n=0; n<NPhi; n++) {
-//            double temp=1.;
-//            
-//            for (int round1=-1249; round1<1250; round1++) {
-//                for (int round2=-1249; round2<1250; round2++) {
-//                    int m1=m+round1*NPhi;
-//                    int n1=n+round2*NPhi;
-//                    
-//                    double q2=sqrt( 2.*M_PI/(1.*NPhi) * (m1*m1+n1*n1) );
-//                    oneoverq[m][n]+=1./q2/(1.*NPhi);
-////                    oneoverq[m][n]+=1./q2*exp(-0.5*q2*q2)/(1.*NPhi);
-////                    temp+=exp(-0.5*q2*q2);
-//                }
-//                
-//            }
-//            outputjie<<oneoverq[m][n]/temp<<endl;
-//        }
-//    }
-//    outputjie.close();
-    
-//    //compare the difference of Duncan's vq and oneoverq.
-//    cout<<"difference"<<endl;
-//    for (int m=0; m<NPhi; m++) {
-//        for (int n=0; n<NPhi; n++) {
-//            cout<<oneoverq[m][n]-real(coulomb_table[m][n])<<endl;
-//        }
-//    }
-//    
-//    exit(0);
     
 }
 double LATTICE::coulomb_energy1(){
@@ -1843,12 +1660,10 @@ complex<double> LATTICE::rhoq(int qx, int qy, const vector< vector<int> > &zs){
 }
 void LATTICE::reset(){
 	tries=0; accepts=0;
-//    locs=hot_start(locs.size(), NPhi, ran);
-//    cold_start();
     
     if (type=="laughlin" || type=="laughlin-hole") {
         locs=hot_start(locs.size(), NPhi, ran);
-        cold_start();
+        //cold_start();
     }
     else {
         locs=hot_start(locs.size(), NPhi, ran);
@@ -1862,9 +1677,6 @@ void LATTICE::reset(){
     while(running_weight<-1e10){
 	//for some sizes the configuration specified by cold_start has zero weight
 	//if that happens fiddle around until you find a better configuration, thats why theres a while loop
-        
-//		locs[site][0]=locs[p(site)][0];
-//		site++;
         
         if (site==Ne-1) {
             locs[site][0]=locs[0][0];
@@ -1906,6 +1718,7 @@ void LATTICE::reset(){
 		}
         
 		running_weight=get_weight(locs);
+		cout<<running_weight<<endl;
         
         if (type=="FilledLL") {
             oldMatrix=Eigen::MatrixXcd(NPhi, NPhi);
@@ -2105,6 +1918,7 @@ vector< vector<int> > LATTICE::hot_start(int Ne_t, int NPhi_t, MTRand &ran_t){
 		locs_table.insert(NPhi_t*x+y);
 		new_locs[i][0]=x;
 		new_locs[i][1]=y;
+		cout<<x<<" "<<y<<endl;
 	}
 	return new_locs;
 }
@@ -2403,7 +2217,31 @@ double LATTICE::pairamplitude(int n, int a) {
     
     return ret;
 }
+double LATTICE::shortrange_coulomb() {
+    double value=0;
+    
+    int k=1;
+    for (int qx=0; qx<k*NPhi; qx++)
+        for (int qy=0; qy<k*NPhi; qy++) {
+            
+            int Qx=qx, Qy=qy;
+            if (2*Qx>k*NPhi) Qx-=k*NPhi;
+            if (2*Qy>k*NPhi) Qy-=k*NPhi;
+            
+            complex<double> z=Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
+            double x=sqrt(2.)*abs(z);
+            
+            if (x>=cutoff[LL_ind]) {
+                double temp = pow(laguerre(LL_ind, x*x/2.),2)*exp(-x*x/2.)/x;
+                value+=temp/(-2.*invNu*invNu);
+            }
+            
+        }
+    return value;
+}
 
 LATTICE::~LATTICE(){
 //if(testing) cout<<"acceptance rate: "<<accepts/(1.*tries)<<endl;
 }
+
+

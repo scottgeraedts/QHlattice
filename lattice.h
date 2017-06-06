@@ -163,10 +163,18 @@ public:
     int trace;
     int lat_scale;
     void set_lat_scale(int);
+    
+    
+    
+    //high LL Coulomb energy things.
+    double shortrange_coulomb();
+    int LL_ind;
+    vector<double> cutoff;//cutoff for Coulomb energy BZ.
 	
 private:
 	void init(int seed);
     double get_in_det_rescaling(int Ne, int invNu);
+    double shift;
 	void sum_locs(int []);
 	void setup_coulomb();
     void setup_coulomb2();
@@ -211,6 +219,8 @@ private:
 //    vector< complex<double> > omegasq;
     
     vector<vector<int> > ds;//an integer defined on an Ne lattice
+    
+    
     
 };
 
