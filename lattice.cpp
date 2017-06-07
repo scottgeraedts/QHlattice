@@ -999,8 +999,7 @@ void LATTICE::setup_coulomb2(){
     //set Landau level index.
     LL_ind=2;
     
-    //The largest zero for the first 5 Laguerrel functions (except for 0 && 1). Used to determined BZ cut-off.
-//    vector<double> laguerrelzero = vector<double>{0.5*M_PI*NPhi, 0.5*M_PI*NPhi, 3.414213562373, 6.289945082937, 9.395070912301, 12.640800844276};
+    //set up Q.
     vector<double> laguerrelzero = vector<double>{5., 5., 5., 5., 5., 5.};
     cutoff.resize(laguerrelzero.size());
     for (int i=0; i<laguerrelzero.size(); i++) cutoff[i]=laguerrelzero[i];
@@ -1282,6 +1281,7 @@ void LATTICE::setup_laguerre(int n) {
                     }
 }
 void LATTICE::setup_compac_lagtable(int n) {
+    //TODO::FIgure out why this does not agree with ED.
     int N=lat_scale*NPhi;
     int Nq=(int)(NPhi/2*lat_scale);
     compac_lagtable=vector<vector<double>> (N, vector<double>(N,0.));
@@ -1308,11 +1308,11 @@ void LATTICE::setup_compac_lagtable(int n) {
 //                    if (n==7) a=0.5;
 //                    if (n==9) a=0.5;
 //                    a=2./sqrt(1.*NPhi);
-//                    a=0.;
+                    a=0.;
                     
                     qtable[qx0][qy0]+=laguerre(n, q2)*exp(-0.5*q2)*exp(-q2*a);
                     
-                    factor[qx0][qy0]+=exp(-0.5*q2);//TODO:figure out why it is [f^2(q)]_No.
+                    factor[qx0][qy0]+=exp(-0.5*q2);
                 }
     
     for (int qx0=0; qx0<Nq; qx0++) {
@@ -1382,7 +1382,7 @@ void LATTICE::setup_compac_lagtable(int n, double Q) {
                     
                     qtable[qx0][qy0]+=laguerre(n, q2)*exp(-0.5*q2)*exp(-q2*a);
                     
-                    factor[qx0][qy0]+=exp(-0.5*q2);//TODO:figure out why it is [f^2(q)]_No.
+                    factor[qx0][qy0]+=exp(-0.5*q2);
                 }
     
     for (int qx0=0; qx0<Nq; qx0++) {
@@ -1437,7 +1437,7 @@ void LATTICE::setup_compac_lagtable(int n, double Q, double a) {
                     
                     qtable[qx0][qy0]+=laguerre(n, q2)*exp(-0.5*q2)*exp(-q2*a);
                     
-                    factor[qx0][qy0]+=exp(-0.5*q2);//TODO:figure out why it is [f^2(q)]_No.
+                    factor[qx0][qy0]+=exp(-0.5*q2);
                 }
     
     for (int qx0=0; qx0<Nq; qx0++) {

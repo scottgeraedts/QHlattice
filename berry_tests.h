@@ -33,6 +33,7 @@ double phasemod(complex<double> in);
 void check_orthogonality(string type);
 void single_run(string filename="params", bool trace=false);
 void parallel_energy(int ncore, string filename="params");
+void parallel_ce_pa(int ncore, vector<int> PP, string filename="params");
 void structurefactor(string, int num_core=1);
 
 //Energetics
@@ -67,6 +68,7 @@ inline double Laguerrel(int N, double x);
 complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu);//this gives 'ED interaction matrix' for square torus.
 complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type);//this gives 'sigma function lattice sum interaction matrix'.
 void testlatticepp();//This function tested that the matrix element V1234 got from 'sigma function lattice sum' is correct.
+
 //pairamplitude
 void LatticeSumHoplist(string);//generalize hoplist from lattice summation.
 void pairamplitude_MC(string filename, bool trace, int num_core, vector<int> PP);

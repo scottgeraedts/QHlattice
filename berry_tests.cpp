@@ -223,8 +223,6 @@ void parallel_energy(int ncore, string filename){
         ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, false);
     }
     
-//    vector<double> E(nBins,0.), EE(nBins,0.), E2(nBins,0.), EE2(nBins,0.);
-    
     int Coul_type=6;
     vector<vector<double>> E(Coul_type, vector<double>(nBins,0.)), EE(Coul_type, vector<double>(nBins,0.));
     
@@ -266,8 +264,6 @@ void parallel_energy(int ncore, string filename){
         }
     }
     
-//    double Etotal=0., E2total=0., EEtotal=0., EE2total=0.;
-    
     vector<double> Etotal(Coul_type,0.), EEtotal(Coul_type,0.);
     
     for (int s=0; s<nBins; s++) {
@@ -303,6 +299,142 @@ void parallel_energy(int ncore, string filename){
     outfile<<"truncated energy="<<ll[0].shortrange_coulomb()<<endl;
 
 }
+void parallel_ce_pa(int ncore, vector<int> PP, string filename){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    double theta_t, alpha_t;
+    string type;
+    
+    ifstream infile(filename);
+    infile>>Ne>>invNu>>theta_t>>alpha_t;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<" nBins="<<nBins<<" ncore="<<ncore<<endl;
+    
+    int gs=0;
+    int NPhi=Ne*invNu;
+    if (type=="laughlin-hole") NPhi++;
+    
+    double theta=theta_t*M_PI, alpha=alpha_t;
+    
+    
+    vector<LATTICE> ll(ncore);
+    for (int i=0; i<ncore; i++) {
+        seed=i;
+        ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, false);
+        
+        ll[i].set_lat_scale(1);//force lattice sum on Nphi*Nphi lattice.
+        ll[i].setup_LagTable(PP);
+    }
+    
+    int Coul_type=6;
+    vector<vector<double>> E(Coul_type, vector<double>(nBins,0.)), EE(Coul_type, vector<double>(nBins,0.));
+    
+    int PA_type=PP.size();
+    vector<vector<double>> PA(PA_type, vector<double>(nBins,0.)), PAPA(PA_type, vector<double>(nBins,0.));
+    
+    omp_set_num_threads(ncore);
+#pragma omp parallel for
+    for(int s=0;s<nBins;s++){
+        int coren=omp_get_thread_num();
+        ll[coren].reset();
+        ll[coren].step(nWarmup);
+        
+        for(int i=0;i<nMeas;i++){
+            ll[coren].step(nSteps);
+            
+            //Coulomb Energy
+            double e;
+            
+            e=ll[coren].coulomb_energy();
+            E[0][s]+=e;
+            EE[0][s]+=e*e;
+            
+            e=ll[coren].coulomb_energy1();
+            E[1][s]+=e;
+            EE[1][s]+=e*e;
+            
+            e=ll[coren].coulomb_energy2();
+            E[2][s]+=e;
+            EE[2][s]+=e*e;
+            
+            e=ll[coren].coulomb_energy3();
+            E[3][s]+=e;
+            EE[3][s]+=e*e;
+            
+            e=ll[coren].coulomb_energy4();
+            E[4][s]+=e;
+            EE[4][s]+=e*e;
+            
+            e=ll[coren].coulomb_energy5();
+            E[5][s]+=e;
+            EE[5][s]+=e*e;
+            
+            //Pair Amplitude
+            for (int p=0; p<PA_type; p++) {
+                double pa=ll[coren].pairamplitude(p);
+                PA[p][s]+=pa;
+                PAPA[p][s]+=pa*pa;
+            }
+            
+            
+        }
+    }
+    
+    vector<double> Etotal(Coul_type,0.), EEtotal(Coul_type,0.);
+    vector<double> PAtotal(PA_type,0.), PAPAtotal(PA_type,0.);
+    
+    for (int s=0; s<nBins; s++) {
+        for (int i=0; i<Coul_type; i++) {
+            Etotal[i]+=E[i][s];
+            EEtotal[i]+=EE[i][s];
+        }
+        for (int p=0; p<PA_type; p++) {
+            PAtotal[p]+=PA[p][s];
+            PAPAtotal[p]+=PAPA[p][s];
+        }
+    }
+    
+    //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
+    ofstream outfile("out_"+filename);
+    ofstream outpa("out_pa_"+filename);
+    outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
+    outpa<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
+    
+    
+    nMeas*=nBins;
+    outfile<<"n=0 Landau Level, coulomb"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[0]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[0]/(1.*nMeas)-pow(Etotal[0]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    outfile<<"n=0 Landau Level, coulomb1"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[1]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[1]/(1.*nMeas)-pow(Etotal[1]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    
+    outfile<<endl;
+    outfile<<"high Landau Level, coulomb2"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    
+    outfile<<"high Landau Level, coulomb3"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[3]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[3]/(1.*nMeas)-pow(Etotal[3]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    //    outfile<<"high Landau Level, coulomb4"<<endl;
+    //    outfile<<"E="<<setprecision(10)<<Etotal[4]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[4]/(1.*nMeas)-pow(Etotal[4]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    //    outfile<<"high Landau Level, coulomb5"<<endl;
+    //    outfile<<"E="<<setprecision(10)<<Etotal[5]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[5]/(1.*nMeas)-pow(Etotal[5]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    
+    outfile<<endl;
+    outfile<<"LL_ind="<<ll[0].LL_ind<<endl;
+    outfile<<"cutoff="<<ll[0].cutoff[ll[0].LL_ind]<<endl;
+    outfile<<"truncated energy="<<ll[0].shortrange_coulomb()<<endl;
+    outfile.close();
+    
+    for (int p=0; p<PP.size(); p++) {
+        //pair amplidue per electron?
+        outpa<<"PP="<<PP[p]<<" PA="<<setprecision(10)<<PAtotal[p]/(1.*nMeas*Ne)<<" var="<<sqrt(PAPAtotal[p]/(1.*nMeas)-pow(PAtotal[p]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    }
+    outpa.close();
+}
+
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
@@ -3070,8 +3202,8 @@ void pairamplitude_MC(string filename, bool trace, int num_core, vector<int> PP)
     infile>>seed;
     infile>>testing;
     infile>>type;
-    infile>>lat_scale;
-    infile>>pp;
+//    infile>>lat_scale;
+//    infile>>pp;
     infile.close();
     //initialize MC object
     theta=theta_t*M_PI;
@@ -3129,6 +3261,7 @@ void pairamplitude_MC(string filename, bool trace, int num_core, vector<int> PP)
         
         pairout.close();
     }
+    //TODO::pair-amplitude can be combined with Coulomb energy calculation. Do it.
 }
 void pairamplitude_MC2(string filename, bool trace, int num_core, vector<int> PP, vector<double> QQ) {
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed,lat_scale,pp;
@@ -3216,7 +3349,7 @@ void pairamplitude_MC2(string filename, bool trace, int num_core, vector<int> PP
     }
 }
 void pairamplitude_ExplicitLatticeSum2() {
-    //TODO::two particle laughlin state explicit lattice summation.
+    //TODO::Figure out why this does not agree with ED.
     int Ne=2, invNu=5, NPhi=Ne*invNu;
     LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0);
     vector<int> PP=vector<int>{1,2,3,5}; vector<double> PA(PP.size(),0.);
@@ -3263,7 +3396,6 @@ void pairamplitude_ExplicitLatticeSum2() {
     
 }
 void pairamplitude_ExplicitLatticeSum3() {
-    //TODO::two particle laughlin state explicit lattice summation.
     int Ne=3, invNu=5, NPhi=Ne*invNu;
     LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0);
     vector<int> PP=vector<int>{1,3,5,7,9,11}; vector<double> PA(PP.size(),0.);
