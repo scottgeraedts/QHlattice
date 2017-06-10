@@ -1331,7 +1331,7 @@ void LATTICE::setup_newLagTable(vector<int> PP) {
     PA_cutoff.resize(PP.size());
     for (int i=0; i<PP.size(); i++) {
         if (PP[i]<=15)
-            PA_cutoff[i]=4.75;
+            PA_cutoff[i]=4.0;
         else
             PA_cutoff[i]=15.;
     }
@@ -1340,14 +1340,16 @@ void LATTICE::setup_newLagTable(vector<int> PP) {
     for (int qx=0; qx<k*N; qx++) {
         for (int qy=0; qy<k*N; qy++) {
             int Qx=qx, Qy=qy;
-            if (2*Qx>k*N) Qx-=k*N;
-            if (2*Qy>k*N) Qy-=k*N;
+            if (2*Qx> k*N) Qx-=k*N;
+            if (2*Qy> k*N) Qy-=k*N;
+            
             complex<double> z = Qx/(1.*N)*L1+Qy/(1.*N)*L2;
             double x = sqrt(2.)*abs(z);
-            for (int i=0; i<PP.size(); i++)
-                qtable_pa[i][qx%N][qy%N] += laguerre(PP[i],x*x) * exp(-0.5*x*x);// * exp(-0.01*x*x);
             
-            ftable[qx%N][qy%N] += exp(-0.5*x*x);
+            for (int i=0; i<PP.size(); i++)
+                qtable_pa[i][supermod(qx,N)][supermod(qy,N)] += laguerre(PP[i],x*x) * exp(-0.5*x*x);// * exp(-0.1*x*x);
+            
+            ftable[supermod(qx,N)][supermod(qy,N)] += exp(-0.5*x*x);
             
         }
     }
@@ -1359,15 +1361,6 @@ void LATTICE::setup_newLagTable(vector<int> PP) {
             }
         }
     }
-    
-    
-//    cout<<"output qtable (new)"<<endl;
-//    for (int qx=0; qx<N; qx++) {
-//        for (int qy=0; qy<N; qy++) {
-//            cout<<qtable[0][qx][qy]<<"   ";
-//        }
-//        cout<<endl;
-//    }
     
     for (int m=0; m<N; m++)
         for (int n=0; n<N; n++)
@@ -1381,26 +1374,11 @@ void LATTICE::setup_newLagTable(vector<int> PP) {
                         complex<double> z = Qx/(1.*N)*L1+Qy/(1.*N)*L2;
                         double x = sqrt(2.)*abs(z);
                         
-                        //the cutoff is set as,
                         if (x<PA_cutoff[i]) {
                             LagTable[i][m][n] += qtable_pa[i][qx][qy] * cos( (2.*M_PI)/(1.*NPhi*lat_scale*lat_scale)*(qx*n-qy*m) )*2./NPhi/lat_scale/lat_scale;
                         }
                         
-//                        LagTable[i][m][n] += qtable[i][qx][qy] * cos( (2.*M_PI)/(1.*NPhi*lat_scale*lat_scale)*(qx*n-qy*m) )*2./NPhi/lat_scale/lat_scale;
-                        
                     }
-    
-    
-    
-    
-//    cout<<"output setup_newLagTable"<<endl;
-//    for (int i=0; i<N; i++) {
-//        for (int j=0; j<N; j++) {
-//            cout<<LagTable[0][i][j]<<"   ";
-//        }
-//        cout<<endl;
-//    }
-
 }
 
 
