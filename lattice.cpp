@@ -2409,7 +2409,7 @@ double LATTICE::shortrange_coulomb() {
             complex<double> z=Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
             double x=sqrt(2.)*abs(z);
             
-            ffactor[qx][qy]+=exp(-x*x/2.);
+            ffactor[qx%NPhi][qy%NPhi]+=exp(-x*x/2.);
         }
     }
     
