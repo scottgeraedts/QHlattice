@@ -48,11 +48,12 @@ int LATTICE_WRAPPER::step(int nSteps){
 						tempzs[electron]=newz;
 						temp=get_wf(it-wfs.begin(), it2-it->begin(), tempzs);
 					}
-					if(print) cout<<"weight for "<<it-wfs.begin()<<" "<<it2-it->begin()<<" "<<temp<<endl;
+					if(print) cout<<"weight for "<<it-wfs.begin()<<" "<<it2-it->begin()<<" "<<log(norm(temp))<<endl;
 				}else{
 					temp=oldweight[it-wfs.begin()][it2-it->begin()];
 				}
-				
+				tempzs=zs;
+				tempzs[electron]=newz;
 				newweight[it-wfs.begin()][it2-it->begin()]=temp;
 				if( it2->denom){
 					prod/=temp;

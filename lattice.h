@@ -35,7 +35,7 @@ extern"C"{
 class LATTICE_PARAMS{
 public:
 	int Ne, invNu, seed, gs;
-	double theta, alpha;
+	double theta, alpha, rescale;
 	complex<double> w_delta, dbar_delta;
 	bool testing, trace;
 	string type;
@@ -51,6 +51,7 @@ public:
 		type="CFL";
 		w_delta=0;
 		dbar_delta=0;
+		rescale=1;
 	}
 };
 	
@@ -70,12 +71,14 @@ public:
     vector<double> hole;
     bool fermions,holes_set;
     
+    double in_determinant_rescaling;
 	//stepping functions
     vector<double> dbar_parameter;
 	bool testing;
 	void step(int);// step(int Nsteps); Nsetps = total MC steps. tries:steps, accepts:updated steps.
 	double get_weight(const vector< vector<int> > &zs);  
 	complex<double> get_wf(const vector< vector<int> > &zs);
+    complex<double> get_laughlinwf(vector<vector<double> > z);
     void make_CFL_det(Eigen::MatrixXcd& newMatrix, vector<int> newloc, int electron, complex<double>& value, const vector< vector<int> > &zs);
 
 	//utility functions
@@ -88,8 +91,16 @@ public:
     vector<vector<vector<double>>> laguerretable;//laguerre table regularized by alpha.
     vector<vector<double>> laguerretable2;//laguerre table for 1BZ.
     vector<vector<double>> compac_lagtable;//compactified laguerre table.
-    vector<vector<vector<double>>> LagTable;//element is the compac_lagtable of given order.
+    vector<vector<vector<double>>> LagTable;
+    
+    vector<vector<vector<double>>> qtable_ce;//compactified coulomb-energy potential.
+    vector<vector<vector<double>>> qtable_pa;//compactified pair-amplitude potential.
+    vector<vector<double>> ftable;//compactified form factor.
+    
     vector<vector<vector<complex<double>>>> landautable;
+    
+//    vector<vector<vector<double>>> newLagTable;
+    void setup_newLagTable(vector<int> PP);
     
     void setup_laguerre(int);
     void setup_laguerre2(int);
@@ -134,9 +145,7 @@ public:
     double coulomb_energy5();
     
 	double threebody();
-	void update_structure_factors();
-	void print_structure_factors(int nMeas, string filename="");
-    double pairamplitude(int n);
+	
     double check_duncan_coulomb(int m, int n, double a);
     
 	vector <vector<int> > get_locs();
@@ -159,20 +168,25 @@ public:
 	static vector<int> random_move(const vector<int> &oldsite, int NPhi_t, MTRand &ran_t);
     
     int trace;
-    int lat_scale;
+    int lat_scale=1;
     void set_lat_scale(int);
     
-    
+    //structure factor, pairamplitude
+    vector<int> PA;
+    void update_structure_factors();
+    void print_structure_factors(int nMeas, string filename="");
+    double pairamplitude(int n);
+    double shortrange_pairamplitude(int n);
+    vector<double> PA_cutoff;//cutoff for pair-amplitude BZ.
     
     //high LL Coulomb energy things.
     double shortrange_coulomb();
     int LL_ind;
-    vector<double> cutoff;//cutoff for Coulomb energy BZ.
+    vector<double> CE_cutoff;//cutoff for Coulomb energy BZ.
 	
 private:
 	void init(int seed);
     double get_in_det_rescaling(int Ne, int invNu);
-    double in_determinant_rescaling;
     double shift;
 	void sum_locs(int []);
 	void setup_coulomb();

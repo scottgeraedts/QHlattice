@@ -32,11 +32,11 @@ double phasemod(complex<double> in);
 //Some Checkings, including ortho, auto-correlation
 void check_orthogonality(string type);
 void single_run(string filename="params", bool trace=false);
-void parallel_energy(int ncore, string filename="params");
-void parallel_ce_pa(int ncore, vector<int> PP, string filename="params");
 void structurefactor(string, int num_core=1);
 
 //Energetics
+void parallel_energy(int ncore, string filename="params");//energy calculator for high LL.
+void parallel_ce_pa(int ncore, vector<int> PP, string filename="params");//energy & p.a. calculator for high LL.
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename);
 void plot_CFL_coule_vsdbar(int grid, int Ne, int nMeas, int nBins);
 void CFL_ne5_energy_var(int nMeas, int nBins, int num_core=1);
@@ -73,9 +73,9 @@ void testlatticepp();//This function tested that the matrix element V1234 got fr
 void LatticeSumHoplist(string);//generalize hoplist from lattice summation.
 void pairamplitude_MC(string filename, bool trace, int num_core, vector<int> PP);
 void pairamplitude_MC2(string filename, bool trace, int num_core, vector<int> PP, vector<double> Q);
-
-void pairamplitude_ExplicitLatticeSum2();//Comparing it with ED and MC.
-void pairamplitude_ExplicitLatticeSum3();//Comparing it with ED and MC.
+//2 and 3 particle explicit lattice sum for pair-amplitude.
+void pairamplitude_ExplicitLatticeSum2(int invNu);
+void pairamplitude_ExplicitLatticeSum3(int invNu);
 
 //old functions
 void pairamplitudeold(string filename, bool trace, int num_core, bool pseu, bool mc);

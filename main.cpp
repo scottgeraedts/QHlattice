@@ -9,15 +9,11 @@ bool IsOdd (int i) {
     return ((i%2)==1);
 }
 int main(){
-//    parallel_energy(2, "params");
+//    parallel_ce_pa(2, vector<int>{0,1,2,3,4,5,6,7}, "params");
     
-    //pair-amplitude.
-//    pairamplitude_MC("params", false, 2, vector<int>{1,3,15,19});
-//    parallel_ce_pa(2, vector<int>{1,3,15,19}, "params");
-    cout<<"pairamplitude2"<<endl;
-    pairamplitude_ExplicitLatticeSum2();
+//    cout<<"pairamplitude2"<<endl;
+//    pairamplitude_ExplicitLatticeSum2(5);
 //    cout<<"pairamplitude3"<<endl;
-//    pairamplitude_ExplicitLatticeSum3();
-//    
+    pairamplitude_ExplicitLatticeSum3(5);
     
 }
