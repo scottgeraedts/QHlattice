@@ -326,7 +326,8 @@ void parallel_ce_pa(int ncore, vector<int> PP, string filename){
         seed=i;
         ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, false);
         
-        ll[i].set_lat_scale(1);//force lattice sum on Nphi*Nphi lattice.
+        ll[i].set_lat_scalex(1);//force lattice sum on Nphi*Nphi lattice.
+        ll[i].set_lat_scaleq(1);//force lattice sum on Nphi*Nphi lattice.
         ll[i].setup_newLagTable(PP);
     }
     
@@ -352,6 +353,7 @@ void parallel_ce_pa(int ncore, vector<int> PP, string filename){
             e=ll[coren].coulomb_energy();
             E[0][s]+=e;
             EE[0][s]+=e*e;
+//            cout<<"e="<<e<<endl;
             
             e=ll[coren].coulomb_energy1();
             E[1][s]+=e;
@@ -379,7 +381,6 @@ void parallel_ce_pa(int ncore, vector<int> PP, string filename){
                 PA[p][s]+=pa;
                 PAPA[p][s]+=pa*pa;
             }
-            
             
         }
     }
@@ -2951,7 +2952,11 @@ complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu
 }
 complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type) {
     complex<double> ret=0.;
-    int N=ll.NPhi*ll.lat_scale;
+    if (ll.lat_scalex!=ll.lat_scaleq) {
+        cout<<"lat_scalex!=lat_scale1"<<endl;
+        exit(0);
+    }
+    int N=ll.NPhi*ll.lat_scalex;
     
     for (int i1=0; i1<N; i1++)
         for (int j1=0; j1<N; j1++)
@@ -3016,7 +3021,8 @@ void testlatticepp(){
         else exactret.push_back(real(interaction(m1, m3, m4, Nphi, vp)/tmp));
     }
     //get V1234 from alpha regularization.
-    ll.set_lat_scale(1);
+    ll.set_lat_scalex(1);
+    ll.set_lat_scaleq(1);
     ll.setup_landautable();
     for (int i=0; i<round; i++) {
         ll.setup_laguerre(i);
@@ -3029,7 +3035,8 @@ void testlatticepp(){
     }
     //get V1234 from lattice sum.
     //1 BZ summation
-    ll.set_lat_scale(lat_scale);
+    ll.set_lat_scalex(lat_scale);
+    ll.set_lat_scaleq(lat_scale);
     ll.setup_landautable();
     for (int i=0; i<round; i++) {
         ll.setup_laguerre2(i);
@@ -3083,7 +3090,8 @@ void LatticeSumHoplist(string filename) {//readhoplist="pairamplitude/hoplist"
     cout<<"lat_scale="<<lat_scale<<",   pp="<<pp<<endl;
     
     LATTICE ll(Ne, invNu, testing, type, 0, 0, theta, alpha);
-    ll.set_lat_scale(1);//lat_scale=1.
+    ll.set_lat_scalex(1);//lat_scale=1.
+    ll.set_lat_scaleq(1);//lat_scale=1.
     
 //    ll.setup_laguerre2(vector<int>{1,3});
 //    //The mth pseudo potential.
@@ -3228,7 +3236,8 @@ void pairamplitude_MC(string filename, bool trace, int num_core, vector<int> PP)
     vector<LATTICE> ll(num_core);
     for (int i=0; i<num_core; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
-        ll[i].set_lat_scale(1);//force lattice sum on Nphi*Nphi lattice.
+        ll[i].set_lat_scalex(1);//force lattice sum on Nphi*Nphi lattice.
+        ll[i].set_lat_scaleq(1);
         ll[i].setup_LagTable(PP);
     }
     cout<<"\nfinish initialization."<<endl;
@@ -3310,7 +3319,8 @@ void pairamplitude_MC2(string filename, bool trace, int num_core, vector<int> PP
     vector<LATTICE> ll(num_core);
     for (int i=0; i<num_core; i++) {
         ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
-        ll[i].set_lat_scale(1);//force lattice sum on Nphi*Nphi lattice.
+        ll[i].set_lat_scalex(1);//force lattice sum on Nphi*Nphi lattice.
+        ll[i].set_lat_scaleq(1);
         ll[i].setup_LagTable(PP,QQ);
     }
     cout<<"\nfinish initialization."<<endl;
@@ -3361,85 +3371,94 @@ void pairamplitude_MC2(string filename, bool trace, int num_core, vector<int> PP
     }
 }
 void pairamplitude_ExplicitLatticeSum2(int invNu) {
-    int scale=1;
-    int Ne=2, NPhi=scale*Ne*invNu;
+    int scalex=1, scaleq=1;
+    int Ne=2, NPhi=Ne*invNu;
+    int Nx=scalex*NPhi, Nq=scaleq*NPhi;
+    
     cout<<"Explicit Lattice Sum, Ne=2, invNu="<<invNu<<endl;
-    LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0);
+    cout<<"lat_scalex="<<scalex<<" lat_scaleq="<<scaleq<<endl;
+    double theta=0.5*M_PI, alpha=1.;
+    LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0, theta, alpha);
+    
     vector<int> PP=vector<int>{0,1,2,3,4,5,6,7};
     vector<double> PA(PP.size(),0.);
     
-    vector<vector<complex<double>>> wfTable = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
-    for (int i=0; i<NPhi*NPhi; i++) {
-        for (int j=0; j<NPhi*NPhi; j++) {
+    ll.set_lat_scalex(scalex);
+    ll.set_lat_scaleq(scaleq);
+    ll.setup_newLagTable(PP);
+    
+    vector<vector<complex<double>>> wfTable = vector<vector<complex<double>>> (Nx*Nx, vector<complex<double>>(Nx*Nx, 0.));
+    for (int i=0; i<Nx*Nx; i++) {
+        for (int j=0; j<Nx*Nx; j++) {
             vector<vector<int>> zs(Ne,vector<int>(2));
-            zs[0][0]=i%NPhi; zs[0][1]=i/NPhi; zs[1][0]=j%NPhi; zs[1][1]=j/NPhi;
+            zs[0][0]=i%Nx; zs[0][1]=i/Nx; zs[1][0]=j%Nx; zs[1][1]=j/Nx;
             
-//            wfTable[i][j]=ll.get_wf(zs);
-            
+            //            if (scalex==1) wfTable[i][j]=ll.get_wf(zs);
+            //            else {
             vector<vector<double>> zs_double(Ne,vector<double>(2,0.));
             for (int k=0; k<Ne; k++) {
-                zs_double[k][0] = zs[k][0]/(1.*NPhi);
-                zs_double[k][1] = zs[k][1]/(1.*NPhi);
+                zs_double[k][0] = zs[k][0]/(1.*Nx)+0.1;
+                zs_double[k][1] = zs[k][1]/(1.*Nx)+0.5;
             }
-            
-            ll.set_lat_scale(scale);
             wfTable[i][j]=ll.get_laughlinwf(zs_double);
+            //            }
             
-//            cout<<ll.get_wf(zs)<<"   "<<ll.get_laughlinwf(zs_double)<<endl;
         }
     }
     
-//    //check ortho.
-//    LATTICE ll0(Ne, invNu, 0, "laughlin", 0, 0); ll0.scale=scale;
-//    LATTICE ll1(Ne, invNu, 0, "laughlin", 0, 1); ll1.scale=scale;
-//    vector<vector<complex<double>>> wfTable0 = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
-//    vector<vector<complex<double>>> wfTable1 = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
-//    complex<double> ortho=0., norm0=0., norm1=0.;
-//    for (int i=0; i<NPhi*NPhi; i++) {
-//        for (int j=0; j<NPhi*NPhi; j++) {
-//            vector<vector<int>> zs(Ne,vector<int>(2));
-//            zs[0][0]=i%NPhi; zs[0][1]=i/NPhi; zs[1][0]=j%NPhi; zs[1][1]=j/NPhi;
-//            vector<vector<double>> zs_double(Ne,vector<double>(2,0.));
-//            for (int k=0; k<Ne; k++) {
-//                zs_double[k][0] = zs[k][0]/(1.*NPhi);
-//                zs_double[k][1] = zs[k][1]/(1.*NPhi);
-//            }
-//            wfTable0[i][j]=ll0.get_laughlinwf(zs_double);
-//            wfTable1[i][j]=ll1.get_laughlinwf(zs_double);
-//        }
-//    }
-//    for (int i=0; i<NPhi*NPhi; i++) {
-//        for (int j=0; j<NPhi*NPhi; j++) {
-//            ortho += conj(wfTable0[i][j])*wfTable1[i][j];
-//            norm0 += conj(wfTable0[i][j])*wfTable0[i][j];
-//            norm1 += conj(wfTable1[i][j])*wfTable1[i][j];
-//        }
-//    }
-//    cout<<"orthogonality: "<<ortho/norm0<<endl<<"norm0="<<norm0<<endl<<"norm1="<<norm1<<endl;
-//    exit(0);
+    //    //check ortho.
+    //    LATTICE ll0(Ne, invNu, 0, "laughlin", 0, 5); ll0.set_lat_scalex(2);ll0.set_lat_scaleq(2);
+    //    LATTICE ll1(Ne, invNu, 0, "laughlin", 0, 5); ll1.set_lat_scalex(2);ll1.set_lat_scaleq(2);
+    //    vector<vector<complex<double>>> wfTable0 = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
+    //    vector<vector<complex<double>>> wfTable1 = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
+    //    complex<double> ortho=0., norm0=0., norm1=0.;
+    //    for (int i=0; i<NPhi*NPhi; i++) {
+    //        for (int j=0; j<NPhi*NPhi; j++) {
+    //            vector<vector<int>> zs(Ne,vector<int>(2));
+    //            zs[0][0]=i%NPhi; zs[0][1]=i/NPhi; zs[1][0]=j%NPhi; zs[1][1]=j/NPhi;
+    //            vector<vector<double>> zs_double(Ne,vector<double>(2,0.));
+    //            for (int k=0; k<Ne; k++) {
+    //                zs_double[k][0] = zs[k][0]/(1.*NPhi);
+    //                zs_double[k][1] = zs[k][1]/(1.*NPhi);
+    //            }
+    //            wfTable0[i][j]=ll0.get_laughlinwf(zs_double);
+    //            wfTable1[i][j]=ll1.get_laughlinwf(zs_double);
+    //        }
+    //    }
+    //    for (int i=0; i<NPhi*NPhi; i++) {
+    //        for (int j=0; j<NPhi*NPhi; j++) {
+    //            ortho += conj(wfTable0[i][j])*wfTable1[i][j];
+    //            norm0 += conj(wfTable0[i][j])*wfTable0[i][j];
+    //            norm1 += conj(wfTable1[i][j])*wfTable1[i][j];
+    //        }
+    //    }
+    //    cout<<"orthogonality: "<<ortho/norm0<<endl<<"norm0="<<norm0<<endl<<"norm1="<<norm1<<endl;
+    //    exit(0);
     
-//    ll.setup_LagTable(PP);
-    ll.setup_newLagTable(PP);
+    //    ll.setup_LagTable(PP);
+    
     double normalization=0.;
     
-//    cout<<"Nphi="<<NPhi<<endl;
-//    for (int n=0; n<PP.size(); n++) {
-//        cout<<"PP[n]="<<PP[n]<<endl;
-//        for (int i=0; i<NPhi; i++) {
-//            cout<<ll.LagTable[n][i][0]<<" ";
-//        }
-//        cout<<endl<<endl;
-//    }
+    //    cout<<"Nphi="<<NPhi<<endl;
+    //    for (int n=0; n<PP.size(); n++) {
+    //        cout<<"PP[n]="<<PP[n]<<endl;
+    //        for (int i=0; i<NPhi; i++) {
+    //            cout<<ll.LagTable[n][i][0]<<" ";
+    //        }
+    //        cout<<endl<<endl;
+    //    }
     
     ofstream outfile("data");
     ofstream outfile2("data2");
     
-    for (int i=0; i<NPhi*NPhi; i++) {
-        for (int j=0; j<NPhi*NPhi; j++) {
-            int x=abs(i%NPhi-j%NPhi), y=abs(i/NPhi-j/NPhi);
+    //    double c=100000000.;
+    
+    for (int i=0; i<Nx*Nx; i++) {
+        for (int j=0; j<Nx*Nx; j++) {
+            int x=abs(i%Nx-j%Nx), y=abs(i/Nx-j/Nx);
             
-            x=((i%NPhi-j%NPhi)%NPhi+NPhi)%NPhi;
-            y=((i/NPhi-j/NPhi)%NPhi+NPhi)%NPhi;
+            x=((i%Nx-j%Nx)%Nx+Nx)%Nx;
+            y=((i/Nx-j/Nx)%Nx+Nx)%Nx;
             
             for (int k=0; k<PA.size(); k++) {
                 PA[k]+=real(conj(wfTable[i][j])*wfTable[i][j]*ll.LagTable[k][x][y]);
@@ -3452,20 +3471,142 @@ void pairamplitude_ExplicitLatticeSum2(int invNu) {
     
     cout<<"\noutput pair-amplitude2"<<endl;
     for (int i=0; i<PA.size(); i++)
-        cout<<"pairamplitude: v "<<PP[i]<<"   "<<setprecision(10)<<PA[i]/normalization + ll.shortrange_pairamplitude(i)<<endl;
+        cout<<"pairamplitude: v "<<PP[i]<<"   "<<setprecision(15)<<PA[i]/normalization + ll.shortrange_pairamplitude(i)<<endl;
     
     cout<<endl;
     
     for (int i=0; i<PA.size(); i++) {
-        cout<<"pairamplitude: v "<<PP[i]<<"   "<<setprecision(10)<<ll.shortrange_pairamplitude(i)<<endl;
+        cout<<"shortrangecutoff "<<PP[i]<<"   "<<setprecision(15)<<ll.shortrange_pairamplitude(i)<<endl;
     }
     
+    //    cout<<"normalization = "<<normalization<<endl;
+    
 }
+
+
+vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift1, double shift2, vector<int> PP) {
+    int scalex=1, scaleq=1;
+    int Ne=2, NPhi=Ne*invNu;
+    int Nx=scalex*NPhi, Nq=scaleq*NPhi;
+    
+//    cout<<"Explicit Lattice Sum, Ne=2, invNu="<<invNu<<endl;
+//    cout<<"lat_scalex="<<scalex<<" lat_scaleq="<<scaleq<<endl;
+    LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0);
+    
+    vector<double> PA(PP.size(),0.);
+    
+    ll.set_lat_scalex(scalex);
+    ll.set_lat_scaleq(scaleq);
+    ll.setup_newLagTable(PP);
+    
+    vector<vector<complex<double>>> wfTable = vector<vector<complex<double>>> (Nx*Nx, vector<complex<double>>(Nx*Nx, 0.));
+    for (int i=0; i<Nx*Nx; i++) {
+        for (int j=0; j<Nx*Nx; j++) {
+            vector<vector<int>> zs(Ne,vector<int>(2));
+            zs[0][0]=i%Nx; zs[0][1]=i/Nx; zs[1][0]=j%Nx; zs[1][1]=j/Nx;
+            
+            //            if (scalex==1) wfTable[i][j]=ll.get_wf(zs);
+            //            else {
+            
+            vector<vector<double>> zs_double(Ne,vector<double>(2,0.));
+            for (int k=0; k<Ne; k++) {
+                zs_double[k][0] = zs[k][0]/(1.*Nx)+shift1;
+                zs_double[k][1] = zs[k][1]/(1.*Nx)+shift2;
+            }
+            wfTable[i][j]=ll.get_laughlinwf(zs_double);
+            //            }
+            
+        }
+    }
+    
+    //    //check ortho.
+    //    LATTICE ll0(Ne, invNu, 0, "laughlin", 0, 5); ll0.set_lat_scalex(2);ll0.set_lat_scaleq(2);
+    //    LATTICE ll1(Ne, invNu, 0, "laughlin", 0, 5); ll1.set_lat_scalex(2);ll1.set_lat_scaleq(2);
+    //    vector<vector<complex<double>>> wfTable0 = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
+    //    vector<vector<complex<double>>> wfTable1 = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
+    //    complex<double> ortho=0., norm0=0., norm1=0.;
+    //    for (int i=0; i<NPhi*NPhi; i++) {
+    //        for (int j=0; j<NPhi*NPhi; j++) {
+    //            vector<vector<int>> zs(Ne,vector<int>(2));
+    //            zs[0][0]=i%NPhi; zs[0][1]=i/NPhi; zs[1][0]=j%NPhi; zs[1][1]=j/NPhi;
+    //            vector<vector<double>> zs_double(Ne,vector<double>(2,0.));
+    //            for (int k=0; k<Ne; k++) {
+    //                zs_double[k][0] = zs[k][0]/(1.*NPhi);
+    //                zs_double[k][1] = zs[k][1]/(1.*NPhi);
+    //            }
+    //            wfTable0[i][j]=ll0.get_laughlinwf(zs_double);
+    //            wfTable1[i][j]=ll1.get_laughlinwf(zs_double);
+    //        }
+    //    }
+    //    for (int i=0; i<NPhi*NPhi; i++) {
+    //        for (int j=0; j<NPhi*NPhi; j++) {
+    //            ortho += conj(wfTable0[i][j])*wfTable1[i][j];
+    //            norm0 += conj(wfTable0[i][j])*wfTable0[i][j];
+    //            norm1 += conj(wfTable1[i][j])*wfTable1[i][j];
+    //        }
+    //    }
+    //    cout<<"orthogonality: "<<ortho/norm0<<endl<<"norm0="<<norm0<<endl<<"norm1="<<norm1<<endl;
+    //    exit(0);
+    
+    //    ll.setup_LagTable(PP);
+    
+    double normalization=0.;
+    
+    //    cout<<"Nphi="<<NPhi<<endl;
+    //    for (int n=0; n<PP.size(); n++) {
+    //        cout<<"PP[n]="<<PP[n]<<endl;
+    //        for (int i=0; i<NPhi; i++) {
+    //            cout<<ll.LagTable[n][i][0]<<" ";
+    //        }
+    //        cout<<endl<<endl;
+    //    }
+    
+    ofstream outfile("data");
+    ofstream outfile2("data2");
+    
+    //    double c=100000000.;
+    
+    for (int i=0; i<Nx*Nx; i++) {
+        for (int j=0; j<Nx*Nx; j++) {
+            int x=abs(i%Nx-j%Nx), y=abs(i/Nx-j/Nx);
+            
+            x=((i%Nx-j%Nx)%Nx+Nx)%Nx;
+            y=((i/Nx-j/Nx)%Nx+Nx)%Nx;
+            
+            for (int k=0; k<PA.size(); k++) {
+                PA[k]+=real(conj(wfTable[i][j])*wfTable[i][j]*ll.LagTable[k][x][y]);
+            }
+            outfile<<real(conj(wfTable[i][j])*wfTable[i][j]*ll.LagTable[0][x][y])<<endl;
+            outfile2<<real(conj(wfTable[i][j])*wfTable[i][j])<<endl;
+            normalization+=real(conj(wfTable[i][j])*wfTable[i][j]);
+        }
+    }
+    
+//    cout<<"\noutput pair-amplitude2"<<endl;
+    for (int i=0; i<PA.size(); i++)
+//        cout<<"pairamplitude: v "<<PP[i]<<"   "<<setprecision(10)<<PA[i]/normalization + ll.shortrange_pairamplitude(i)<<endl;
+    
+//    cout<<endl;
+    
+    for (int i=0; i<PA.size(); i++) {
+//        cout<<"shortrangecutoff "<<PP[i]<<"   "<<setprecision(10)<<ll.shortrange_pairamplitude(i)<<endl;
+    }
+    
+    //    cout<<"normalization = "<<normalization<<endl;
+    
+    vector<double> value(PA.size(), 0.);
+    for (int i=0; i<PA.size(); i++) {
+        value[i] = PA[i]/normalization + ll.shortrange_pairamplitude(i);
+    }
+    
+    return value;
+}
+
 void pairamplitude_ExplicitLatticeSum3(int invNu) {
     int Ne=3, NPhi=Ne*invNu;
     LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0);
     cout<<"Explicit Lattice Sum, Ne=3, invNu"<<invNu<<endl;
-    vector<int> PP=vector<int>{0,1,2,3,4,5,6,7};
+    vector<int> PP=vector<int>{0,1,2,3,4,5,6,7,9,11,13,15};
     vector<double> PA(PP.size(),0.);
     
     vector<vector<vector<complex<double>>>> wfTable=vector<vector<vector<complex<double>>>>(NPhi*NPhi,vector<vector<complex<double>>>(NPhi*NPhi,vector<complex<double>>(NPhi*NPhi,0.)));
@@ -3514,7 +3655,7 @@ void pairamplitude_ExplicitLatticeSum3(int invNu) {
     cout<<endl;
     
     for (int i=0; i<PA.size(); i++) {
-        cout<<"pairamplitude: v "<<PP[i]<<"   "<<setprecision(10)<<ll.shortrange_pairamplitude(i)<<endl;
+        cout<<"shortrangecutoff "<<PP[i]<<"   "<<setprecision(10)<<ll.shortrange_pairamplitude(i)<<endl;
     }
     
 }
@@ -3662,3 +3803,32 @@ void pairamplitudeold(string filename, bool trace, int num_core, bool pseu, bool
     
 }
 */
+
+void onebody(int m1, int m2, int NPhi, int n){
+    LATTICE ll(1, NPhi, 0, "laughlin", 0, 0);
+    cout<<"NPhi="<<ll.NPhi<<endl;
+    
+    ll.set_lat_scalex(1);
+    ll.set_lat_scaleq(1);
+    ll.setup_landautable();
+    
+    m1=supermod(m1,NPhi);
+    m2=supermod(m2,NPhi);
+    
+    vector<int> PP=vector<int>{1};
+    ll.setup_newLagTable(PP);
+    
+    double output=0., normalization=0.;
+    for (int x=0; x<NPhi; x++) {
+        for (int y=0; y<NPhi; y++) {
+            output+=real(conj(ll.landautable[m1][x][y])*ll.landautable[m2][x][y]);//*ll.LagTable[n][x][y]);
+            normalization+=real( conj(ll.landautable[m1][x][y])*ll.landautable[m1][x][y] );
+        }
+    }
+    output/=normalization;
+    
+    cout<<"output="<<output<<endl;
+    
+}
+    
+

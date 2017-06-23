@@ -101,6 +101,7 @@ public:
     
 //    vector<vector<vector<double>>> newLagTable;
     void setup_newLagTable(vector<int> PP);
+    void setup_newnewLagTable(vector<int> PP);
     
     void setup_laguerre(int);
     void setup_laguerre2(int);
@@ -168,8 +169,9 @@ public:
 	static vector<int> random_move(const vector<int> &oldsite, int NPhi_t, MTRand &ran_t);
     
     int trace;
-    int lat_scale=1;
-    void set_lat_scale(int);
+    int lat_scalex, lat_scaleq;
+    void set_lat_scalex(int);
+    void set_lat_scaleq(int);
     
     //structure factor, pairamplitude
     vector<int> PA;
@@ -183,6 +185,10 @@ public:
     double shortrange_coulomb();
     int LL_ind;
     vector<double> CE_cutoff;//cutoff for Coulomb energy BZ.
+    
+    //compactification.
+    vector<vector<complex<double>>> comp_ftable(vector<vector<double>> ws);
+    void test_shift();
 	
 private:
 	void init(int seed);

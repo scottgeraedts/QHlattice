@@ -76,6 +76,9 @@ void pairamplitude_MC2(string filename, bool trace, int num_core, vector<int> PP
 //2 and 3 particle explicit lattice sum for pair-amplitude.
 void pairamplitude_ExplicitLatticeSum2(int invNu);
 void pairamplitude_ExplicitLatticeSum3(int invNu);
+vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift1, double shift2, vector<int> PP);
+
+void onebody(int m1, int m2, int NPhi, int n);
 
 //old functions
 void pairamplitudeold(string filename, bool trace, int num_core, bool pseu, bool mc);

@@ -38,8 +38,6 @@ void LATTICE::init(int seed){
 
 	if(trace)
 		cout<<"WARNING! Trace=true is no longer supported, use lattice_wrapper instead"<<endl;
-    lat_scale=1;
-	
 
 	//various parameters from input file
  	NPhi=Ne*invNu;
@@ -93,17 +91,27 @@ void LATTICE::init(int seed){
         ws0[i][1]=gs/(1.*invNu)+imag(w_delta)*lil_sign(gs)*lil_sign(i);
     }
     
-//    shift=0.5/(1.*NPhi);
-//    for (int i=0; i<invNu; i++) {
+    shift=0.25/(1.*NPhi);
+    for (int i=0; i<invNu; i++) {
 //        ws0[i][0]+=shift;
-//        ws0[i][1]+=shift;
-//    }
+//        ws0[i][1]+=shift;//TODO:shift.
+    }
     
     //alternatively, in the CFL case we can access different ground states by moving the ds (to do this uncomment the next line)
    // if(type=="CFL") for(int i=0; i<Ne; i++) ds[i][1]+=gs;
     if (type=="CFL" or type=="doubledCFL") set_ds(ds);//set ds, and reset ws.
     else if (type=="FilledLL") set_zeros(vector<double>{0., 0.});
     else ws=ws0;
+        
+//    cout<<"output com zeros"<<endl;
+//    for (int i=0; i<invNu; i++) {
+//        cout<<ws[i][0]<<" ";
+//    }
+//    cout<<endl;
+//    for (int i=0; i<invNu; i++) {
+//        cout<<ws[i][1]<<" ";
+//    }
+    
     
 	holes_set=false;
     //*********************
@@ -129,10 +137,12 @@ void LATTICE::init(int seed){
 //	sq3=vector<vector<vector<vector<complex<double>>>>>(NPhi, vector<vector<vector<complex<double>>>>(NPhi, vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0))));
     //comment out sq3, otherwise memory exceed easilly for large invNu state.
 }
-void LATTICE::set_lat_scale(int lat){
-    lat_scale=lat;
+void LATTICE::set_lat_scalex(int lat){
+    lat_scalex=lat;
 }
-    
+void LATTICE::set_lat_scaleq(int lat){
+    lat_scaleq=lat;
+}
 double LATTICE::get_in_det_rescaling(int Ne, int invNu){
     double rescaling=1.;
     if (type=="CFL") {
@@ -187,6 +197,10 @@ int LATTICE::simple_update(){
 	int electron;
 	if(type=="doubledCFL") electron=ran.randInt(2*Ne-1);
 	else electron=ran.randInt(Ne-1);
+//    cout<<"electron="<<electron<<endl;
+//    for (int i=0; i<Ne; i++) {
+//        cout<<locs[i][0]<<" "<<locs[i][1]<<endl;
+//    }
 	vector<int> oldloc, newloc=random_move(locs[electron], NPhi, ran);
 	vector< vector<int> >::iterator it=find(locs.begin(),locs.end(),newloc);
 	if(it!=locs.end()) return 0;
@@ -848,8 +862,8 @@ complex<double> LATTICE::get_laughlinwf(vector<vector<double> > z){
         z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
         out*=temp;
     }
-    if (type=="laughlin")
-        out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
+    
+    out*=exp(1./(2.*NPhi)*( conj(w_comp)*zcom_comp - (w_comp)*conj(zcom_comp) ));
     
     return out;
 }
@@ -1005,16 +1019,17 @@ void LATTICE::setup_coulomb(){
 //            cout<<"m,n="<<m<<" "<<n<<" "<<setprecision(12)<<coulomb_table[m][n]<<endl;
 //        }
 //    }
+//    cout<<"coulomb[0][0]="<<coulomb_table[0][0]<<endl;
 }
 double LATTICE::coulomb_energy(){
 	double out=0.5*Ne*coulomb_table[0][0];
-    out=0.;
+//    out=0.;
 	int m,n;
 	for(int i=0;i<Ne;i++){
 		for(int j=0;j<i;j++){
 			m=((locs[i][0]-locs[j][0])%NPhi+NPhi)%NPhi;
 			n=((locs[i][1]-locs[j][1])%NPhi+NPhi)%NPhi;
-//			cout<<m<<" "<<n<<endl;
+//			cout<<m<<" "<<n<<" "<<coulomb_table[m][n]<<endl;
 			out+=coulomb_table[m][n];
 		}
 	}
@@ -1036,7 +1051,7 @@ void LATTICE::setup_coulomb2(){
     LL_ind=2;
     
     //set up Q.
-    vector<double> laguerrelzero = vector<double>{5., 5., 5., 5., 5., 5.};
+    vector<double> laguerrelzero(6, 5.);
     CE_cutoff.resize(laguerrelzero.size());
     for (int i=0; i<laguerrelzero.size(); i++) CE_cutoff[i]=laguerrelzero[i];
     
@@ -1115,7 +1130,7 @@ void LATTICE::setup_coulomb2(){
 }
 double LATTICE::coulomb_energy1(){
     double out=0.5*Ne*coulomb_table[0][0];
-    out=0.;
+//    out=0.;
     int m,n;
     for(int i=0;i<Ne;i++){
         for(int j=0;j<i;j++){
@@ -1129,7 +1144,7 @@ double LATTICE::coulomb_energy1(){
 }
 double LATTICE::coulomb_energy2(){
     double out=0.5*Ne*coulomb_table[0][0];
-    out=0.;
+//    out=0.;
     int m,n;
     for(int i=0;i<Ne;i++){
         for(int j=0;j<i;j++){
@@ -1143,7 +1158,7 @@ double LATTICE::coulomb_energy2(){
 }
 double LATTICE::coulomb_energy3(){
     double out=0.5*Ne*coulomb_table[0][0];
-    out=0.;
+//    out=0.;
     int m,n;
     for(int i=0;i<Ne;i++){
         for(int j=0;j<i;j++){
@@ -1157,7 +1172,7 @@ double LATTICE::coulomb_energy3(){
 }
 double LATTICE::coulomb_energy4(){
     double out=0.5*Ne*coulomb_table[0][0];
-    out=0.;
+//    out=0.;
     int m,n;
     for(int i=0;i<Ne;i++){
         for(int j=0;j<i;j++){
@@ -1171,7 +1186,7 @@ double LATTICE::coulomb_energy4(){
 }
 double LATTICE::coulomb_energy5(){
     double out=0.5*Ne*coulomb_table[0][0];
-    out=0.;
+//    out=0.;
     int m,n;
     for(int i=0;i<Ne;i++){
         for(int j=0;j<i;j++){
@@ -1317,75 +1332,268 @@ void LATTICE::setup_laguerre(int n) {
                     }
 }
 
+vector<vector<complex<double>>> LATTICE::comp_ftable(vector<vector<double>> w) {
+    
+    vector<vector<complex<double>>> output(NPhi, vector<complex<double>>(NPhi, 0.));
+    
+    complex<double> wbar=0.;
+    for (int i=0; i<invNu; i++)
+        wbar+=w[i][0]*L1/(1.*invNu)+w[i][1]*L2/(1.*invNu);
+    
+    cout<<"sumofw="<<wbar<<endl;
+    
+    int round=3;
+    for (int qx=0; qx<NPhi; qx++) {
+        for (int qy=0; qy<NPhi; qy++) {
+            for (int m=-round; m<=round; m++) {
+                for (int n=-round; n<=round; n++) {
+                    
+                    int phy_qx=qx, phy_qy=qy;
+                    if (2*phy_qx>NPhi) phy_qx-=NPhi;
+                    if (2*phy_qy>NPhi) phy_qy-=NPhi;
+                    
+                    int phy_Qx=phy_qx+m*NPhi;
+                    int phy_Qy=phy_qy+n*NPhi;
+                    complex<double> z=phy_Qx/(1.*NPhi)*L1+phy_Qy/(1.*NPhi)*L2;
+                    double x=sqrt(2.)*abs(z);
+                    
+                    complex<double> L=1.*m*L1+1.*n*L2;
+                    complex<double> bc_phase=exp( conj(L)*wbar - L*conj(wbar) );//phase from boundary condition.
+                    
+                    
+                    output[qx][qy]+=exp(-0.25*x*x)*pow(-1., phy_qx*n-phy_qy*m)*pow(-1., NPhi*(m*n+m+n))*bc_phase;
+                    
+//                    output[qx][qy]+=exp(-0.5*x*x);//TODO: seems that this works better. WHY???
+                    
+                }
+            }
+        }
+    }
+    
+    
+//    for (int i=0; i<NPhi; i++) {
+//        for (int j=0; j<NPhi; j++) {
+//            cout<<setw(10)<<abs(output[i][j])<<setw(10)<<" ";
+//        }
+//        cout<<endl;
+//    }
+    
+    return output;
+}
+void LATTICE::test_shift() {
+    double z_bound=sqrt(2.)*abs(0.5*L1+0.5*L2);
+    if (theta>0.5*M_PI)
+        z_bound=sqrt(2.)*abs(0.5*L1-0.5*L2);
+    
+    double bound=exp(-0.25*pow(z_bound,2) );
+    cout<<"bound="<<bound<<endl;
+    
+    for (int a=0; a<2; a++) {
+        vector<vector<double>> wss=ws;
+        for (int i=0; i<invNu; i++)
+            for (int j=0; j<2; j++)
+                wss[i][j]+=0.25*a/NPhi;
+        
+        cout<<"a="<<a<<endl;
+        vector<vector<complex<double>>> FTABLE=comp_ftable(wss);
+        ofstream outFILE("ffactor_zeros/out"+to_string((long int )a));
+  
+        for (int k=0; k<FTABLE.size(); k++)
+            for (int l=0; l<FTABLE.size(); l++)
+                if (abs(FTABLE[k][l])<bound)
+                    outFILE<<k<<" "<<l<<" "<<abs(FTABLE[k][l])<<endl;
+        outFILE.close();
+    }
+    
+}
 void LATTICE::setup_newLagTable(vector<int> PP) {
     //TODO: set up new LagTable.
-    int N=lat_scale*NPhi;
+    int Nx=lat_scalex*NPhi;
+    int Nq=lat_scaleq*NPhi;
     
-    LagTable=vector<vector<vector<double>>>(PP.size(), vector<vector<double>>(N, vector<double>(N, 0.)));
-    qtable_pa = vector<vector<vector<double>>>(PP.size(), vector<vector<double>>(N, vector<double>(N, 0.)));
-    ftable = vector<vector<double>>(N, vector<double>(N, 0.));
-    
+    LagTable=vector<vector<vector<double>>>(PP.size(), vector<vector<double>>(Nx, vector<double>(Nx, 0.)));
+    qtable_pa = vector<vector<vector<double>>>(PP.size(), vector<vector<double>>(Nq, vector<double>(Nq, 0.)));
+    ftable = vector<vector<double>>(Nq, vector<double>(Nq, 0.));
     
     //set up Q.
     PA=PP;
     PA_cutoff.resize(PP.size());
     for (int i=0; i<PP.size(); i++) {
         if (PP[i]<=15)
-            PA_cutoff[i]=4.0;
+            PA_cutoff[i]=5.;
         else
             PA_cutoff[i]=15.;
     }
     
-    int k=5;
-    for (int qx=0; qx<k*N; qx++) {
-        for (int qy=0; qy<k*N; qy++) {
+    int round=5;
+    for (int qx=0; qx<round*Nq; qx++)
+        for (int qy=0; qy<round*Nq; qy++) {
             int Qx=qx, Qy=qy;
-            if (2*Qx> k*N) Qx-=k*N;
-            if (2*Qy> k*N) Qy-=k*N;
+            if (2*Qx> round*Nq) Qx-=round*Nq;
+            if (2*Qy> round*Nq) Qy-=round*Nq;
             
-            complex<double> z = Qx/(1.*N)*L1+Qy/(1.*N)*L2;
+            int index_qx, index_qy;
+            index_qx=supermod(qx,Nq);
+            index_qy=supermod(qy,Nq);//'index_q' is the matrix element index.
+            int phy_qx=index_qx, phy_qy=index_qy;
+            if (2*phy_qx>Nq) phy_qx-=Nq;//'phy_q' is in the first BZ, from -Nq/2 to Nq/2.
+            if (2*phy_qy>Nq) phy_qy-=Nq;
+            
+            
+            complex<double> z = Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
             double x = sqrt(2.)*abs(z);
             
-            for (int i=0; i<PP.size(); i++)
-                qtable_pa[i][supermod(qx,N)][supermod(qy,N)] += laguerre(PP[i],x*x) * exp(-0.5*x*x);// * exp(-0.1*x*x);
+            for (int i=0; i<PP.size(); i++) {
+                qtable_pa[i][index_qx][index_qy] += laguerre(PP[i],x*x) * exp(-0.5*x*x);// * exp(-0.05*x*x);
+            }
             
-            ftable[supermod(qx,N)][supermod(qy,N)] += exp(-0.5*x*x);
+            int m = (Qx-phy_qx)/Nq;
+            int n = (Qy-phy_qy)/Nq;
             
+            ftable[index_qx][index_qy] += exp(-0.5*x*x);
         }
-    }
     
-    for (int i=0; i<PP.size(); i++) {
-        for (int qx=0; qx<N; qx++) {
-            for (int qy=0; qy<N; qy++) {
+    for (int qx=0; qx<Nq; qx++)
+        for (int qy=0; qy<Nq; qy++) {
+            
+            int Qx=qx, Qy=qy;
+            if (2*Qx>Nq) Qx-=Nq;
+            if (2*Qy>Nq) Qy-=Nq;
+            complex<double> z = Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
+            double x = sqrt(2.)*abs(z);
+            
+            for (int i=0; i<PP.size(); i++) {
+//                if (abs(ftable[qx][qy])<pow(10.,-15)) {
+//                    qtable_pa[i][qx][qy]=0.;
+//                }
+//                else {
+//                    qtable_pa[i][qx][qy] /= pow( ftable[qx][qy], 2 );
+//                }
+                
                 qtable_pa[i][qx][qy] /= ftable[qx][qy];
+                
             }
         }
-    }
     
-    for (int m=0; m<N; m++)
-        for (int n=0; n<N; n++)
-            for (int qx=0; qx<N; qx++)
-                for (int qy=0; qy<N; qy++)
+    for (int m=0; m<Nx; m++)
+        for (int n=0; n<Nx; n++)
+            for (int qx=0; qx<Nq; qx++)
+                for (int qy=0; qy<Nq; qy++)
                     for (int i=0; i<PP.size(); i++) {
                         
                         int Qx=qx, Qy=qy;
-                        if (2*Qx>N) Qx-=N;
-                        if (2*Qy>N) Qy-=N;
-                        complex<double> z = Qx/(1.*N)*L1+Qy/(1.*N)*L2;
+                        if (2*Qx>Nq) Qx-=Nq;
+                        if (2*Qy>Nq) Qy-=Nq;
+                        complex<double> z = Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
                         double x = sqrt(2.)*abs(z);
                         
-                        if (x<PA_cutoff[i]) {
-                            LagTable[i][m][n] += qtable_pa[i][qx][qy] * cos( (2.*M_PI)/(1.*NPhi*lat_scale*lat_scale)*(qx*n-qy*m) )*2./NPhi/lat_scale/lat_scale;
-                        }
-                        
+                        if (x<PA_cutoff[i])
+                            LagTable[i][m][n] += qtable_pa[i][qx][qy] * cos( (2.*M_PI)/(1.*Nx)*(Qx*n-Qy*m) )*2./NPhi;
                     }
 }
-
-
-
-
-
+void LATTICE::setup_newnewLagTable(vector<int> PP) {
+    //TODO: set up newnew LagTable.
+    
+    //    test_shift();
+    //    exit(0);
+    
+    int Nx=lat_scalex*NPhi;
+    int Nq=lat_scaleq*NPhi;
+    
+    LagTable=vector<vector<vector<double>>>(PP.size(), vector<vector<double>>(Nx, vector<double>(Nx, 0.)));
+    qtable_pa = vector<vector<vector<double>>>(PP.size(), vector<vector<double>>(Nq, vector<double>(Nq, 0.)));
+    ftable = vector<vector<double>>(Nq, vector<double>(Nq, 0.));
+    
+//    comp_ftable(ws);
+    
+//    ftable=comp_ftable();
+    
+    //set up Q.
+    PA=PP;
+    PA_cutoff.resize(PP.size());
+    for (int i=0; i<PP.size(); i++) {
+        if (PP[i]<=15)
+            PA_cutoff[i]=5.;
+        else
+            PA_cutoff[i]=15.;
+    }
+    
+    int round=5;
+    for (int qx=0; qx<round*Nq; qx++)
+        for (int qy=0; qy<round*Nq; qy++) {
+            int Qx=qx, Qy=qy;
+            if (2*Qx> round*Nq) Qx-=round*Nq;
+            if (2*Qy> round*Nq) Qy-=round*Nq;
+            
+            int index_qx, index_qy;
+            index_qx=supermod(qx,Nq);
+            index_qy=supermod(qy,Nq);//'index_q' is the matrix element index.
+            int phy_qx=index_qx, phy_qy=index_qy;
+            if (2*phy_qx>Nq) phy_qx-=Nq;//'phy_q' is in the first BZ, from -Nq/2 to Nq/2.
+            if (2*phy_qy>Nq) phy_qy-=Nq;
+            
+            
+            complex<double> z = Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
+            double x = sqrt(2.)*abs(z);
+            
+            for (int i=0; i<PP.size(); i++) {
+                qtable_pa[i][index_qx][index_qy] += laguerre(PP[i],x*x) * exp(-0.5*x*x);// * exp(-0.05*x*x);
+                //                qtable_pa[i][supermod(qx,Nq)][supermod(qy,Nq)] += laguerre(PP[i],x*x) * exp(-0.25*x*x) * real( exp( 1.*M_PI/(1.*NPhi)*Qx*Qy*complex<double>(0,1) ) );//TODO:: try new compactification.
+            }
+            
+            int m = (Qx-phy_qx)/Nq;
+            int n = (Qy-phy_qy)/Nq;
+            
+            //            ftable[index_qx][index_qy] += exp(-0.5*x*x);
+            
+            ftable[index_qx][index_qy] += exp(-0.25*x*x)*pow(-1., phy_qx*n-phy_qy*m)*pow(-1., NPhi*(m*n+m+n) );
+            
+            //            ftable[supermod(qx,Nq)][supermod(qy,Nq)] += exp(-0.25*x*x) * real( exp( 1.*M_PI/(1.*NPhi)*Qx*Qy*complex<double>(0,1) ) );
+        }
+    
+    for (int qx=0; qx<Nq; qx++)
+        for (int qy=0; qy<Nq; qy++) {
+            
+            int Qx=qx, Qy=qy;
+            if (2*Qx>Nq) Qx-=Nq;
+            if (2*Qy>Nq) Qy-=Nq;
+            complex<double> z = Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
+            double x = sqrt(2.)*abs(z);
+            
+            for (int i=0; i<PP.size(); i++) {
+                if (abs(ftable[qx][qy])<pow(10.,-15)) {
+                    qtable_pa[i][qx][qy]=0.;
+                }
+                else {
+                    qtable_pa[i][qx][qy] /= pow( ftable[qx][qy], 2 );
+                }
+                
+            }
+        }
+    
+    for (int m=0; m<Nx; m++)
+        for (int n=0; n<Nx; n++)
+            for (int qx=0; qx<Nq; qx++)
+                for (int qy=0; qy<Nq; qy++)
+                    for (int i=0; i<PP.size(); i++) {
+                        
+                        int Qx=qx, Qy=qy;
+                        if (2*Qx>Nq) Qx-=Nq;
+                        if (2*Qy>Nq) Qy-=Nq;
+                        complex<double> z = Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
+                        double x = sqrt(2.)*abs(z);
+                        
+                        if (x<PA_cutoff[i])
+                            LagTable[i][m][n] += qtable_pa[i][qx][qy] * cos( (2.*M_PI)/(1.*Nx)*(Qx*n-Qy*m) )*2./NPhi;
+                    }
+}
 void LATTICE::setup_compac_lagtable(int n) {
+    if (lat_scalex!=lat_scaleq) {
+        cout<<"lat_scalex!=lat_scaleq, doesnot work here."<<endl;
+        exit(0);
+    }
+    int lat_scale=lat_scalex;
+    
     //TODO::FIgure out why this does not agree with ED.
     int N=lat_scale*NPhi;
     int Nq=(int)(NPhi/2*lat_scale);
@@ -1491,6 +1699,12 @@ void LATTICE::setup_compac_lagtable(int n) {
     
 }
 void LATTICE::setup_compac_lagtable(int n, double Q) {
+    if (lat_scalex!=lat_scaleq) {
+        cout<<"lat_scalex!=lat_scaleq, doesnot work here."<<endl;
+        exit(0);
+    }
+    int lat_scale=lat_scalex;
+    
     int N=lat_scale*NPhi;
     int Nq=(int)(NPhi/2*lat_scale);
     compac_lagtable=vector<vector<double>> (N, vector<double>(N,0.));
@@ -1546,6 +1760,12 @@ void LATTICE::setup_compac_lagtable(int n, double Q) {
                 }
 }
 void LATTICE::setup_compac_lagtable(int n, double Q, double a) {
+    if (lat_scalex!=lat_scaleq) {
+        cout<<"lat_scalex!=lat_scaleq, doesnot work here."<<endl;
+        exit(0);
+    }
+    int lat_scale=lat_scalex;
+    
     int N=lat_scale*NPhi;
     int Nq=(int)(NPhi/2*lat_scale);
     compac_lagtable=vector<vector<double>> (N, vector<double>(N, 0.));
@@ -1602,6 +1822,11 @@ void LATTICE::setup_compac_lagtable(int n, double Q, double a) {
 }
 void LATTICE::setup_laguerre2(int n) {
     //I make the real space lattice lat_scale times densier. the recipicle lattice are lat_scale times larger.
+    if (lat_scalex!=lat_scaleq) {
+        cout<<"lat_scalex!=lat_scaleq, doesnot work here."<<endl;
+        exit(0);
+    }
+    int lat_scale=lat_scalex;
     int N=lat_scale*NPhi;
     int Nq=(int)(NPhi/2*lat_scale);
     
@@ -1622,6 +1847,12 @@ void LATTICE::setup_laguerre2(int n) {
                 }
 }
 void LATTICE::setup_laguerre2(vector<int> PP) {
+    if (lat_scalex!=lat_scaleq) {
+        cout<<"lat_scalex!=lat_scaleq, doesnot work here."<<endl;
+        exit(0);
+    }
+    int lat_scale=lat_scalex;
+    
     //I make the real space lattice lat_scale times densier. the recipicle lattice are lat_scale times larger.
     int N=lat_scale*NPhi;
     int Nq=(int)(NPhi/2*lat_scale);
@@ -1680,6 +1911,12 @@ void LATTICE::setup_LagTable(vector<int> PP, vector<double> QQ) {
 }
 
 void LATTICE::print_laguerreltable() {
+    if (lat_scalex!=lat_scaleq) {
+        cout<<"lat_scalex!=lat_scaleq, doesnot work here."<<endl;
+        exit(0);
+    }
+    int lat_scale=lat_scalex;
+    
     ofstream outfile("laguerreltable");
     int N=lat_scale*NPhi;
     for (int i=0; i<N; i++) {
@@ -1690,6 +1927,12 @@ void LATTICE::print_laguerreltable() {
     outfile.close();
 }
 void LATTICE::print_laguerreltableBZ() {
+    if (lat_scalex!=lat_scaleq) {
+        cout<<"lat_scalex!=lat_scaleq, doesnot work here."<<endl;
+        exit(0);
+    }
+    int lat_scale=lat_scalex;
+    
     ofstream outfile("laguerreltableBZ");
     int N=lat_scale*NPhi;
     for (int i=0; i<N; i++) {
@@ -2187,6 +2430,12 @@ complex<double> LATTICE::FilledLL(vector<vector<int>> z){
     return detSolver.determinant();
 }
 void LATTICE::setup_landautable(){
+    if (lat_scalex!=lat_scaleq) {
+        cout<<"lat_scalex!=lat_scaleq, doesnot work here."<<endl;
+        exit(0);
+    }
+    int lat_scale=lat_scalex;
+    
     int N=NPhi*lat_scale;
     landautable=vector<vector<vector<complex<double>>>>(NPhi, vector<vector<complex<double>>>(N, vector<complex<double>>(N, 1.)));
     //landautable[m][x][y], m landau state, (x, y) lattice point.
@@ -2374,7 +2623,7 @@ double LATTICE::pairamplitude(int n) {
     return ret;
 }
 double LATTICE::shortrange_coulomb() {
-    double value=0;
+    double value=0.;
     
     vector<vector<double>> ffactor(NPhi, vector<double>(NPhi,0.));
     int k2=3;
@@ -2387,7 +2636,7 @@ double LATTICE::shortrange_coulomb() {
             complex<double> z=Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
             double x=sqrt(2.)*abs(z);
             
-            ffactor[qx%NPhi][qy%NPhi]+=exp(-x*x/2.);
+            ffactor[qx%NPhi][qy%NPhi]+=exp(-0.5*x*x);
         }
     }
     
