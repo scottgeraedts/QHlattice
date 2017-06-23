@@ -1051,7 +1051,7 @@ void LATTICE::setup_coulomb2(){
     LL_ind=2;
     
     //set up Q.
-    vector<double> laguerrelzero(6, 5.);
+    vector<double> laguerrelzero(6, 4.5);
     CE_cutoff.resize(laguerrelzero.size());
     for (int i=0; i<laguerrelzero.size(); i++) CE_cutoff[i]=laguerrelzero[i];
     
@@ -1076,7 +1076,8 @@ void LATTICE::setup_coulomb2(){
                         cout<<"cannot calculate LL_ind>5 Coulomb energy."<<endl;
                         exit(0);
                     }
-                    else if (x<CE_cutoff[LL_ind]) coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
+                    else if (x<CE_cutoff[LL_ind])
+                        coulomb_table2[i][j]+=1./x*pow(laguerre(LL_ind,0.5*x*x),2)*cos( (2.*M_PI)/(1.*NPhi)*(qm*j-qn*i) )/(1.*NPhi);
                     
                 }
             }
@@ -1118,9 +1119,15 @@ void LATTICE::setup_coulomb2(){
                     complex<double> z=qm/(1.*NPhi)*L1+qn/(1.*NPhi)*L2;
                     double x=sqrt(2.)*abs(z);
                     
-                    coulomb_table3[i][j]+=vq[m][n]/f0[m][n]            *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
-                    coulomb_table4[i][j]+=vq[m][n]/f00[m][n]/f00[m][n] *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
-                    coulomb_table5[i][j]+=vq[m][n]/exp(-0.5*x*x)       *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
+                    if (LL_ind>5) {
+                        cout<<"cannot calculate LL_ind>5 Coulomb energy."<<endl;
+                        exit(0);
+                    }
+                    else if (x<CE_cutoff[LL_ind]) {
+                        coulomb_table3[i][j]+=vq[m][n]/f0[m][n]            *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
+                        coulomb_table4[i][j]+=vq[m][n]/f00[m][n]/f00[m][n] *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
+                        coulomb_table5[i][j]+=vq[m][n]/exp(-0.5*x*x)       *cos( (2.*M_PI)/(1.*NPhi)*(m*j-n*i) )/(1.*NPhi);
+                    }
                     
                 }
             }
@@ -1396,7 +1403,7 @@ void LATTICE::test_shift() {
         
         cout<<"a="<<a<<endl;
         vector<vector<complex<double>>> FTABLE=comp_ftable(wss);
-        ofstream outFILE("ffactor_zeros/out"+to_string((long int )a));
+        ofstream outFILE("ffactor_zeros/out"+to_string((long long int )a));
   
         for (int k=0; k<FTABLE.size(); k++)
             for (int l=0; l<FTABLE.size(); l++)

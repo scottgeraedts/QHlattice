@@ -320,7 +320,6 @@ void parallel_ce_pa(int ncore, vector<int> PP, string filename){
     
     double theta=theta_t*M_PI, alpha=alpha_t;
     
-    
     vector<LATTICE> ll(ncore);
     for (int i=0; i<ncore; i++) {
         seed=i;
@@ -417,11 +416,11 @@ void parallel_ce_pa(int ncore, vector<int> PP, string filename){
     outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     
     outfile<<"high Landau Level, coulomb3"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[3]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[3]/(1.*nMeas)-pow(Etotal[3]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    //    outfile<<"high Landau Level, coulomb4"<<endl;
-    //    outfile<<"E="<<setprecision(10)<<Etotal[4]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[4]/(1.*nMeas)-pow(Etotal[4]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    //    outfile<<"high Landau Level, coulomb5"<<endl;
-    //    outfile<<"E="<<setprecision(10)<<Etotal[5]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[5]/(1.*nMeas)-pow(Etotal[5]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[3]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[3]/(1.*nMeas)-pow(Etotal[3]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+//    outfile<<"high Landau Level, coulomb4"<<endl;
+//    outfile<<"E="<<setprecision(10)<<Etotal[4]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[4]/(1.*nMeas)-pow(Etotal[4]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+//    outfile<<"high Landau Level, coulomb5"<<endl;
+//    outfile<<"E="<<setprecision(10)<<Etotal[5]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[5]/(1.*nMeas)-pow(Etotal[5]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     
     outfile<<endl;
     outfile<<"LL_ind="<<ll[0].LL_ind<<endl;
