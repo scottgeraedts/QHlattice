@@ -1051,7 +1051,7 @@ void LATTICE::setup_coulomb2(){
     LL_ind=2;
     
     //set up Q.
-    vector<double> laguerrelzero(6, 4.5);
+    vector<double> laguerrelzero(6, 5.);
     CE_cutoff.resize(laguerrelzero.size());
     for (int i=0; i<laguerrelzero.size(); i++) CE_cutoff[i]=laguerrelzero[i];
     
@@ -2632,13 +2632,13 @@ double LATTICE::pairamplitude(int n) {
 double LATTICE::shortrange_coulomb() {
     double value=0.;
     
-    vector<vector<double>> ffactor(NPhi, vector<double>(NPhi,0.));
+    vector<vector<double>> ffactor(NPhi, vector<double>(NPhi, 0.));
     int k2=3;
     for (int qx=0; qx<k2*NPhi; qx++) {
         for (int qy=0; qy<k2*NPhi; qy++) {
             int Qx=qx, Qy=qy;
-            if (2*Qx<k2*NPhi) Qx-=k2*NPhi;
-            if (2*Qy<k2*NPhi) Qy-=k2*NPhi;
+            if (2*Qx>k2*NPhi) Qx-=k2*NPhi;
+            if (2*Qy>k2*NPhi) Qy-=k2*NPhi;
             
             complex<double> z=Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
             double x=sqrt(2.)*abs(z);
@@ -2646,6 +2646,14 @@ double LATTICE::shortrange_coulomb() {
             ffactor[qx%NPhi][qy%NPhi]+=exp(-0.5*x*x);
         }
     }
+    
+//    cout<<"%%%%% output ffactor table %%%%%"<<endl;
+//    for (int i=0; i<NPhi; i++) {
+//        for (int j=0; j<NPhi; j++) {
+//            cout<<ffactor[i][j]<<" ";
+//        }
+//        cout<<endl;
+//    }
     
     int k=1;
     for (int qx=0; qx<k*NPhi; qx++)
@@ -2661,9 +2669,13 @@ double LATTICE::shortrange_coulomb() {
             if (x>=CE_cutoff[LL_ind]) {
                 double temp = pow(laguerre(LL_ind, x*x/2.),2)*ffactor[qx][qy]/x;
                 value+=temp/(-2.*invNu*invNu);
+                
+//                cout<<"qx=,qy="<<qx<<" "<<qy<<endl;
+//                cout<<"x="<<x<<" value="<<value<<" ffactor="<<ffactor[qx][qy]<<endl;
             }
             
         }
+//    cout<<"shortrangecoulomb="<<value<<endl;
     return value;
 }
 double LATTICE::shortrange_pairamplitude(int n) {
