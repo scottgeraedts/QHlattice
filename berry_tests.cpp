@@ -133,6 +133,8 @@ void single_run(string filename, bool trace){
 //    }
     
     LATTICE ll(Ne, invNu, testing, type, seed, gs, theta, alpha, trace);
+    ll.setup_coulomb();
+    ll.setup_coulombHLL();
 //    ll.set_ds(old_ds);
 //    ll.print_ds();
     
@@ -154,7 +156,8 @@ void single_run(string filename, bool trace){
         
         for(int i=0;i<nMeas;i++){
             ll.step(nSteps);
-            e=ll.coulomb_energy();ee=ll.coulomb_energy2();
+            e=ll.coulomb_energy();
+            ee=ll.coulomb_energyHLL();
             E+=e;EE+=ee;
             E2+=e*e;EE2+=ee*ee;
             p=ll.running_weight;
@@ -195,110 +198,110 @@ void single_run(string filename, bool trace){
     eout.close();
     outfile.close();
 }
-void parallel_energy(int ncore, string filename){
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-    bool testing;
-    double theta_t, alpha_t;
-    string type;
-    
-    ifstream infile(filename);
-    infile>>Ne>>invNu>>theta_t>>alpha_t;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    //initialize MC object
-    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<" nBins="<<nBins<<" ncore="<<ncore<<endl;
-    
-    int gs=0;
-    int NPhi=Ne*invNu;
-    if (type=="laughlin-hole") NPhi++;
-    
-    double theta=theta_t*M_PI, alpha=alpha_t;
-    
-    
-    vector<LATTICE> ll(ncore);
-    for (int i=0; i<ncore; i++) {
-        seed=i;
-        ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, false);
-    }
-    
-    int Coul_type=6;
-    vector<vector<double>> E(Coul_type, vector<double>(nBins,0.)), EE(Coul_type, vector<double>(nBins,0.));
-    
-    omp_set_num_threads(ncore);
-#pragma omp parallel for
-    for(int s=0;s<nBins;s++){
-        int coren=omp_get_thread_num();
-        ll[coren].reset();
-        ll[coren].step(nWarmup);
-
-        for(int i=0;i<nMeas;i++){
-            ll[coren].step(nSteps);
-            double e;
-            
-            e=ll[coren].coulomb_energy();
-            E[0][s]+=e;
-            EE[0][s]+=e*e;
-            
-            e=ll[coren].coulomb_energy1();
-            E[1][s]+=e;
-            EE[1][s]+=e*e;
-            
-            e=ll[coren].coulomb_energy2();
-            E[2][s]+=e;
-            EE[2][s]+=e*e;
-            
-            e=ll[coren].coulomb_energy3();
-            E[3][s]+=e;
-            EE[3][s]+=e*e;
-            
-            e=ll[coren].coulomb_energy4();
-            E[4][s]+=e;
-            EE[4][s]+=e*e;
-            
-            e=ll[coren].coulomb_energy5();
-            E[5][s]+=e;
-            EE[5][s]+=e*e;
-            
-        }
-    }
-    
-    vector<double> Etotal(Coul_type,0.), EEtotal(Coul_type,0.);
-    
-    for (int s=0; s<nBins; s++) {
-        for (int i=0; i<Coul_type; i++) {
-            Etotal[i]+=E[i][s];
-            EEtotal[i]+=EE[i][s];
-        }
-    }
-    
-    //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
-    ofstream outfile("out_"+filename);
-    outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
-    nMeas*=nBins;
-    outfile<<"n=0 Landau Level, coulomb"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[0]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[0]/(1.*nMeas)-pow(Etotal[0]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    outfile<<"n=0 Landau Level, coulomb1"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[1]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[1]/(1.*nMeas)-pow(Etotal[1]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    
-    outfile<<endl;
-    outfile<<"high Landau Level, coulomb2"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    
-    outfile<<"high Landau Level, coulomb3"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[3]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[3]/(1.*nMeas)-pow(Etotal[3]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    outfile<<"high Landau Level, coulomb4"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[4]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[4]/(1.*nMeas)-pow(Etotal[4]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    outfile<<"high Landau Level, coulomb5"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[5]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[5]/(1.*nMeas)-pow(Etotal[5]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    
-    outfile<<endl;
-    outfile<<"LL_ind="<<ll[0].LL_ind<<endl;
-    outfile<<"cutoff="<<ll[0].CE_cutoff[ll[0].LL_ind]<<endl;
-    outfile<<"truncated energy="<<ll[0].shortrange_coulomb()<<endl;
-
-}
+//void parallel_energy(int ncore, string filename){
+//    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+//    bool testing;
+//    double theta_t, alpha_t;
+//    string type;
+//    
+//    ifstream infile(filename);
+//    infile>>Ne>>invNu>>theta_t>>alpha_t;
+//    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+//    infile>>seed;
+//    infile>>testing;
+//    infile>>type;
+//    //initialize MC object
+//    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<" nBins="<<nBins<<" ncore="<<ncore<<endl;
+//    
+//    int gs=0;
+//    int NPhi=Ne*invNu;
+//    if (type=="laughlin-hole") NPhi++;
+//    
+//    double theta=theta_t*M_PI, alpha=alpha_t;
+//    
+//    
+//    vector<LATTICE> ll(ncore);
+//    for (int i=0; i<ncore; i++) {
+//        seed=i;
+//        ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, false);
+//    }
+//    
+//    int Coul_type=6;
+//    vector<vector<double>> E(Coul_type, vector<double>(nBins,0.)), EE(Coul_type, vector<double>(nBins,0.));
+//    
+//    omp_set_num_threads(ncore);
+//#pragma omp parallel for
+//    for(int s=0;s<nBins;s++){
+//        int coren=omp_get_thread_num();
+//        ll[coren].reset();
+//        ll[coren].step(nWarmup);
+//
+//        for(int i=0;i<nMeas;i++){
+//            ll[coren].step(nSteps);
+//            double e;
+//            
+//            e=ll[coren].coulomb_energy();
+//            E[0][s]+=e;
+//            EE[0][s]+=e*e;
+//            
+//            e=ll[coren].coulomb_energy1();
+//            E[1][s]+=e;
+//            EE[1][s]+=e*e;
+//            
+//            e=ll[coren].coulomb_energy2();
+//            E[2][s]+=e;
+//            EE[2][s]+=e*e;
+//            
+//            e=ll[coren].coulomb_energy3();
+//            E[3][s]+=e;
+//            EE[3][s]+=e*e;
+//            
+//            e=ll[coren].coulomb_energy4();
+//            E[4][s]+=e;
+//            EE[4][s]+=e*e;
+//            
+//            e=ll[coren].coulomb_energy5();
+//            E[5][s]+=e;
+//            EE[5][s]+=e*e;
+//            
+//        }
+//    }
+//    
+//    vector<double> Etotal(Coul_type,0.), EEtotal(Coul_type,0.);
+//    
+//    for (int s=0; s<nBins; s++) {
+//        for (int i=0; i<Coul_type; i++) {
+//            Etotal[i]+=E[i][s];
+//            EEtotal[i]+=EE[i][s];
+//        }
+//    }
+//    
+//    //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
+//    ofstream outfile("out_"+filename);
+//    outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
+//    nMeas*=nBins;
+//    outfile<<"n=0 Landau Level, coulomb"<<endl;
+//    outfile<<"E="<<setprecision(10)<<Etotal[0]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[0]/(1.*nMeas)-pow(Etotal[0]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+//    outfile<<"n=0 Landau Level, coulomb1"<<endl;
+//    outfile<<"E="<<setprecision(10)<<Etotal[1]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[1]/(1.*nMeas)-pow(Etotal[1]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+//    
+//    outfile<<endl;
+//    outfile<<"high Landau Level, coulomb2"<<endl;
+//    outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+//    
+//    outfile<<"high Landau Level, coulomb3"<<endl;
+//    outfile<<"E="<<setprecision(10)<<Etotal[3]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[3]/(1.*nMeas)-pow(Etotal[3]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+//    outfile<<"high Landau Level, coulomb4"<<endl;
+//    outfile<<"E="<<setprecision(10)<<Etotal[4]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[4]/(1.*nMeas)-pow(Etotal[4]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+//    outfile<<"high Landau Level, coulomb5"<<endl;
+//    outfile<<"E="<<setprecision(10)<<Etotal[5]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[5]/(1.*nMeas)-pow(Etotal[5]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+//    
+//    outfile<<endl;
+//    outfile<<"LL_ind="<<ll[0].LL_ind<<endl;
+//    outfile<<"cutoff="<<ll[0].CE_cutoff[ll[0].LL_ind]<<endl;
+//    outfile<<"truncated energy="<<ll[0].shortrange_coulomb()<<endl;
+//
+//}
 void parallel_ce_pa(int ncore, vector<int> PP, double shift, string filename){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
@@ -328,12 +331,10 @@ void parallel_ce_pa(int ncore, vector<int> PP, double shift, string filename){
         ll[i].set_lat_scalex(1);//force lattice sum on Nphi*Nphi lattice.
         ll[i].set_lat_scaleq(1);//force lattice sum on Nphi*Nphi lattice.
         ll[i].shift_ws(shift);
-//        ll[i].setup_coulomb();
-//        ll[i].setup_coulomb2();
         ll[i].setup_newLagTable(PP);
     }
     
-    int Coul_type=6;
+    int Coul_type=2;
     vector<vector<double>> E(Coul_type, vector<double>(nBins,0.)), EE(Coul_type, vector<double>(nBins,0.));
     
     int PA_type=PP.size();
@@ -357,25 +358,9 @@ void parallel_ce_pa(int ncore, vector<int> PP, double shift, string filename){
             EE[0][s]+=e*e;
 //            cout<<"e="<<e<<endl;
             
-            e=ll[coren].coulomb_energy1();
+            e=ll[coren].coulomb_energyHLL();
             E[1][s]+=e;
             EE[1][s]+=e*e;
-            
-            e=ll[coren].coulomb_energy2();
-            E[2][s]+=e;
-            EE[2][s]+=e*e;
-            
-            e=ll[coren].coulomb_energy3();
-            E[3][s]+=e;
-            EE[3][s]+=e*e;
-            
-            e=ll[coren].coulomb_energy4();
-            E[4][s]+=e;
-            EE[4][s]+=e*e;
-            
-            e=ll[coren].coulomb_energy5();
-            E[5][s]+=e;
-            EE[5][s]+=e*e;
             
             //Pair Amplitude
             for (int p=0; p<PA_type; p++) {
@@ -411,24 +396,14 @@ void parallel_ce_pa(int ncore, vector<int> PP, double shift, string filename){
     nMeas*=nBins;
     outfile<<"n=0 Landau Level, coulomb"<<endl;
     outfile<<"E="<<setprecision(10)<<Etotal[0]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[0]/(1.*nMeas)-pow(Etotal[0]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    outfile<<"n=0 Landau Level, coulomb1"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[1]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[1]/(1.*nMeas)-pow(Etotal[1]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     
-    outfile<<endl;
-    outfile<<"high Landau Level, coulomb2"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    
-    outfile<<"high Landau Level, coulomb3"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[3]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[3]/(1.*nMeas)-pow(Etotal[3]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-//    outfile<<"high Landau Level, coulomb4"<<endl;
-//    outfile<<"E="<<setprecision(10)<<Etotal[4]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[4]/(1.*nMeas)-pow(Etotal[4]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-//    outfile<<"high Landau Level, coulomb5"<<endl;
-//    outfile<<"E="<<setprecision(10)<<Etotal[5]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[5]/(1.*nMeas)-pow(Etotal[5]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
+    outfile<<"high Landau Level, coulombHLL"<<endl;
+    outfile<<"E="<<setprecision(10)<<Etotal[1]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[1]/(1.*nMeas)-pow(Etotal[1]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     
     outfile<<endl;
     outfile<<"LL_ind="<<ll[0].LL_ind<<endl;
     outfile<<"cutoff="<<ll[0].CE_cutoff[ll[0].LL_ind]<<endl;
-    outfile<<"truncated energy="<<ll[0].shortrange_coulomb()<<endl;
+    outfile<<"truncated energy="<<ll[0].shortrange_coulomb()/(1.*Ne)<<endl;
     outfile.close();
     
     for (int p=0; p<PA_type; p++) {

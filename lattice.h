@@ -100,6 +100,7 @@ public:
     vector<vector<double>> ftable;//compactified form factor.
     
     vector<vector<complex<double>>> Ftable;
+    vector<vector<double>> Coulombq;
 //    void print_Ftable();
     
     vector<vector<vector<complex<double>>>> landautable;
@@ -118,7 +119,6 @@ public:
     void setup_newcompac_lagtable(int n, double Q);
     void setup_LagTable(vector<int>);
     void setup_LagTable(vector<int>, vector<double>);
-    void test_coulomb();
     
     //TODO::old functions;
     void setup_laguerre_lat();
@@ -145,11 +145,7 @@ public:
 
 	//measurement related functions
 	double coulomb_energy();
-    double coulomb_energy1();
-    double coulomb_energy2();
-    double coulomb_energy3();
-    double coulomb_energy4();
-    double coulomb_energy5();
+    double coulomb_energyHLL();
     
 	double threebody();
 	
@@ -188,10 +184,12 @@ public:
     vector<double> PA_cutoff;//cutoff for pair-amplitude BZ.
     
     //high LL Coulomb energy things.
+    void setup_coulomb();
+    void setup_coulombHLL();
     double shortrange_coulomb();
     int LL_ind;
     vector<double> CE_cutoff;//cutoff for Coulomb energy BZ.
-    
+
     //compactification.
     vector<vector<complex<double>>> comp_ftable(vector<vector<double>> ws);
     void test_shift();
@@ -201,8 +199,6 @@ private:
     double get_in_det_rescaling(int Ne, int invNu);
     double shift;
 	void sum_locs(int []);
-	void setup_coulomb();
-    void setup_coulomb2();
     
 	int simple_update();// returns '1' if updated, '0' if not updated.
 	complex<double> modded_lattice_z(int x, int y);
@@ -220,7 +216,7 @@ private:
     int gs;
     double theta, alpha;
     vector <double> pair_amp;
-	vector <vector <double> > coulomb_table, coulomb_table1, coulomb_table2, coulomb_table3, coulomb_table4, coulomb_table5, sq2, sq2_mqy;
+	vector <vector <double> > coulomb_table, coulomb_tableHLL, sq2, sq2_mqy;
 	vector <vector <complex<double> > > sq, sq_mqy;//'minus qy', qy<=0.
 	vector <vector <vector <vector< complex<double> > > > > sq3;
     vector <vector <double> > SMAq;
