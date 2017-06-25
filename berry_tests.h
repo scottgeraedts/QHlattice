@@ -65,7 +65,7 @@ void GetCoefficient(vector<int> input);
 
 //pairamplitude (testings)
 inline double Laguerrel(int N, double x);
-complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu);//this gives 'ED interaction matrix' for square torus.
+complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu, string type="pa");//this gives 'ED interaction matrix' for square torus.
 complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type);//this gives 'sigma function lattice sum interaction matrix'.
 void testlatticepp(double shift=0.);//This function tested that the matrix element V1234 got from 'sigma function lattice sum' is correct.
 

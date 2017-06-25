@@ -13,8 +13,8 @@ int main(){
     void test_exact();
     void testonebody();
     
-    Ed_Coulomb();
-//    test_exact();
+//    Ed_Coulomb();
+    test_exact();
 //    testonebody();
     
 }

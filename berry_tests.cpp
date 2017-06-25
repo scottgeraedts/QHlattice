@@ -2915,16 +2915,31 @@ inline double Laguerrel(int N, double x){
     }
     return v[N];
 }
-complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu){
+complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu, string type){
     double L=sqrt(2.0*M_PI*No), gamma=(2*M_PI/L)*(2*M_PI/L);
     complex<double> k=0.;
-    for (int q1=-No*5; q1<No*5; q1++)
-        for (int q2=-No*5; q2<No*5; q2++)
-            if ((q2-(m1-m4))%No==0)
-                for (int l=0; l<vpseu.size(); l++) {
-                    if (vpseu[l]==0) continue;
-                    else k+=vpseu[l]/No*exp(-2.0*M_PI*M_PI*(pow(q1,2)+pow(q2,2))/L/L)*exp(2.0*M_PI*q1*(m1-m3)/No*complex<double>(0,1))*Laguerrel(l,(q1*q1+q2*q2)*(4*M_PI*M_PI)/L/L);
-                }
+    
+    if (type=="pa") {
+        for (int q1=-No*5; q1<No*5; q1++)
+            for (int q2=-No*5; q2<No*5; q2++)
+                if ((q2-(m1-m4))%No==0)
+                    for (int l=0; l<vpseu.size(); l++) {
+                        if (vpseu[l]==0) continue;
+                        else k+=vpseu[l]/No*exp(-2.0*M_PI*M_PI*(pow(q1,2)+pow(q2,2))/L/L)*exp(2.0*M_PI*q1*(m1-m3)/No*complex<double>(0,1))*Laguerrel(l,(q1*q1+q2*q2)*(4*M_PI*M_PI)/L/L);
+                    }
+    }
+    else if (type=="ce") {
+        for (int q1=-No*5; q1<No*5; q1++)
+            for (int q2=-No*5; q2<No*5; q2++)
+                if ((q2-(m1-m4))%No==0)
+                    for (int l=0; l<vpseu.size(); l++) {
+                        if (vpseu[l]==0) continue;
+                        else if (q1==0 && q2==0) continue;
+                        else k+=vpseu[l]/No*exp(-2.0*M_PI*M_PI*(pow(q1,2)+pow(q2,2))/L/L)*exp(2.0*M_PI*q1*(m1-m3)/No*complex<double>(0,1))*pow(Laguerrel(l,0.5*(q1*q1+q2*q2)*(4*M_PI*M_PI)/L/L),2)/sqrt((q1*q1+q2*q2)*(4*M_PI*M_PI)/L/L);
+                    }
+    }
+    
+    
     return k;
 }
 complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type) {
@@ -2980,6 +2995,7 @@ void testlatticepp(double shift){
     ifstream inf("para");
     int Nphi, m1, m2, m3, m4, m5, m6, m7, m8, Kx, Ky, round, lat_scale;
     double Kq;
+    string int_type;
     complex<double> tmp=0.;
     
     inf>>Nphi;
@@ -2987,6 +3003,7 @@ void testlatticepp(double shift){
     inf>>Kx>>Ky>>Kq;
     inf>>round;
     inf>>lat_scale;
+    inf>>int_type;
     
     LATTICE ll(Nphi, 1, 0, "laughlin", 1, 0, 0.5*M_PI, 1.);
     ll.set_lat_scalex(lat_scale);
@@ -2999,7 +3016,7 @@ void testlatticepp(double shift){
     for (int i=0; i<round; i++) {
         vector<double> vp=vector<double>(i,0.); vp.push_back(1.);
         if (i==0) {
-            tmp=interaction(m1, m3, m4, Nphi, vp);
+            tmp=interaction(m1, m3, m4, Nphi, vp, int_type);
             exactret.push_back(1.);
         }
         else exactret.push_back(real(interaction(m1, m3, m4, Nphi, vp)/tmp));
@@ -3025,7 +3042,7 @@ void testlatticepp(double shift){
     }
     //new-compactified
     for (int i=0; i<round; i++) {
-        ll.setup_newcompac_lagtable(i,-1.);
+        ll.setup_newcompac_lagtable(i,-1.,int_type);
         if (i==0) {
             tmp=latticepp(ll, m1, m2, m3, m4, "newCOMP");
             latsumnewcom.push_back(1.);
@@ -3038,9 +3055,11 @@ void testlatticepp(double shift){
     cout<<"m1,m2,m3,m4="<<m1<<" "<<m2<<" "<<m3<<" "<<m4<<endl;
     cout<<"lat_scale="<<lat_scale<<endl;
     cout<<"output V_{m1m2,m3m4} with m1="<<m1<<" m2="<<m2<<" m3="<<m3<<" m4="<<m4<<endl;
-    cout<<setw(30)<<" "<<"VED"<<setw(30)<<"VBZ/VED-1"<<setw(30)<<"VC/VED-1"<<setw(30)<<"nVC/VED-1"<<endl;
+//    cout<<setw(30)<<" "<<"VED"<<setw(30)<<"VBZ/VED-1"<<setw(30)<<"VC/VED-1"<<setw(30)<<"nVC/VED-1"<<endl;
+    cout<<setw(30)<<" "<<"VED"<<setw(30)<<"nVC/VED-1"<<endl;
     for (int i=0; i<round; i++) {
-        cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsum[i]/exactret[i]-1<<setw(30)<<latsumcom[i]/exactret[i]-1<<setw(30)<<latsumnewcom[i]/exactret[i]-1<<endl;
+//        cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsum[i]/exactret[i]-1<<setw(30)<<latsumcom[i]/exactret[i]-1<<setw(30)<<latsumnewcom[i]/exactret[i]-1<<endl;
+        cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsumnewcom[i]/exactret[i]-1<<endl;
     }
 }
 
@@ -3791,7 +3810,7 @@ void onebody(int m1, int m2, int NPhi, double shift, int lat_scale){
     m1=supermod(m1,NPhi);
     m2=supermod(m2,NPhi);
     
-    ll.setup_newcompac_lagtable(-1,-1.);
+    ll.setup_newcompac_lagtable(-1,-1.,"pa");
     
     complex<double> output=0., normalization=0.;
     for (int x=0; x<lat_scale*NPhi; x++) {

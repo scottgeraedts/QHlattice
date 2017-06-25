@@ -1482,7 +1482,7 @@ void LATTICE::setup_newnewLagTable(vector<int> PP) {
                             LagTable[i][m][n] += qtable_pa[i][qx][qy] * cos( (2.*M_PI)/(1.*Nx)*(Qx*n-Qy*m) )*2./NPhi;
                     }
 }
-void LATTICE::setup_newcompac_lagtable(int n, double Q) {
+void LATTICE::setup_newcompac_lagtable(int n, double Q, string type) {
     if (lat_scalex!=lat_scaleq) {
         cout<<"lat_scalex!=lat_scaleq, doesnot work here."<<endl;
         exit(0);
@@ -1493,8 +1493,7 @@ void LATTICE::setup_newcompac_lagtable(int n, double Q) {
     newcompac_lagtable=vector<vector<double>> (N, vector<double>(N, 0.));
     
     vector<vector<double>> qtable = vector<vector<double>>(N, vector<double>(N, 0.));
-    vector<vector<complex<double>>> factor1 = vector<vector<complex<double>>>(N, vector<complex<double>>(N, 0.));
-    vector<vector<complex<double>>> factor2 = vector<vector<complex<double>>>(N, vector<complex<double>>(N, 0.));
+    vector<vector<complex<double>>> factor = vector<vector<complex<double>>>(N, vector<complex<double>>(N, 0.));
     
     //boundary conditions.
     complex<double> ph1, ph2;
@@ -1520,12 +1519,24 @@ void LATTICE::setup_newcompac_lagtable(int n, double Q) {
             int ind_m = (Qx-phy_qx)/N;
             int ind_n = (Qy-phy_qy)/N;
 
-            factor1[qx%N][qy%N]+=exp(-0.25*q2)*pow(-1., phy_qx*ind_n-phy_qy*ind_m)*pow(-1., NPhi*(ind_m*ind_n+ind_m+ind_n) ) * pow(ph1, ind_m)*pow(ph2, ind_n);
+            double sign = pow(-1., phy_qx*ind_n-phy_qy*ind_m)*pow(-1., NPhi*(ind_m*ind_n+ind_m+ind_n) );
+            factor[qx%N][qy%N]+= sign * exp(-0.25*q2) * pow(ph1, ind_m) * pow(ph2, ind_n);
             
-            factor2[qx%N][qy%N]+=exp(-0.5*q2);
+            if (type=="pa") {
+                qtable[qx%N][qy%N]+=laguerre(n, q2)*exp(-0.5*q2)/(1.*NPhi);
+            }
+            if (type=="ce") {
+                if (Qx==0 && Qy==0)
+                    continue;
+                else
+                    qtable[qx%N][qy%N]+=1./sqrt(q2)*pow(laguerre(n, 0.5*q2),2)*exp(-0.5*q2)/(1.*NPhi);
+            }
             
-            qtable[qx%N][qy%N]+=laguerre(n, q2)*exp(-0.5*q2);
         }
+    }
+    
+    if (type=="ce") {
+        qtable[0][0]=0.;
     }
     
 //    cout<<"%%%%%output factor1 table%%%%%"<<endl;
@@ -1549,7 +1560,7 @@ void LATTICE::setup_newcompac_lagtable(int n, double Q) {
     
     for (int qx=0; qx<N; qx++) {
         for (int qy=0; qy<N; qy++) {
-                qtable[qx][qy]/=norm(factor1[qx][qy]);
+                qtable[qx][qy]/=norm(factor[qx][qy]);
         }
     }
  
@@ -2455,7 +2466,7 @@ double LATTICE::shortrange_coulomb() {
             if (Qx==0 && Qy==0)
                 continue;
             else if (x>=CE_cutoff[LL_ind])
-                value += -0.5*NPhi*pow(1.*invNu,2)*Coulombq[qx][qy];
+                value += -0.5*NPhi/pow(1.*invNu,2)*Coulombq[qx][qy];
             
         }
     return value;

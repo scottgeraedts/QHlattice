@@ -116,7 +116,7 @@ public:
     void setup_compac_lagtable(int);
     void setup_compac_lagtable(int, double);
     void setup_compac_lagtable(int, double, double);
-    void setup_newcompac_lagtable(int n, double Q);
+    void setup_newcompac_lagtable(int n, double Q, string type);
     void setup_LagTable(vector<int>);
     void setup_LagTable(vector<int>, vector<double>);
     
