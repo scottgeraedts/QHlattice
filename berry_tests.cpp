@@ -299,7 +299,7 @@ void parallel_energy(int ncore, string filename){
     outfile<<"truncated energy="<<ll[0].shortrange_coulomb()<<endl;
 
 }
-void parallel_ce_pa(int ncore, vector<int> PP, string filename){
+void parallel_ce_pa(int ncore, vector<int> PP, double shift, string filename){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, alpha_t;
@@ -327,6 +327,9 @@ void parallel_ce_pa(int ncore, vector<int> PP, string filename){
         
         ll[i].set_lat_scalex(1);//force lattice sum on Nphi*Nphi lattice.
         ll[i].set_lat_scaleq(1);//force lattice sum on Nphi*Nphi lattice.
+        ll[i].shift_ws(shift);
+//        ll[i].setup_coulomb();
+//        ll[i].setup_coulomb2();
         ll[i].setup_newLagTable(PP);
     }
     
@@ -2951,8 +2954,8 @@ complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu
 }
 complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type) {
     complex<double> ret=0.;
-    if (ll.lat_scalex!=ll.lat_scaleq) {
-        cout<<"lat_scalex!=lat_scale1"<<endl;
+    if (ll.lat_scalex!=ll.lat_scaleq || ll.lat_scalex!=1) {
+        cout<<"lat_scalex != lat_scaleq != 1"<<endl;
         exit(0);
     }
     int N=ll.NPhi*ll.lat_scalex;
@@ -2986,12 +2989,19 @@ complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string typ
                         *
                         ll.laguerretable[0][abs(i1-i2)][abs(j1-j2)];
                     }
+                    else if (type=="newCOMP") {
+                        ret+=
+                        conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
+                        *
+                        ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
+                        *
+                        ll.newcompac_lagtable[abs(i1-i2)][abs(j1-j2)];
+                    }
                     else {cout<<"unrecognized type."<<endl; exit(0);}
                 }
     return ret;
 }
-
-void testlatticepp(){
+void testlatticepp(double shift){
     ifstream inf("para");
     int Nphi, m1, m2, m3, m4, m5, m6, m7, m8, Kx, Ky, round, lat_scale;
     double Kq;
@@ -3004,12 +3014,12 @@ void testlatticepp(){
     inf>>lat_scale;
     
     LATTICE ll(Nphi, 1, 0, "laughlin", 1, 0, 0.5*M_PI, 1.);
-    ll.setup_compac_lagtable(2);
-    ll.setup_laguerre2(2);
-    ll.print_laguerreltable();
-    ll.print_laguerreltableBZ();
+    ll.set_lat_scalex(lat_scale);
+    ll.set_lat_scaleq(lat_scale);
+    ll.shift_ws(shift);
+    ll.setup_landautable();
     
-    vector<double> exactret, latsum, latsumcom, latsumalp;
+    vector<double> exactret, latsum, latsumcom, latsumnewcom;
     //get V1234 for ED.
     for (int i=0; i<round; i++) {
         vector<double> vp=vector<double>(i,0.); vp.push_back(1.);
@@ -3019,24 +3029,8 @@ void testlatticepp(){
         }
         else exactret.push_back(real(interaction(m1, m3, m4, Nphi, vp)/tmp));
     }
-    //get V1234 from alpha regularization.
-    ll.set_lat_scalex(1);
-    ll.set_lat_scaleq(1);
-    ll.setup_landautable();
-    for (int i=0; i<round; i++) {
-        ll.setup_laguerre(i);
-        if (i==0) {
-            tmp=latticepp(ll, m1, m2, m3, m4, "Alp");
-            latsumalp.push_back(1.);
-        }
-        else latsumalp.push_back(real(latticepp(ll, m1, m2, m3, m4, "Alp")/tmp));
-//        else latsumalp.push_back(real(latticepp(ll, m1, m2, m3, m4, "Alp")));
-    }
     //get V1234 from lattice sum.
     //1 BZ summation
-    ll.set_lat_scalex(lat_scale);
-    ll.set_lat_scaleq(lat_scale);
-    ll.setup_landautable();
     for (int i=0; i<round; i++) {
         ll.setup_laguerre2(i);
         if (i==0) {
@@ -3044,7 +3038,6 @@ void testlatticepp(){
             latsum.push_back(1.);
         }
         else latsum.push_back(real(latticepp(ll, m1, m2, m3, m4, "BZ")/tmp));
-//        else latsum.push_back(real(latticepp(ll, m1, m2, m3, m4, "BZ")));
     }
     //compactified
     for (int i=0; i<round; i++) {
@@ -3054,18 +3047,28 @@ void testlatticepp(){
             latsumcom.push_back(1.);
         }
         else latsumcom.push_back(real(latticepp(ll, m1, m2, m3, m4, "COMP")/tmp));
-//        else latsumcom.push_back(real(latticepp(ll, m1, m2, m3, m4, "COMP")));
     }
+    //new-compactified
+    for (int i=0; i<round; i++) {
+        ll.setup_newcompac_lagtable(i,-1.);
+        if (i==0) {
+            tmp=latticepp(ll, m1, m2, m3, m4, "newCOMP");
+            latsumnewcom.push_back(1.);
+        }
+        else latsumnewcom.push_back(real(latticepp(ll, m1, m2, m3, m4, "newCOMP")/tmp));
+    }
+    
     //output
     cout<<"Nphi="<<Nphi<<" round="<<round<<endl;
     cout<<"m1,m2,m3,m4="<<m1<<" "<<m2<<" "<<m3<<" "<<m4<<endl;
     cout<<"lat_scale="<<lat_scale<<endl;
     cout<<"output V_{m1m2,m3m4} with m1="<<m1<<" m2="<<m2<<" m3="<<m3<<" m4="<<m4<<endl;
-    cout<<setw(30)<<" "<<"VED"<<setw(30)<<"VBZ/VED-1"<<setw(30)<<"VC/VED-1"<<setw(30)<<"Valp/VED-1"<<endl;
+    cout<<setw(30)<<" "<<"VED"<<setw(30)<<"VBZ/VED-1"<<setw(30)<<"VC/VED-1"<<setw(30)<<"nVC/VED-1"<<endl;
     for (int i=0; i<round; i++) {
-        cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsum[i]/exactret[i]-1<<setw(30)<<latsumcom[i]/exactret[i]-1<<setw(30)<<latsumalp[i]/exactret[i]-1<<endl;
+        cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsum[i]/exactret[i]-1<<setw(30)<<latsumcom[i]/exactret[i]-1<<setw(30)<<latsumnewcom[i]/exactret[i]-1<<endl;
     }
 }
+
 void LatticeSumHoplist(string filename) {//readhoplist="pairamplitude/hoplist"
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed,lat_scale,pp;
     bool testing;
@@ -3803,24 +3806,22 @@ void pairamplitudeold(string filename, bool trace, int num_core, bool pseu, bool
 }
 */
 
-void onebody(int m1, int m2, int NPhi, int n){
-    LATTICE ll(1, NPhi, 0, "laughlin", 0, 0);
-    cout<<"NPhi="<<ll.NPhi<<endl;
-    
-    ll.set_lat_scalex(1);
-    ll.set_lat_scaleq(1);
+void onebody(int m1, int m2, int NPhi, double shift, int lat_scale){
+    LATTICE ll(NPhi, 1, 0, "laughlin", 1, 0, 0.5*M_PI, 1.);
+    ll.set_lat_scalex(lat_scale);
+    ll.set_lat_scaleq(lat_scale);
+    ll.shift_ws(shift);
     ll.setup_landautable();
     
     m1=supermod(m1,NPhi);
     m2=supermod(m2,NPhi);
     
-    vector<int> PP=vector<int>{1};
-    ll.setup_newLagTable(PP);
+    ll.setup_newcompac_lagtable(-1,-1.);
     
-    double output=0., normalization=0.;
-    for (int x=0; x<NPhi; x++) {
-        for (int y=0; y<NPhi; y++) {
-            output+=real(conj(ll.landautable[m1][x][y])*ll.landautable[m2][x][y]);//*ll.LagTable[n][x][y]);
+    complex<double> output=0., normalization=0.;
+    for (int x=0; x<lat_scale*NPhi; x++) {
+        for (int y=0; y<lat_scale*NPhi; y++) {
+            output+=conj(ll.landautable[m1][x][y]*ll.landautable[m2][x][y]*ll.newcompac_lagtable[x][y]);
             normalization+=real( conj(ll.landautable[m1][x][y])*ll.landautable[m1][x][y] );
         }
     }
@@ -3828,6 +3829,12 @@ void onebody(int m1, int m2, int NPhi, int n){
     
     cout<<"output="<<output<<endl;
     
-}
+    output=0.;
+    for (int x=0; x<lat_scale*NPhi; x++) {
+        for (int y=0; y<lat_scale*NPhi; y++) {
+            output+=conj(ll.landautable[m1][x][y])*ll.landautable[m2][x][y];
+        }
+    }
+//    cout<<"test organ"<<output/normalization<<endl;
     
-
+}

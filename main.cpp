@@ -10,18 +10,38 @@ bool IsOdd (int i) {
 }
 int main(){
     void Ed_Coulomb();
+    void test_exact();
+    void testonebody();
+    
     Ed_Coulomb();
+//    test_exact();
+//    testonebody();
+    
 }
 void Ed_Coulomb(){
-    parallel_ce_pa(2, vector<int>{}, "params_cfl");
+    parallel_ce_pa(2, vector<int>{}, 0.25, "params_cfl");
 }
 void test_exact(){
-    cout<<"pairamplitude2"<<endl;
-    pairamplitude_ExplicitLatticeSum2(3);
-    int m1=2, m2=7, NPhi=5, n=0;
-    onebody(m1, m2, NPhi, n);
-    cout<<"pairamplitude3"<<endl;
-    pairamplitude_ExplicitLatticeSum3(5);
+//    cout<<"pairamplitude2"<<endl;
+//    pairamplitude_ExplicitLatticeSum2(3);
+//    int m1=2, m2=7, NPhi=5, n=0;
+//    onebody(m1, m2, NPhi, n);
+//    cout<<"pairamplitude3"<<endl;
+//    pairamplitude_ExplicitLatticeSum3(5);
+    
+//    int NPhi=10;
+//    vector<int> PP = vector<int>{1};
+//    LATTICE ll(Nphi, 1, 0, "laughlin", 1, 0, 0.5*M_PI, 1.);
+//    ll.setup_newLagTable(PP);
+//    ll.setup_landautable();
+    
+    for (double shift=0.; shift<=0.5; shift+=0.25) {
+        cout<<"***** shift="<<shift<<" *****"<<endl;
+        testlatticepp(shift);
+        cout<<"**********"<<endl<<endl;
+    }
+    //VERY STRENGE THAT PERIODIC COMPACTIFICATION WORKS IF BC=1/4.
+    
 }
 void test_int_bc(){
     vector<int> PP = vector<int>{0,1,2,3,4,5,6,7};
@@ -62,4 +82,20 @@ void test_int_bc(){
             cout<<"pairamplitude["<<i<<"] = "<<setprecision(15)<<value[i]/(1.*N*N)<<endl;
     }
 }
-
+void testonebody(){
+    ifstream inf("para2");
+    int Nphi, m1, m2, m3, m4, m5, m6, m7, m8, Kx, Ky, round, lat_scale;
+    double Kq;
+    complex<double> tmp=0.;
+    
+    inf>>Nphi;
+    inf>>m1>>m2>>m3>>m4;
+    inf>>Kx>>Ky>>Kq;
+    inf>>round;
+    inf>>lat_scale;
+    
+    cout<<"test one body"<<endl;
+    double shift=0.25;
+    onebody(m1, m2, Nphi, shift, lat_scale);
+    
+}

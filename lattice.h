@@ -84,6 +84,7 @@ public:
 	//utility functions
 	void print_ds();
     void print_ws();
+    void shift_ws(double shift);
 //    void print_landautable();
 //    void print_laguerreltable(int);
     void print_laguerreltable();
@@ -91,11 +92,15 @@ public:
     vector<vector<vector<double>>> laguerretable;//laguerre table regularized by alpha.
     vector<vector<double>> laguerretable2;//laguerre table for 1BZ.
     vector<vector<double>> compac_lagtable;//compactified laguerre table.
+    vector<vector<double>> newcompac_lagtable;//new-compactified laguerre table.
     vector<vector<vector<double>>> LagTable;
     
     vector<vector<vector<double>>> qtable_ce;//compactified coulomb-energy potential.
     vector<vector<vector<double>>> qtable_pa;//compactified pair-amplitude potential.
     vector<vector<double>> ftable;//compactified form factor.
+    
+    vector<vector<complex<double>>> Ftable;
+//    void print_Ftable();
     
     vector<vector<vector<complex<double>>>> landautable;
     
@@ -110,6 +115,7 @@ public:
     void setup_compac_lagtable(int);
     void setup_compac_lagtable(int, double);
     void setup_compac_lagtable(int, double, double);
+    void setup_newcompac_lagtable(int n, double Q);
     void setup_LagTable(vector<int>);
     void setup_LagTable(vector<int>, vector<double>);
     void test_coulomb();
@@ -231,6 +237,7 @@ private:
 	MTRand ran;
 	vector<vector<int>> locs;//an integer defined on an NPhi lattice
 	vector<vector<double>> ws, ws0;
+    vector<double> wsum;
     vector<vector<vector<double>>> zeros;//a parameter for 'FilledLL' state.
 	int one,zero;
 	vector< complex<double> > omega;

@@ -36,7 +36,7 @@ void structurefactor(string, int num_core=1);
 
 //Energetics
 void parallel_energy(int ncore, string filename="params");//energy calculator for high LL.
-void parallel_ce_pa(int ncore, vector<int> PP, string filename="params");//energy & p.a. calculator for high LL.
+void parallel_ce_pa(int ncore, vector<int> PP, double shift=0.25, string filename="params");//energy & p.a. calculator for high LL.
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename);
 void plot_CFL_coule_vsdbar(int grid, int Ne, int nMeas, int nBins);
 void CFL_ne5_energy_var(int nMeas, int nBins, int num_core=1);
@@ -67,7 +67,7 @@ void GetCoefficient(vector<int> input);
 inline double Laguerrel(int N, double x);
 complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu);//this gives 'ED interaction matrix' for square torus.
 complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type);//this gives 'sigma function lattice sum interaction matrix'.
-void testlatticepp();//This function tested that the matrix element V1234 got from 'sigma function lattice sum' is correct.
+void testlatticepp(double shift=0.);//This function tested that the matrix element V1234 got from 'sigma function lattice sum' is correct.
 
 //pairamplitude
 void LatticeSumHoplist(string);//generalize hoplist from lattice summation.
@@ -78,7 +78,7 @@ void pairamplitude_ExplicitLatticeSum2(int invNu);
 void pairamplitude_ExplicitLatticeSum3(int invNu);
 vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift1, double shift2, vector<int> PP);
 
-void onebody(int m1, int m2, int NPhi, int n);
+void onebody(int m1, int m2, int NPhi, double shift, int lat_scale);
 
 //old functions
 void pairamplitudeold(string filename, bool trace, int num_core, bool pseu, bool mc);
