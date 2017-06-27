@@ -187,6 +187,7 @@ public:
     void setup_coulomb();
     void setup_coulombHLL();
     double shortrange_coulomb();
+    double shortrange_coulomb_maxerror();
     int LL_ind;
     vector<double> CE_cutoff;//cutoff for Coulomb energy BZ.
 

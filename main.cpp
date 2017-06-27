@@ -14,12 +14,17 @@ int main(){
     void testonebody();
     
 //    Ed_Coulomb();
-    test_exact();
+//    test_exact();
 //    testonebody();
+    
+    
+    parallel_ce_pa(15, vector<int>{}, 0.5, "params_cfl4");
+    parallel_ce_pa(15, vector<int>{}, 0.5, "params_cfl5");
+    parallel_ce_pa(15, vector<int>{}, 0.5, "params_cfl6");
     
 }
 void Ed_Coulomb(){
-    parallel_ce_pa(2, vector<int>{}, 0.25, "params_cfl");
+    parallel_ce_pa(2, vector<int>{}, 0.5, "params_cfl");
 }
 void test_exact(){
 //    cout<<"pairamplitude2"<<endl;

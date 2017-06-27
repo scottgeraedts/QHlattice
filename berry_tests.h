@@ -24,7 +24,7 @@ struct hop{
     vector<int> list;//this is momentum list. interaction = v_{1234} c1^+ c2^+ c3 c4.
     vector<complex<double>> ele;//this is a list for hopping amplitude, for different alpha.
 };
-
+/*
 //Some Utilities
 void hermitianize(Eigen::MatrixXcd &x);
 double phasemod(complex<double> in);
@@ -33,10 +33,12 @@ double phasemod(complex<double> in);
 void check_orthogonality(string type);
 void single_run(string filename="params", bool trace=false);
 void structurefactor(string, int num_core=1);
+*/
 
 //Energetics
-void parallel_energy(int ncore, string filename="params");//energy calculator for high LL.
 void parallel_ce_pa(int ncore, vector<int> PP, double shift=0.25, string filename="params");//energy & p.a. calculator for high LL.
+/*
+void parallel_energy(int ncore, string filename="params");//energy calculator for high LL.
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename);
 void plot_CFL_coule_vsdbar(int grid, int Ne, int nMeas, int nBins);
 void CFL_ne5_energy_var(int nMeas, int nBins, int num_core=1);
@@ -62,6 +64,7 @@ void Explicit();
 
 //...
 void GetCoefficient(vector<int> input);
+*/
 
 //pairamplitude (testings)
 inline double Laguerrel(int N, double x);

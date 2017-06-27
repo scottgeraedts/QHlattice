@@ -416,8 +416,9 @@ void parallel_ce_pa(int ncore, vector<int> PP, double shift, string filename){
         
     }
     outpa.close();
+    cout<<"systematic error per particle = "<<ll[0].shortrange_coulomb_maxerror()<<endl;
 }
-
+/*
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
@@ -955,6 +956,7 @@ void two_holes(string input_name, string str, int nmeasurement, data& test){
 //    }
     
 }
+ */
 /*
 void test_error(int ne, double loop, double steplength, int nMea, int ncore, string test, int num_core){
     void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, int change_nMeas, int change_Ne, int num_core);
@@ -1007,7 +1009,8 @@ void test_error(int ne, double loop, double steplength, int nMea, int ncore, str
         }
     }
 }
-*/
+
+
 //CFL Berry Phase Calculator, Core Part.
 void CFL_berry_phases_parallel(string params_name, string output_name, int num_core, string kind, double theta, double alpha){
     //input file is 'params_name'.
@@ -1039,10 +1042,10 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
     infile>>seed;
     //if 1, will calculate the energy every step and print it.
     //This is helpful for debugging but slows down the code so should be set to 0 if the code is working
-    /*IMPORTANT: every time you try a larger system size than anyone has tried before (the largest I have done is 57)
-     *you should rerun with testing=1, and make sure all the columns in the output are the same.
-     This is because increasing the size may cause floating point overflow errors
-     */
+    //*IMPORTANT: every time you try a larger system size than anyone has tried before (the largest I have done is 57)
+    //*you should rerun with testing=1, and make sure all the columns in the output are the same.
+    //This is because increasing the size may cause floating point overflow errors
+     *
     infile>>testing;
     //  a string which chooses mode to run the code in. right now there are 4 choices:
     //  twod: put two electrons outside the circular fermi surface, move them both around
@@ -2904,7 +2907,7 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
         }
     }
 }
-
+*/
 //pairamplitude
 inline double Laguerrel(int N, double x){
     vector<double> v;
@@ -2919,27 +2922,33 @@ complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu
     double L=sqrt(2.0*M_PI*No), gamma=(2*M_PI/L)*(2*M_PI/L);
     complex<double> k=0.;
     
-    if (type=="pa") {
-        for (int q1=-No*5; q1<No*5; q1++)
-            for (int q2=-No*5; q2<No*5; q2++)
-                if ((q2-(m1-m4))%No==0)
-                    for (int l=0; l<vpseu.size(); l++) {
-                        if (vpseu[l]==0) continue;
-                        else k+=vpseu[l]/No*exp(-2.0*M_PI*M_PI*(pow(q1,2)+pow(q2,2))/L/L)*exp(2.0*M_PI*q1*(m1-m3)/No*complex<double>(0,1))*Laguerrel(l,(q1*q1+q2*q2)*(4*M_PI*M_PI)/L/L);
+    int round=10;
+    for (int q1=-No*round; q1<No*round; q1++)
+        for (int q2=-No*round; q2<No*round; q2++)
+            if ((q2-(m1-m4))%No==0)
+                for (int l=0; l<vpseu.size(); l++) {
+                    
+                    double temp=0.;
+                    double qnorm=1.*(q1*q1+q2*q2)*gamma;
+                    
+                    if (vpseu[l]==0) {
+                        continue;
                     }
-    }
-    else if (type=="ce") {
-        for (int q1=-No*5; q1<No*5; q1++)
-            for (int q2=-No*5; q2<No*5; q2++)
-                if ((q2-(m1-m4))%No==0)
-                    for (int l=0; l<vpseu.size(); l++) {
-                        if (vpseu[l]==0) continue;
-                        else if (q1==0 && q2==0) continue;
-                        else k+=vpseu[l]/No*exp(-2.0*M_PI*M_PI*(pow(q1,2)+pow(q2,2))/L/L)*exp(2.0*M_PI*q1*(m1-m3)/No*complex<double>(0,1))*pow(Laguerrel(l,0.5*(q1*q1+q2*q2)*(4*M_PI*M_PI)/L/L),2)/sqrt((q1*q1+q2*q2)*(4*M_PI*M_PI)/L/L);
+                    
+                    if (type=="pa")
+                        temp=Laguerrel(l,qnorm)*exp(-0.5*qnorm)/(1.*No);
+                    else if (type=="ce") {
+                        if ( q1%No!=0 || q2%No!=0 ) {
+                            temp=1./sqrt(qnorm)*pow(Laguerrel(l, 0.5*qnorm),2)*exp(-0.5*qnorm)/(1.*No);
+                        }
                     }
-    }
-    
-    
+                    else {
+                        cout<<"not set up type yet"<<endl;
+                        exit(0);
+                    }
+       
+                    k+=vpseu[l]*exp(2.0*M_PI*q1*(m1-m3)/No*complex<double>(0,1))*temp;
+                }
     return k;
 }
 complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type) {
@@ -3019,7 +3028,7 @@ void testlatticepp(double shift){
             tmp=interaction(m1, m3, m4, Nphi, vp, int_type);
             exactret.push_back(1.);
         }
-        else exactret.push_back(real(interaction(m1, m3, m4, Nphi, vp)/tmp));
+        else exactret.push_back(real(interaction(m1, m3, m4, Nphi, vp, int_type)/tmp));
     }
     //get V1234 from lattice sum.
     //1 BZ summation
@@ -3056,7 +3065,7 @@ void testlatticepp(double shift){
     cout<<"lat_scale="<<lat_scale<<endl;
     cout<<"output V_{m1m2,m3m4} with m1="<<m1<<" m2="<<m2<<" m3="<<m3<<" m4="<<m4<<endl;
 //    cout<<setw(30)<<" "<<"VED"<<setw(30)<<"VBZ/VED-1"<<setw(30)<<"VC/VED-1"<<setw(30)<<"nVC/VED-1"<<endl;
-    cout<<setw(30)<<" "<<"VED"<<setw(30)<<"nVC/VED-1"<<endl;
+    cout<<setw(30)<<" "<<"VED"<<setw(30)<<"V(lat)/VED-1"<<endl;
     for (int i=0; i<round; i++) {
 //        cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsum[i]/exactret[i]-1<<setw(30)<<latsumcom[i]/exactret[i]-1<<setw(30)<<latsumnewcom[i]/exactret[i]-1<<endl;
         cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsumnewcom[i]/exactret[i]-1<<endl;
@@ -3278,7 +3287,6 @@ void pairamplitude_MC(string filename, bool trace, int num_core, vector<int> PP)
         
         pairout.close();
     }
-    //TODO::pair-amplitude can be combined with Coulomb energy calculation. Do it.
 }
 void pairamplitude_MC2(string filename, bool trace, int num_core, vector<int> PP, vector<double> QQ) {
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed,lat_scale,pp;

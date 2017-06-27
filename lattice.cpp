@@ -94,7 +94,7 @@ void LATTICE::init(int seed){
 //    shift=0.25/(1.*NPhi);
 //    for (int i=0; i<invNu; i++) {
 //        ws0[i][0]+=shift;
-//        ws0[i][1]+=shift;//TODO:shift.
+//        ws0[i][1]+=shift;
 //    }
     
     //alternatively, in the CFL case we can access different ground states by moving the ds (to do this uncomment the next line)
@@ -136,6 +136,8 @@ void LATTICE::shift_ws(double shift_s){
         wsum[0]+=ws[i][0];
         wsum[1]+=ws[i][1];
     }
+    
+    cout<<"wsum="<<wsum[0]<<" "<<wsum[1]<<endl;
     
     setup_coulomb();
     setup_coulombHLL();
@@ -1109,6 +1111,12 @@ double LATTICE::coulomb_energyHLL(){
             out+=coulomb_tableHLL[m][n];
         }
     }
+    
+//    cout<<"**********"<<endl;
+//    cout<<"Madelung Energy is "<<0.5*Ne*coulomb_table[0][0]<<endl;
+//    cout<<"**********"<<endl;
+//    exit(0);
+    
     return out;
 }
 
@@ -1505,7 +1513,7 @@ void LATTICE::setup_newcompac_lagtable(int n, double Q, string type) {
 //    cout<<real(ph1)<<" "<<real(ph2)<<endl;
 //    cout<<"**********"<<endl;
     
-    int round=5;
+    int round=10;
     for (int qx=0; qx<round*N; qx++) {
         for (int qy=0; qy<round*N; qy++) {
             int Qx=qx, Qy=qy;
@@ -1526,10 +1534,12 @@ void LATTICE::setup_newcompac_lagtable(int n, double Q, string type) {
                 qtable[qx%N][qy%N]+=laguerre(n, q2)*exp(-0.5*q2)/(1.*NPhi);
             }
             if (type=="ce") {
-                if (Qx==0 && Qy==0)
+                if (Qx%NPhi==0 && Qy%NPhi==0)
                     continue;
-                else
+                else {
                     qtable[qx%N][qy%N]+=1./sqrt(q2)*pow(laguerre(n, 0.5*q2),2)*exp(-0.5*q2)/(1.*NPhi);
+                }
+                
             }
             
         }
@@ -1558,11 +1568,20 @@ void LATTICE::setup_newcompac_lagtable(int n, double Q, string type) {
 //    exit(0);
     
     
+    int counter=0;
     for (int qx=0; qx<N; qx++) {
         for (int qy=0; qy<N; qy++) {
+//            if (norm(Ftable[qx][qy])>pow(10.,-20)) {
                 qtable[qx][qy]/=norm(factor[qx][qy]);
+//            }
+//            else {
+//                cout<<"qx="<<qx<<" qy="<<qy<<endl;
+//                counter++;
+//                qtable[qx][qy]=0.;
+//            }
         }
     }
+//    cout<<"counter="<<counter<<endl<<endl<<endl;
  
     for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
@@ -1572,11 +1591,11 @@ void LATTICE::setup_newcompac_lagtable(int n, double Q, string type) {
                     if (2*Qx>N) Qx-=N;
                     if (2*Qy>N) Qy-=N;
                     
-                    double qnorm=sqrt(2.*norm(Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2));
+                    double qabs=sqrt(2.*norm(Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2));
                     
                     if (Q<0)
                         newcompac_lagtable[x][y]+=qtable[qx][qy]*cos(2.*M_PI*qx*y/N)*cos(2.*M_PI*qy*x/N);
-                    else if (qnorm<=Q)
+                    else if (qabs<=Q)
                         newcompac_lagtable[x][y]+=qtable[qx][qy]*cos(2.*M_PI*qx*y/N)*cos(2.*M_PI*qy*x/N);
                     
                 }
@@ -2273,7 +2292,7 @@ void LATTICE::setup_landautable(){
                 
                 complex<double> z = x/(1.*N)*L1+y/(1.*N)*L2;
                 complex<double> temp = conj(AVEZERO[ind_state])*z - AVEZERO[ind_state]*conj(z);
-                landautable[ind_state][x][y]*=exp( 0.5*temp );
+                landautable[ind_state][x][y]*=exp(0.5*temp);
                 
             }
         }
@@ -2394,7 +2413,6 @@ void LATTICE::update(){
 	}
 }
 
-//TODO::old functions
 void LATTICE::setup_laguerre_lat() {
     int mlength=50;
     laguerretables=vector<vector<vector<vector<double>>>> (10, vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi))));
@@ -2471,6 +2489,34 @@ double LATTICE::shortrange_coulomb() {
         }
     return value;
 }
+double LATTICE::shortrange_coulomb_maxerror() {
+    double value = 0.;
+    
+    for (int qx=0; qx<NPhi; qx++) {
+        for (int qy=0; qy<NPhi; qy++) {
+            
+            int Qx=qx, Qy=qy;
+            if (2*Qx>NPhi) Qx-=NPhi;
+            if (2*Qy>NPhi) Qy-=NPhi;
+            
+            complex<double> z=Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
+            double x=sqrt(2.)*abs(z);
+            
+            double Smax=0.5, nu=1./(1.*invNu), Sinf=nu*(1.-nu);
+            
+            double tmp=abs(Smax-Sinf);
+            if (Sinf<tmp) tmp=Sinf;
+            
+            if (Qx==0 && Qy==0)
+                continue;
+            else if (x>=CE_cutoff[LL_ind])
+                value += 0.5*NPhi*Coulombq[qx][qy]*tmp;
+        }
+    }
+    //error per particle.
+    return value/(1.*Ne);
+}
+    
 double LATTICE::shortrange_pairamplitude(int n) {
     double value=0.;
     
