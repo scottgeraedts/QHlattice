@@ -71,7 +71,7 @@ void LATTICE::init(int seed){
 	else locs=vector< vector<int> >(Ne, vector<int>(2,0)); //initalize locations of all electrons
 
 	double center_frac[2]={0., 0.};
-    dbar_parameter=vector<double>(2,0);
+    dbar_parameter=vector<double>(2,0.);
     
 	if(type=="CFL" or type=="doubledCFL"){
 		if(Ne%2==0){center_frac[0]=0.5/(1.*Ne); center_frac[1]=0.5/(1.*Ne);}
@@ -91,17 +91,17 @@ void LATTICE::init(int seed){
         ws0[i][1]=gs/(1.*invNu)+imag(w_delta)*lil_sign(gs)*lil_sign(i);
     }
     
-//    shift=0.25/(1.*NPhi);
-//    for (int i=0; i<invNu; i++) {
-//        ws0[i][0]+=shift;
-//        ws0[i][1]+=shift;
-//    }
+    //boundary condition. zero by default.
+    shift=0.;
     
     //alternatively, in the CFL case we can access different ground states by moving the ds (to do this uncomment the next line)
    // if(type=="CFL") for(int i=0; i<Ne; i++) ds[i][1]+=gs;
-    if (type=="CFL" or type=="doubledCFL") set_ds(ds);//set ds, and reset ws.
-    else if (type=="FilledLL") set_zeros(vector<double>{0., 0.});
-    else ws=ws0;
+    if (type=="CFL" or type=="doubledCFL")
+        set_ds(ds);//set ds, and reset ws.
+    else if (type=="FilledLL")
+        set_zeros(vector<double>{0., 0.});
+    else
+        ws=ws0;
     
     wsum=vector<double>(2,0.);
     for (int i=0; i<invNu; i++) {
@@ -137,10 +137,13 @@ void LATTICE::shift_ws(double shift_s){
         wsum[1]+=ws[i][1];
     }
     
-    cout<<"wsum="<<wsum[0]<<" "<<wsum[1]<<endl;
+//    cout<<"wsum="<<wsum[0]<<" "<<wsum[1]<<endl;
     
     setup_coulomb();
     setup_coulombHLL();
+}
+double LATTICE::get_shift(){
+    return shift;
 }
 void LATTICE::set_lat_scalex(int lat){
     lat_scalex=lat;
@@ -1020,7 +1023,7 @@ void LATTICE::setup_coulombHLL(){
     LL_ind=2;
     
     //set up cutoff Q.
-    CE_cutoff=vector<double>(6, 5.);
+    CE_cutoff=vector<double>(6, 4.5);
 
     //boundary conditions.
     complex<double> ph1, ph2;
@@ -1282,32 +1285,6 @@ vector<vector<complex<double>>> LATTICE::comp_ftable(vector<vector<double>> w) {
 //    }
     
     return output;
-}
-void LATTICE::test_shift() {
-    double z_bound=sqrt(2.)*abs(0.5*L1+0.5*L2);
-    if (theta>0.5*M_PI)
-        z_bound=sqrt(2.)*abs(0.5*L1-0.5*L2);
-    
-    double bound=exp(-0.25*pow(z_bound,2) );
-    cout<<"bound="<<bound<<endl;
-    
-    for (int a=0; a<2; a++) {
-        vector<vector<double>> wss=ws;
-        for (int i=0; i<invNu; i++)
-            for (int j=0; j<2; j++)
-                wss[i][j]+=0.25*a/NPhi;
-        
-        cout<<"a="<<a<<endl;
-        vector<vector<complex<double>>> FTABLE=comp_ftable(wss);
-        ofstream outFILE("ffactor_zeros/out"+to_string((long long int )a));
-  
-        for (int k=0; k<FTABLE.size(); k++)
-            for (int l=0; l<FTABLE.size(); l++)
-                if (abs(FTABLE[k][l])<bound)
-                    outFILE<<k<<" "<<l<<" "<<abs(FTABLE[k][l])<<endl;
-        outFILE.close();
-    }
-    
 }
 void LATTICE::setup_newLagTable(vector<int> PP) {
     //TODO: set up new LagTable.
@@ -2029,7 +2006,6 @@ void LATTICE::change_dbar_parameter(double dbarx, double dbary){
 	for(int i=-omega_dbar_range; i<=omega_dbar_range; i++)
 		for(int j=0; j<2; j++) omega_dbar[j][i+omega_dbar_range]=polar(1.,M_PI*dbar_parameter[j]*i/(1.*NPhi));
 	
-	
 }
 void LATTICE::set_ds(vector< vector<int> > tds){
     if (tds.size()!=(unsigned)Ne) {
@@ -2043,7 +2019,6 @@ void LATTICE::set_ds(vector< vector<int> > tds){
 	print_ds();
 	change_dbar_parameter(dsum[0]/(1.*Ne)+real(dbar_delta),dsum[1]/(1.*Ne)+imag(dbar_delta));
     
-    
     //reset ws, according to ds.
     ws.clear(); ws=ws0;
     if (type=="CFL" or type=="doubledCFL") {
@@ -2051,24 +2026,9 @@ void LATTICE::set_ds(vector< vector<int> > tds){
             ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.
         }
     }
-}
-void LATTICE::set_ws(vector<vector<double>> ws_t){
-    if (ws_t.size()!=(unsigned)invNu) {
-        cout<<"cannot set ws, ws.size() wrong."<<endl;
-        exit(0);
-    }
-    for (int i=0; i<invNu; i++) {
-        if (ws_t[i].size()!=2) {
-            cout<<"cannot set ws, ws[i].size() wrong."<<endl;
-            exit(0);
-        }
-    }
-    ws0=ws_t; ws=ws0;
-    if (type=="CFL" or type=="doubledCFL") {
-        for (unsigned int i=0; i<ws.size(); i++) {
-            ws[i][0]+=dsum[0]/(1.*invNu*NPhi); ws[i][1]+=dsum[1]/(1.*invNu*NPhi);// if 'd = wsum'.
-        }
-    }
+    
+    //shift ws.
+    shift_ws(shift);
 }
 void LATTICE::set_zeros(vector<double> zeros0){
     if (zeros0.size()!=2) {
@@ -2502,19 +2462,21 @@ double LATTICE::shortrange_coulomb_maxerror() {
             complex<double> z=Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
             double x=sqrt(2.)*abs(z);
             
-            double Smax=0.5, nu=1./(1.*invNu), Sinf=nu*(1.-nu);
+            double Smax, nu=1./(1.*invNu), Sinf=nu*(1.-nu);
+            if (type=="CFL") Smax=0.8;
+            else Smax=0.5;
             
-            double tmp=abs(Smax-Sinf);
-            if (Sinf<tmp) tmp=Sinf;
+            double bound=abs(Smax-Sinf);
+            if (Sinf<bound) bound=Sinf;
             
             if (Qx==0 && Qy==0)
                 continue;
             else if (x>=CE_cutoff[LL_ind])
-                value += 0.5*NPhi*Coulombq[qx][qy]*tmp;
+                value += 0.5*NPhi*Coulombq[qx][qy]*bound;
         }
     }
     //error per particle.
-    return value/(1.*Ne);
+    return value;
 }
     
 double LATTICE::shortrange_pairamplitude(int n) {

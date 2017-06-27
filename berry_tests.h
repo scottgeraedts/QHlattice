@@ -36,7 +36,7 @@ void structurefactor(string, int num_core=1);
 */
 
 //Energetics
-void parallel_ce_pa(int ncore, vector<int> PP, double shift=0.25, string filename="params");//energy & p.a. calculator for high LL.
+void parallel_ce_pa(int ncore, vector<int> PP, bool bo_shift=false, double shift=0.25, string filename="params");//energy & p.a. calculator for high LL.
 /*
 void parallel_energy(int ncore, string filename="params");//energy calculator for high LL.
 void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename);
@@ -58,12 +58,8 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
 void ParticleHoleSym();
 void ParticleHoleSymBackwards();
 void ParticleHoleSym2();
-void testIQHwf();
-complex<double> landauwf(int Nphi, int n, vector<double> latticeshift, vector<int> z, double theta=0.5*M_PI, double alpha=1.0);
 void Explicit();
 
-//...
-void GetCoefficient(vector<int> input);
 */
 
 //pairamplitude (testings)

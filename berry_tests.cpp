@@ -302,7 +302,7 @@ void single_run(string filename, bool trace){
 //    outfile<<"truncated energy="<<ll[0].shortrange_coulomb()<<endl;
 //
 //}
-void parallel_ce_pa(int ncore, vector<int> PP, double shift, string filename){
+void parallel_ce_pa(int ncore, vector<int> PP, bool bo_shift, double shift, string filename){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, alpha_t;
@@ -330,6 +330,14 @@ void parallel_ce_pa(int ncore, vector<int> PP, double shift, string filename){
         
         ll[i].set_lat_scalex(1);//force lattice sum on Nphi*Nphi lattice.
         ll[i].set_lat_scaleq(1);//force lattice sum on Nphi*Nphi lattice.
+        
+        if (!bo_shift) {
+            if (NPhi%2==0)
+                shift=0.25;
+            else
+                shift=0.;
+        }
+        
         ll[i].shift_ws(shift);
         ll[i].setup_newLagTable(PP);
     }
@@ -391,6 +399,8 @@ void parallel_ce_pa(int ncore, vector<int> PP, double shift, string filename){
     ofstream outpa("out_pa_"+filename);
     outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
     outpa<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
+    outfile<<"shift="<<ll[0].get_shift()<<endl;
+    outpa<<"shift="<<ll[0].get_shift()<<endl;
     
     
     nMeas*=nBins;
@@ -404,6 +414,7 @@ void parallel_ce_pa(int ncore, vector<int> PP, double shift, string filename){
     outfile<<"LL_ind="<<ll[0].LL_ind<<endl;
     outfile<<"cutoff="<<ll[0].CE_cutoff[ll[0].LL_ind]<<endl;
     outfile<<"truncated energy="<<ll[0].shortrange_coulomb()/(1.*Ne)<<endl;
+    outfile<<"systematic error per particle = "<<ll[0].shortrange_coulomb_maxerror()/(1.*Ne)<<endl;
     outfile.close();
     
     for (int p=0; p<PA_type; p++) {
@@ -416,7 +427,6 @@ void parallel_ce_pa(int ncore, vector<int> PP, double shift, string filename){
         
     }
     outpa.close();
-    cout<<"systematic error per particle = "<<ll[0].shortrange_coulomb_maxerror()<<endl;
 }
 /*
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
@@ -947,7 +957,7 @@ void two_holes(string input_name, string str, int nmeasurement, data& test){
 //        cout<<"determinant=\n"<<arg(berryloop.determinant())<<endl;
 //    
 //    for (int b=0; b<nds; b++) {
-//        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b][2]);//TODO:what is overlap[][2] anyway?
+//        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b][2]);
 //        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<abs(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[1])<<" "<<abs(es.eigenvalues()[2])<<" "<<arg(es.eigenvalues()[2])<<endl;
 //        //        for (int i=0; i<3; i++) {
 //        //            test.amp[i]=abs(es.eigenvalues()[i]);
@@ -1634,133 +1644,6 @@ void Explicit(){
 	}
 	norm1=1;
 	cout<<"final overlap: "<<sqrt(comb(Ne,Ne/2))*abs(out/sqrt(norm1*norm2*norm3))<<" "<<total/norm3<<endl;
-}
-void GetCoefficient(vector<int> landauwfindex){
-    int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
-    ifstream infile("params");
-    infile>>Ne>>invNu;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    //initialize MC object
-    
-    Ne=10; invNu=2;
-    int Ne1=5, Ne2=Ne-Ne1;
-    
-    //sanity;
-    if ((signed)landauwfindex.size()!=Ne2) {
-        cout<<"landauwfindex.size() is wrong."<<endl;
-        exit(0);
-    }
-    
-    //cfl1 is the wavefunction that we will project into filled landau level.
-    //We will see if overlap with cfl2 after projection is close to 1 or not.
-    vector<LATTICE> cfl1(invNu), cfl2(invNu);
-    for (int gs=0; gs<invNu; gs++) {
-        cfl1[gs]=LATTICE(Ne1, invNu, testing, "CFL", seed, gs);
-//        cfl2[gs]=LATTICE(Ne2, invNu, testing, "CFL", seed, gs);
-    }
-    LATTICE FLL(Ne, 1, testing, "FilledLL", seed, 0);//Filled LL Wavefunction.
-    //    cout<<"testing = "<<testing<<endl;
-    //    cfl1[1].print_ws();
-    
-    //set ds.
-    vector<vector<int>> ds;
-    ds.push_back(vector<int>{0,0});
-    ds.push_back(vector<int>{1,0});
-    ds.push_back(vector<int>{0,1});
-    ds.push_back(vector<int>{1,1});
-    ds.push_back(vector<int>{2,0});
-    
-    //latticeshift;
-    vector<double> latticeshift(2);
-    
-    //monte carlo.
-    for (int nbin=0; nbin<nBins; nbin++) {
-        vector<complex<double>> overlaps(2);
-        //overlaps[0]=<FLL|cfl1[0]*landauwf>, overlaps[1]=<|FLL|cfl1[0]*landauwf|^2>.
-        
-        FLL.reset();
-        FLL.step(nWarmup);
-        for (int nmea=0; nmea<nMeas; nmea++) {
-            FLL.step(nSteps);
-            vector<vector<int>> z=FLL.get_locs(), z1=z, z2=z;
-            z1.resize(Ne1);
-            z2.erase(z2.begin(), z2.begin()+Ne1);
-            
-            complex<double> value=1.;
-            for (int k=0; k<Ne2; k++) {
-                value*=landauwf(Ne, landauwfindex[k], latticeshift, z2[k]);
-            }
-            complex<double> tmp=value*cfl1[0].get_wf(z2)/FLL.get_wf(z);
-            overlaps[0]+=tmp;
-            overlaps[1]+=norm(tmp);
-        }
-        
-        for (int l=0; l<2; l++) overlaps[l]/=(1.*nMeas);
-        overlaps[0]/=sqrt(overlaps[1]);
-        
-        cout<<"nbin="<<nbin<<endl;
-        cout<<"overlaps="<<abs(overlaps[0])<<" "<<arg(overlaps[0])<<endl;
-        cout<<endl;
-    }
-}
-void testIQHwf(){
-    int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
-    ifstream infile("params");
-    infile>>Ne>>invNu;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    //initialize MC object
-    
-    Ne=10, invNu=1;
-    vector<vector<double>> ws(1, vector<double>(2));
-    vector<double> zeros0{0.3, 0.6};
-    for (int i=0; i<2; i++) {
-        ws[0][0]=zeros0[0]*Ne+0.5*(Ne-1);
-        ws[0][1]=zeros0[1]*Ne;
-    }
-    
-    LATTICE lat1(Ne, invNu, testing, "laughlin", seed, 0); lat1.set_ws(ws);
-    LATTICE lat2(Ne, invNu, testing, "FilledLL", seed, 0); lat2.set_zeros(zeros0);
-//    lat1.print_ws();
-    
-    lat2.reset(); lat2.step(nWarmup); complex<double> value=0., value2=0.;;
-    for (int nmeas=0; nmeas<nMeas; nmeas++) {
-        lat2.step(nSteps);
-        complex<double> tmp=lat1.get_wf(lat2.get_locs())/lat2.get_wf(lat2.get_locs());
-        value+=tmp;
-        value2+=norm(tmp);
-    }
-    value/=(1.*nMeas); value2/=(1.*nMeas);
-    value/=sqrt(value2);
-    cout<<"abs(overlap)="<<abs(value)<<" ,arg(overlap)="<<arg(value)<<endl;
-    //So, alpha = Nphi*W_0^(0) + 0.5*Lx*(Nphi-1).
-}
-complex<double> landauwf(int Nphi, int n, vector<double> latticeshift, vector<int> z, double theta, double alpha){
-    //make l1, l2 through theta, alpha.
-    complex<double> L1, L2, value=1.;
-    L1=sqrt(1.*M_PI*Nphi/sin(theta))*alpha;
-    L2=sqrt(1.*M_PI*Nphi/sin(theta))/alpha*polar(1.,theta);
-    int zero=0;
-    
-    vector<vector<vector<double>>> zeros(Nphi, vector<vector<double>>(Nphi, vector<double>(2)));
-    for (int i=0; i<Nphi; i++) {
-        for (int gs=0; gs<Nphi; gs++) {
-            zeros[gs][i][0]=i/(1.*Nphi)+latticeshift[0];
-            zeros[gs][i][1]=gs/(1.*Nphi)+latticeshift[1];
-        }
-    }
-    for (int i=0; i<Nphi; i++) {
-        double dx, dy; complex<double> temp;
-        dx=z[0]/(1.*Nphi)-zeros[n][i][0]; dy=z[1]/(1.*Nphi)-zeros[n][i][1];
-        z_function_(&dx, &dy, &L1, &L2, &zero, &Nphi, &temp);
-        value*=temp*polar(1., (zeros[n][i][0]*z[1]-zeros[n][i][1]*z[0])*M_PI/Nphi);
-    }
-    return value;
 }
 //this part of the code specifies all the grid points just outside the circle made up of tempNe electrons
 //we will loop through all these positions and add electrons to them

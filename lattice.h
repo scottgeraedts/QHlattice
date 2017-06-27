@@ -135,11 +135,8 @@ public:
     
     //initialization or reset related functions
 	void set_ds(vector< vector<int> > ds);
-    void set_ws(vector<vector<double>> ws);
     void set_zeros(vector<double> zeros0);//for "FilledLL" state only, set zeros[0][0][0], zeros[0][0][1];
 	void set_hole(vector<double> temphole);
-    //*********************
-    //To Avoid Bugs, 'set_ws' must be followed by 'set_ds', 'change_dbar_parameter' must following 'set_ds'.
     
 	vector<double> get_hole();
 
@@ -153,7 +150,6 @@ public:
     
 	vector <vector<int> > get_locs();
 	complex<double> formfactor(int qx, int qy);
-//    double formfactor(double qx, double qy);
 	complex<double> rhoq(int qx ,int qy, const vector< vector<int> > &zs);
     vector<int> dsum;//an integer defined on an NPhi lattice
     
@@ -190,10 +186,10 @@ public:
     double shortrange_coulomb_maxerror();
     int LL_ind;
     vector<double> CE_cutoff;//cutoff for Coulomb energy BZ.
+    double get_shift();
 
     //compactification.
     vector<vector<complex<double>>> comp_ftable(vector<vector<double>> ws);
-    void test_shift();
 	
 private:
 	void init(int seed);
