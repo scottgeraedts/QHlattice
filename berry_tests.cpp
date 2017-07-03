@@ -323,6 +323,19 @@ void parallel_ce_pa(int ncore, vector<int> PP, bool bo_shift, double shift, stri
     
     double theta=theta_t*M_PI, alpha=alpha_t;
     
+    vector<vector<int>> ds;
+    if (Ne==8) {
+        ds=vector<vector<int>> (8,vector<int>(2,0));
+        for (int i=0; i<8; i++) {
+            ds[i][0]=i/3-1;
+            ds[i][1]=i%3-1;
+        }
+    }
+//    for (int i=0; i<8; i++) {
+//        cout<<"i="<<i<<" d[0]="<<ds[i][0]<<" d[1]="<<ds[i][1]<<endl;
+//    }
+//    exit(0);
+    
     vector<LATTICE> ll(ncore);
     for (int i=0; i<ncore; i++) {
         seed=i;
@@ -340,6 +353,9 @@ void parallel_ce_pa(int ncore, vector<int> PP, bool bo_shift, double shift, stri
         
         ll[i].shift_ws(shift);
         ll[i].setup_newLagTable(PP);
+        
+        if (Ne==8 && type=="CFL") ll[i].set_ds(ds);
+        
     }
     
     int Coul_type=2;

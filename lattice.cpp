@@ -1023,7 +1023,7 @@ void LATTICE::setup_coulombHLL(){
     LL_ind=2;
     
     //set up cutoff Q.
-    CE_cutoff=vector<double>(6, 4.5);
+    CE_cutoff=vector<double>(6, 5.);
 
     //boundary conditions.
     complex<double> ph1, ph2;
