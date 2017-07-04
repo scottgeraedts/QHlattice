@@ -331,8 +331,25 @@ void parallel_ce_pa(int ncore, vector<int> PP, bool bo_shift, double shift, stri
             ds[i][1]=i%3-1;
         }
     }
-//    for (int i=0; i<8; i++) {
-//        cout<<"i="<<i<<" d[0]="<<ds[i][0]<<" d[1]="<<ds[i][1]<<endl;
+    if (Ne==16) {
+        ds.clear();
+        for (int i=-2; i<=2; i++) {
+            vector<int> temp1(2,0), temp2(2,0);
+            temp1[0]=i; temp2[0]=i;
+            temp1[1]=0; temp2[1]=-1;
+            ds.push_back(temp1);
+            ds.push_back(temp2);
+        }
+        for (int i=-1; i<=1; i++) {
+            vector<int> temp1(2,0), temp2(2,0);
+            temp1[0]=i; temp2[0]=i;
+            temp1[1]=1; temp2[1]=-2;
+            ds.push_back(temp1);
+            ds.push_back(temp2);
+        }
+    }
+//    for (int i=0; i<ds.size(); i++) {
+//        cout<<ds[i][0]<<" "<<ds[i][1]<<endl;
 //    }
 //    exit(0);
     
@@ -355,6 +372,7 @@ void parallel_ce_pa(int ncore, vector<int> PP, bool bo_shift, double shift, stri
         ll[i].setup_newLagTable(PP);
         
         if (Ne==8 && type=="CFL") ll[i].set_ds(ds);
+        if (Ne==16&& type=="CFL") ll[i].set_ds(ds);
         
     }
     
