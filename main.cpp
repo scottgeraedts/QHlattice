@@ -17,7 +17,7 @@ int main(){
     test_exact(0.00);
     test_exact(0.25);
     test_exact(0.30);
-//    testonebody();
+    test_exact(0.50);
     
   
 }
@@ -32,23 +32,23 @@ void test_exact(double shift){
 //    }
     
     cout<<"*****shift="<<shift<<"*****"<<endl;
-//    testlatticepp(shift);
+    testlatticepp(shift);
     
-    //TODO:generalized bc works for 2 particle, but not for 3 particle. don't know y.
+//    TODO:generalized bc works for 2 particle, but not for 3 particle. don't know y.
     
-    vector<double> pa;
-    pa=
-    pairamplitude_ExplicitLatticeSum2(5,shift,shift,vector<int>{0,1,2,3,4,5,6,7});
-    for (int i=0; i<pa.size(); i++) {
-        cout<<"pa["<<i<<"]="<<setprecision(10)<<pa[i]<<endl;
-    }
-    cout<<endl;
-    pa=
-    pairamplitude_ExplicitLatticeSum3(5,shift,shift,vector<int>{0,1,2,3,4,5,6,7});
-    for (int i=0; i<pa.size(); i++) {
-        cout<<"pa["<<i<<"]="<<setprecision(10)<<pa[i]<<endl;
-    }
-    cout<<endl;
+//    vector<double> pa;
+//    pa=
+//    pairamplitude_ExplicitLatticeSum2(3,shift,shift,vector<int>{0,1,2,3,4,5,6,7});
+//    for (int i=0; i<pa.size(); i++) {
+//        cout<<"pa["<<i<<"]="<<setprecision(10)<<pa[i]<<endl;
+//    }
+//    cout<<endl;
+//    pa=
+//    pairamplitude_ExplicitLatticeSum3(3,shift,shift,vector<int>{0,1,2,3,4,5,6,7});
+//    for (int i=0; i<pa.size(); i++) {
+//        cout<<"pa["<<i<<"]="<<setprecision(10)<<pa[i]<<endl;
+//    }
+//    cout<<endl;
     
 }
 /*

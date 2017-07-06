@@ -2513,7 +2513,6 @@ complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu
                     
                     if (vpseu[l]==0)
                         continue;
-                    
                     if (type=="pa")
                         temp=Laguerrel(l,qnorm)*exp(-0.5*qnorm)/(1.*No);
                     else if (type=="ce") {
@@ -2525,7 +2524,6 @@ complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu
                         cout<<"not set up type yet"<<endl;
                         exit(0);
                     }
-       
                     k+=vpseu[l]*exp(2.0*M_PI*q1*(m1-m3)/No*complex<double>(0,1))*temp;
                 }
     return k;
@@ -2549,7 +2547,7 @@ complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string typ
                         *
                         ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
                         *
-                        ll.coulomb_tableHLL[0][abs(i1-i2)][abs(j1-j2)];
+                        ll.coulomb_tableHLL[0][supermod(i1-i2,N)][supermod(j1-j2,N)];
                     }
                     else if (type=="pa") {
                         ret+=
@@ -2557,7 +2555,7 @@ complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string typ
                         *
                         ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
                         *
-                        ll.PA_table[0][abs(i1-i2)][abs(j1-j2)];
+                        ll.PA_table[0][supermod(i1-i2,N)][supermod(j1-j2,N)];
                     }
                     else {cout<<"unrecognized type."<<endl; exit(0);}
                 }
