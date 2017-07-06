@@ -15,77 +15,17 @@ double phasemod(complex<double> in){
     else return out;
     return out;
 }
-inline double laguerre(int n, double x){
-    double result=0;
-    for (int k=0; k<=n; k++) {
-        if (k%2==0) result+=pow(x,k)*comb(n,k)/factorial(k);
-        else result-=pow(x,k)*comb(n,k)/factorial(k);
+inline double Laguerrel(int N, double x){
+    vector<double> v;
+    v.push_back(1); v.push_back(1-x);
+    for (int i=1; i<N; i++) {
+        double temp=((2.0*i+1-x)*v[i]-i*v[i-1])/(1.0+i);
+        v.push_back(temp);
     }
-    return result;
+    return v[N];
 }
 
-//test ortho laughlin states via monte carlo.
-void check_orthogonality(string type){
-    int Ne=8, invNu, nWarmup=5000, nMeas=5000, nSteps=20;
-    cout<<"--->type = "<<type<<", nMeas="<<nMeas<<", nSteps="<<nSteps<<", Ne="<<Ne;
-    
-    if (type=="CFL") cout<<". General d, sum of d neq 0."<<endl;
-    
-    if (type=="CFL") invNu=2;
-    if (type=="laughlin") invNu=3;
-    
-    vector<LATTICE> cfl;
-    for (int i=0; i<invNu; i++) {
-        if (type=="CFL")
-            cfl.push_back(LATTICE(Ne, invNu, false, "CFL", 0, i));
-        
-        else if (type=="laughlin")
-            cfl.push_back(LATTICE(Ne, invNu, false, "laughlin", 0, i));
-        
-        else {
-            cout<<"Type Wrong."<<endl; exit(0);
-        }
-    }
-    
-    if (type=="CFL") {
-        vector<vector<int> > ds;
-        for (int i=0; i<Ne; i++) {
-            vector<int> tmp {i,0}; ds.push_back(tmp);
-        }
-        cfl[0].set_ds(ds); cfl[1].set_ds(ds);
-    }
-    
-    //overlaps[b][0]=<psi(xb)|psi(xb+1)>, overlaps[b][1]=<|<psi(xb)|psi(xb+1)>|^2>, overlaps[b][2]=<psi(xb)|psi(xb)>, overlaps[b][3]=<|<psi(xb)|psi(xb)>|^2>.
-    for (int nBins=0; nBins<5; nBins++) {
-        vector<Eigen::MatrixXcd > overlaps(4, Eigen::MatrixXcd::Zero(invNu, invNu));
-        for (int l=0; l<2; l++) {
-            cfl[l].reset();
-            //            cfl[l].print_ds();
-            cfl[l].step(nWarmup);
-        }
-        for (int k=0; k<nMeas; k++) {
-            for (int i=0; i<2; i++)
-                cfl[i].step(nSteps);
-            for (int i=0; i<invNu; i++) {
-                for (int j=0; j<invNu; j++) {
-                    complex<double> temp;
-                    //                temp=cfl[j].get_wf(cfl[i].get_locs())/cfl[i].get_wf(cfl[i].get_locs());
-                    //                overlaps[0](i,j)+=temp;
-                    //                overlaps[1](i,j)+=norm(temp);
-                    temp=cfl[j].get_wf(cfl[i].get_locs())/cfl[i].get_wf(cfl[i].get_locs());
-                    overlaps[2](i,j)+=temp;
-                    overlaps[3](i,j)+=norm(temp);
-                }
-            }
-        }
-        
-        for (int l=0; l<4; l++) overlaps[l]/=(1.*nMeas);
-        //    overlaps[0]=overlaps[0].array()/overlaps[1].array().sqrt();
-        overlaps[2]=overlaps[2].array()/overlaps[3].array().sqrt();
-        //        hermitianize(overlaps[2]);
-        cout<<"\nnBins="<<nBins<<", overlap matrix = "<<overlaps[2](0,0)<<" "<<overlaps[2](1,1)<<" "<<overlaps[2](0,1)<<" "<<overlaps[2](1,0)<<endl;
-    }
-}
+
 void single_run(string filename, bool trace){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
@@ -133,8 +73,8 @@ void single_run(string filename, bool trace){
 //    }
     
     LATTICE ll(Ne, invNu, testing, type, seed, gs, theta, alpha, trace);
-    ll.setup_coulomb();
-    ll.setup_coulombHLL();
+    ll.setup_coulomb0();
+    ll.setup_tables(vector<int>{0,2}, "ce");
 //    ll.set_ds(old_ds);
 //    ll.print_ds();
     
@@ -156,8 +96,8 @@ void single_run(string filename, bool trace){
         
         for(int i=0;i<nMeas;i++){
             ll.step(nSteps);
-            e=ll.coulomb_energy();
-            ee=ll.coulomb_energyHLL();
+            e=ll.coulomb_energy(0, "ce");
+            ee=ll.coulomb_energy(1, "ce");
             E+=e;EE+=ee;
             E2+=e*e;EE2+=ee*ee;
             p=ll.running_weight;
@@ -198,111 +138,7 @@ void single_run(string filename, bool trace){
     eout.close();
     outfile.close();
 }
-//void parallel_energy(int ncore, string filename){
-//    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-//    bool testing;
-//    double theta_t, alpha_t;
-//    string type;
-//    
-//    ifstream infile(filename);
-//    infile>>Ne>>invNu>>theta_t>>alpha_t;
-//    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-//    infile>>seed;
-//    infile>>testing;
-//    infile>>type;
-//    //initialize MC object
-//    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<" nBins="<<nBins<<" ncore="<<ncore<<endl;
-//    
-//    int gs=0;
-//    int NPhi=Ne*invNu;
-//    if (type=="laughlin-hole") NPhi++;
-//    
-//    double theta=theta_t*M_PI, alpha=alpha_t;
-//    
-//    
-//    vector<LATTICE> ll(ncore);
-//    for (int i=0; i<ncore; i++) {
-//        seed=i;
-//        ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, false);
-//    }
-//    
-//    int Coul_type=6;
-//    vector<vector<double>> E(Coul_type, vector<double>(nBins,0.)), EE(Coul_type, vector<double>(nBins,0.));
-//    
-//    omp_set_num_threads(ncore);
-//#pragma omp parallel for
-//    for(int s=0;s<nBins;s++){
-//        int coren=omp_get_thread_num();
-//        ll[coren].reset();
-//        ll[coren].step(nWarmup);
-//
-//        for(int i=0;i<nMeas;i++){
-//            ll[coren].step(nSteps);
-//            double e;
-//            
-//            e=ll[coren].coulomb_energy();
-//            E[0][s]+=e;
-//            EE[0][s]+=e*e;
-//            
-//            e=ll[coren].coulomb_energy1();
-//            E[1][s]+=e;
-//            EE[1][s]+=e*e;
-//            
-//            e=ll[coren].coulomb_energy2();
-//            E[2][s]+=e;
-//            EE[2][s]+=e*e;
-//            
-//            e=ll[coren].coulomb_energy3();
-//            E[3][s]+=e;
-//            EE[3][s]+=e*e;
-//            
-//            e=ll[coren].coulomb_energy4();
-//            E[4][s]+=e;
-//            EE[4][s]+=e*e;
-//            
-//            e=ll[coren].coulomb_energy5();
-//            E[5][s]+=e;
-//            EE[5][s]+=e*e;
-//            
-//        }
-//    }
-//    
-//    vector<double> Etotal(Coul_type,0.), EEtotal(Coul_type,0.);
-//    
-//    for (int s=0; s<nBins; s++) {
-//        for (int i=0; i<Coul_type; i++) {
-//            Etotal[i]+=E[i][s];
-//            EEtotal[i]+=EE[i][s];
-//        }
-//    }
-//    
-//    //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
-//    ofstream outfile("out_"+filename);
-//    outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
-//    nMeas*=nBins;
-//    outfile<<"n=0 Landau Level, coulomb"<<endl;
-//    outfile<<"E="<<setprecision(10)<<Etotal[0]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[0]/(1.*nMeas)-pow(Etotal[0]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-//    outfile<<"n=0 Landau Level, coulomb1"<<endl;
-//    outfile<<"E="<<setprecision(10)<<Etotal[1]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[1]/(1.*nMeas)-pow(Etotal[1]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-//    
-//    outfile<<endl;
-//    outfile<<"high Landau Level, coulomb2"<<endl;
-//    outfile<<"E="<<setprecision(10)<<Etotal[2]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[2]/(1.*nMeas)-pow(Etotal[2]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-//    
-//    outfile<<"high Landau Level, coulomb3"<<endl;
-//    outfile<<"E="<<setprecision(10)<<Etotal[3]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[3]/(1.*nMeas)-pow(Etotal[3]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-//    outfile<<"high Landau Level, coulomb4"<<endl;
-//    outfile<<"E="<<setprecision(10)<<Etotal[4]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[4]/(1.*nMeas)-pow(Etotal[4]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-//    outfile<<"high Landau Level, coulomb5"<<endl;
-//    outfile<<"E="<<setprecision(10)<<Etotal[5]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[5]/(1.*nMeas)-pow(Etotal[5]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-//    
-//    outfile<<endl;
-//    outfile<<"LL_ind="<<ll[0].LL_ind<<endl;
-//    outfile<<"cutoff="<<ll[0].CE_cutoff[ll[0].LL_ind]<<endl;
-//    outfile<<"truncated energy="<<ll[0].shortrange_coulomb()<<endl;
-//
-//}
-void parallel_ce_pa(int ncore, vector<int> PP, bool bo_shift, double shift, string filename){
+void parallel_ce_pa(int ncore, vector<int> CE, vector<int> PP, bool bo_shift, double shift, string filename){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, alpha_t;
@@ -369,14 +205,17 @@ void parallel_ce_pa(int ncore, vector<int> PP, bool bo_shift, double shift, stri
         }
         
         ll[i].shift_ws(shift);
-        ll[i].setup_newLagTable(PP);
         
         if (Ne==8 && type=="CFL") ll[i].set_ds(ds);
         if (Ne==16&& type=="CFL") ll[i].set_ds(ds);
         
+        
+        ll[i].setup_tables(CE, "ce");
+        ll[i].setup_tables(PP, "pa");
+        
     }
     
-    int Coul_type=2;
+    int Coul_type=CE.size();
     vector<vector<double>> E(Coul_type, vector<double>(nBins,0.)), EE(Coul_type, vector<double>(nBins,0.));
     
     int PA_type=PP.size();
@@ -393,24 +232,19 @@ void parallel_ce_pa(int ncore, vector<int> PP, bool bo_shift, double shift, stri
             ll[coren].step(nSteps);
             
             //Coulomb Energy
-            double e;
-            
-            e=ll[coren].coulomb_energy();
-            E[0][s]+=e;
-            EE[0][s]+=e*e;
-//            cout<<"e="<<e<<endl;
-            
-            e=ll[coren].coulomb_energyHLL();
-            E[1][s]+=e;
-            EE[1][s]+=e*e;
+            for (int c=0; c<Coul_type; c++) {
+                double e=ll[coren].coulomb_energy(c,"ce");
+                E[c][s]+=e;
+                EE[c][s]+=e*e;
+            }
             
             //Pair Amplitude
             for (int p=0; p<PA_type; p++) {
-                double pa=ll[coren].pairamplitude(p);
+                double pa=ll[coren].coulomb_energy(p,"pa");
                 PA[p][s]+=pa;
                 PAPA[p][s]+=pa*pa;
             }
-            
+
         }
     }
     
@@ -433,36 +267,45 @@ void parallel_ce_pa(int ncore, vector<int> PP, bool bo_shift, double shift, stri
     ofstream outpa("out_pa_"+filename);
     outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
     outpa<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
-    outfile<<"shift="<<ll[0].get_shift()<<endl;
-    outpa<<"shift="<<ll[0].get_shift()<<endl;
+    outfile<<"shift="<<ll[0].get_shift()<<endl<<endl;
+    outpa<<"shift="<<ll[0].get_shift()<<endl<<endl;
     
     
     nMeas*=nBins;
-    outfile<<"n=0 Landau Level, coulomb"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[0]/(1.*nMeas*Ne)<<" var="<<sqrt(EEtotal[0]/(1.*nMeas)-pow(Etotal[0]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
     
-    outfile<<"high Landau Level, coulombHLL"<<endl;
-    outfile<<"E="<<setprecision(10)<<Etotal[1]/(1.*nMeas*Ne)+ll[0].shortrange_coulomb()/(1.*Ne)<<" var="<<sqrt(EEtotal[1]/(1.*nMeas)-pow(Etotal[1]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-    
-    outfile<<endl;
-    outfile<<"LL_ind="<<ll[0].LL_ind<<endl;
-    outfile<<"cutoff="<<ll[0].CE_cutoff[ll[0].LL_ind]<<endl;
-    outfile<<"truncated energy="<<ll[0].shortrange_coulomb()/(1.*Ne)<<endl;
-    outfile<<"systematic error per particle = "<<ll[0].shortrange_coulomb_maxerror()/(1.*Ne)<<endl;
-    outfile.close();
-    
-    for (int p=0; p<PA_type; p++) {
-        //pair amplidue per electron?
-        outpa<<"PP="<<PP[p]<<" PA="<<setprecision(10)<<PAtotal[p]/(1.*nMeas)+ll[0].shortrange_pairamplitude(p)<<" var="<<sqrt(PAPAtotal[p]/(1.*nMeas)-pow(PAtotal[p]/(1.*nMeas),2))/sqrt(1.*nMeas)<<endl;
-    }
-    outpa<<endl;
-    for (int p=0; p<PA_type; p++) {
-        outpa<<"cutoff["<<p<<"]= "<<ll[0].PA_cutoff[p]<<"     truncated value="<<ll[0].shortrange_pairamplitude(p)<<endl;
+    for (int c=0; c<Coul_type; c++) {
+        double short_value, short_error;
+        ll[0].shortrange(c, short_value, short_error, "ce");
+        short_value/=(1.*Ne);
+        short_error/=(1.*Ne);
+        double MCerror=sqrt(EEtotal[c]/(1.*nMeas)-pow(Etotal[c]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne);
         
+        outfile<<"n="<<CE[c]<<" COULOMB-ENERGY."<<endl;
+        outfile<<"cutoff="<<ll[0].CE_cutoff[c]<<endl;
+        outfile<<"truncation value  ="<<setprecision(10)<<short_value<<endl;
+        outfile<<"truncation error  = "<<setprecision(10)<<short_error<<endl;
+        outfile<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
+        
+        outfile<<"E="<<setprecision(10)<<Etotal[c]/(1.*nMeas*Ne)+short_value<<" var="<<sqrt( MCerror*MCerror + short_error*short_error)<<endl<<endl;
     }
+    for (int p=0; p<PA_type; p++) {
+        double short_value, short_error;
+        ll[0].shortrange(p, short_value, short_error, "pa");
+        short_value/=(1.*Ne);
+        short_error/=(1.*Ne);
+        double MCerror=sqrt(PAPAtotal[p]/(1.*nMeas)-pow(PAtotal[p]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne);
+        
+        outpa<<"n="<<PP[p]<<" PAIR-AMPLITUDE."<<endl;
+        outpa<<"cutoff="<<ll[0].PA_cutoff[p]<<endl;
+        outpa<<"truncation value  ="<<setprecision(10)<<short_value<<endl;
+        outpa<<"truncation error  = "<<setprecision(10)<<short_error<<endl;
+        outpa<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
+        
+        outpa<<"PA="<<setprecision(10)<<PAtotal[p]/(1.*nMeas*Ne)+short_value<<" var="<<sqrt( MCerror*MCerror + short_error*short_error)<<endl<<endl;
+    }
+    outfile.close();
     outpa.close();
 }
-/*
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
@@ -509,121 +352,6 @@ void structurefactor(string intputfilename, int num_core){//fielname='params_sq_
         }
         ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
     }
-}
-
-//Energetics.
-void coul_energy(LATTICE& lattice, int nWarmup, int nMeas, int nSteps, int nBins, string filename){
-    ofstream outfile(filename, ios::out| ios::app);//write into the file, write from the end.
-    for (int s=0; s<nBins; s++) {
-        lattice.reset();
-        lattice.step(nWarmup);
-        double E=0, E2=0, e;
-        for(int i=0;i<nMeas;i++){
-            lattice.step(nSteps);
-            e=lattice.coulomb_energy();
-            E+=e;
-            E2+=e*e;
-        }
-        outfile<<s<<" "<<E/(1.*nMeas)<<" "<<E2/(1.*nMeas)<<" "<<E2/(1.*nMeas)-pow(E/(1.*nMeas), 2)<<endl;
-    }
-    outfile<<endl;
-    outfile.close();
-}
-void plot_CFL_coule_vsdbar(int grid, int Ne, int nMeas, int nBins){
-    ofstream bout("CFLenergy"); bout.close();
-    int invNu=2, Nphi=Ne*invNu, seed=0, nWarmup=5000, nSteps=20;
-    LATTICE cfl(Ne, invNu, false, "CFL", seed, 0);
-    
-    for (int i=0; i<grid*Nphi; i++) {
-        for (int j=0; j<grid*Nphi; j++) {
-            double dbar_parameter[2];
-            dbar_parameter[0]=i/(1.*Nphi*grid); dbar_parameter[1]=j/(1.*Nphi*grid);
-            cfl.change_dbar_parameter(dbar_parameter[0],dbar_parameter[1]);
-            
-            ofstream outfile("CFLenergy", ios::out| ios::app);
-            outfile<<i/(1.*grid)<<" "<<j/(1.*grid)<<endl;
-            outfile.close();
-            coul_energy(cfl, nWarmup, nMeas, nSteps, nBins, "CFLenergy");
-        }
-    }
-}
-void CFL_ne5_energy_var(int nMeas, int nBins, int num_core){
-    int Ne=5, invNu=2, nSteps=20, seed=0, gs=0, nWarmup=5000;
-    
-    int n=6;
-    vector<vector<vector<int>>> ds(n);
-    if (Ne==5) {
-        ds[0].push_back(vector<int>{0,0});
-        ds[0].push_back(vector<int>{0,1});
-        ds[0].push_back(vector<int>{1,0});
-        ds[0].push_back(vector<int>{-1,0});
-        ds[0].push_back(vector<int>{1,-1});
-        
-        ds[1].push_back(vector<int>{0,0});
-        ds[1].push_back(vector<int>{0,1});
-        ds[1].push_back(vector<int>{1,0});
-        ds[1].push_back(vector<int>{1,1});
-        ds[1].push_back(vector<int>{2,0});
-        
-        ds[2].push_back(vector<int>{0,0});
-        ds[2].push_back(vector<int>{0,1});
-        ds[2].push_back(vector<int>{1,0});
-        ds[2].push_back(vector<int>{0,-1});
-        ds[2].push_back(vector<int>{-1,0});
-        
-        ds[3].push_back(vector<int>{0,0});
-        ds[3].push_back(vector<int>{1,1});
-        ds[3].push_back(vector<int>{1,-1});
-        ds[3].push_back(vector<int>{-1,1});
-        ds[3].push_back(vector<int>{-1,-1});
-        
-        ds[4].push_back(vector<int>{0,0});
-        ds[4].push_back(vector<int>{1,0});
-        ds[4].push_back(vector<int>{-1,0});
-        ds[4].push_back(vector<int>{1,1});
-        ds[4].push_back(vector<int>{-1,1});
-        
-        ds[5].push_back(vector<int>{0,0});
-        ds[5].push_back(vector<int>{0,1});
-        ds[5].push_back(vector<int>{0,2});
-        ds[5].push_back(vector<int>{0,3});
-        ds[5].push_back(vector<int>{1,0});
-    }
-    
-    //Initialize cfls. Write things into n different files, to avoid mass up during omp.
-    vector<string> filename(n);
-    vector<LATTICE> cfls(n);
-    for (int i=0; i<n; i++) {
-        cfls[i]=LATTICE(Ne, invNu, false, "CFL", seed, gs);
-    }
-    
-    //parallel code begin.
-    omp_set_num_threads(num_core);
-#pragma omp parallel for
-    for (int i=0; i<n; i++) {
-        int coren=omp_get_thread_num();
-        cfls[i].set_ds(ds[i]);
-        cfls[i].reset();
-        filename[i]="cflne5evar/cflne5evar_"+to_string((long long)i);
-//        cout<<i<<" "<<filename[i]<<endl;
-        ofstream outfile(filename[i]);
-        outfile<<i<<endl;
-        coul_energy(cfls[i], nWarmup, nMeas, nSteps, nBins, filename[i]);
-        outfile.close();
-    }
-    
-    //combine outfiles.
-    ofstream combine("cflne5evar/cflne5evar"); combine.close();
-    for (int i=0; i<n; i++) {
-        ofstream combine("cflne5evar/cflne5evar", ios::out| ios::app);
-        ifstream infile(filename[i]);
-        string str;
-        while(getline(infile, str)){
-            combine<<str<<endl;
-        }
-        combine.close(); infile.close();
-    }
-    
 }
 //laughlin-hole berry phase.
 void laughlinberryphase(string input_name, string output_name, vector<double> length, double steplength, int change_nMeas, int change_Ne, int num_core, double theta, double alpha){
@@ -1000,61 +728,6 @@ void two_holes(string input_name, string str, int nmeasurement, data& test){
 //    }
     
 }
- */
-/*
-void test_error(int ne, double loop, double steplength, int nMea, int ncore, string test, int num_core){
-    void laughlinberryphase(vector<double> length, double steplength, vector<data> &datas, int change_nMeas, int change_Ne, int num_core);
-    vector<double> length(2); vector<data> datas;
-    length[0]=loop; length[1]=loop;
-    
-    ofstream bout("test");
-    if (test=="steplength") {
-        for (double steplength=0.001; steplength<loop; steplength+=0.002) {
-            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
-            vector<double> phase(3);
-            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
-            bout<<steplength<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
-        }
-    }
-    if (test=="ne") {
-        for (int ne=2; ne<22; ne=ne+2) {
-            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
-            vector<double> phase(3);
-            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
-            bout<<ne<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
-        }
-    }
-    if (test=="nMea") {
-        for (int nMeas=10; nMeas<20; nMeas+=2){
-            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
-            vector<double> phase(3);
-            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
-            bout<<nMeas<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
-        }
-    }
-    if (test=="loop") {
-        for (double x=0.05; x<0.8; x+=0.05) {
-            length[0]=x; length[1]=x;
-            laughlinberryphase(length, steplength, datas, nMea, ne, num_core);
-            vector<double> phase(3);
-            for (int i=0; i<datas.size(); i++) for (int j=0; j<3; j++) phase[j]+=datas[i].ang[j];
-            bout<<x<<" "<<phase[0]<<" "<<phase[1]<<" "<<phase[2]<<endl;
-        }
-    }
-    if (test=="normality") {
-        for (double steplength=0.01; steplength<0.25; steplength+=0.01) {
-            laughlinberryphase(length, steplength, datas, 0, 0, num_core);
-            
-            bout<<steplength<<endl;
-            for (int i=0; i<datas.size(); i++) {
-                bout<<datas[i].num<<" "<<datas[i].dfromnorm<<endl;
-            }
-            bout<<endl;
-        }
-    }
-}
-
-
 //CFL Berry Phase Calculator, Core Part.
 void CFL_berry_phases_parallel(string params_name, string output_name, int num_core, string kind, double theta, double alpha){
     //input file is 'params_name'.
@@ -1089,7 +762,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
     //*IMPORTANT: every time you try a larger system size than anyone has tried before (the largest I have done is 57)
     //*you should rerun with testing=1, and make sure all the columns in the output are the same.
     //This is because increasing the size may cause floating point overflow errors
-     *
+    //*
     infile>>testing;
     //  a string which chooses mode to run the code in. right now there are 4 choices:
     //  twod: put two electrons outside the circular fermi surface, move them both around
@@ -1215,7 +888,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
                 for (int i=0; i<invNu; i++)
                     ll[coren][i].step(nSteps);
                 
-                energy[b]+=ll[coren][0].coulomb_energy();
+                energy[b]+=ll[coren][0].coulomb_energy(0);
                 
                 for (int i=0; i<invNu; i++) {
                     for (int j=0; j<invNu; j++) {
@@ -2824,17 +2497,7 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
         }
     }
 }
-*/
 //pairamplitude
-inline double Laguerrel(int N, double x){
-    vector<double> v;
-    v.push_back(1); v.push_back(1-x);
-    for (int i=1; i<N; i++) {
-        double temp=((2.0*i+1-x)*v[i]-i*v[i-1])/(1.0+i);
-        v.push_back(temp);
-    }
-    return v[N];
-}
 complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu, string type){
     double L=sqrt(2.0*M_PI*No), gamma=(2*M_PI/L)*(2*M_PI/L);
     complex<double> k=0.;
@@ -2848,16 +2511,15 @@ complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu
                     double temp=0.;
                     double qnorm=1.*(q1*q1+q2*q2)*gamma;
                     
-                    if (vpseu[l]==0) {
+                    if (vpseu[l]==0)
                         continue;
-                    }
                     
                     if (type=="pa")
                         temp=Laguerrel(l,qnorm)*exp(-0.5*qnorm)/(1.*No);
                     else if (type=="ce") {
-                        if ( q1%No!=0 || q2%No!=0 ) {
-                            temp=1./sqrt(qnorm)*pow(Laguerrel(l, 0.5*qnorm),2)*exp(-0.5*qnorm)/(1.*No);
-                        }
+                        if (q1%No==0 && q2%No==0)
+                            continue;
+                        temp=1./sqrt(qnorm)*pow(Laguerrel(l, 0.5*qnorm),2)*exp(-0.5*qnorm)/(1.*No);
                     }
                     else {
                         cout<<"not set up type yet"<<endl;
@@ -2881,37 +2543,21 @@ complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string typ
             for (int i2=0; i2<N; i2++)
                 for (int j2=0; j2<N; j2++) {
                     
-                    if (type=="BZ") {
+                    if (type=="ce") {
                         ret+=
                         conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
                         *
                         ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
                         *
-                        ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
+                        ll.coulomb_tableHLL[0][abs(i1-i2)][abs(j1-j2)];
                     }
-                    else if (type=="COMP") {
+                    else if (type=="pa") {
                         ret+=
                         conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
                         *
                         ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
                         *
-                        ll.compac_lagtable[abs(i1-i2)][abs(j1-j2)];
-                    }
-                    else if (type=="Alp") {
-                        ret+=
-                        conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                        *
-                        ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                        *
-                        ll.laguerretable[0][abs(i1-i2)][abs(j1-j2)];
-                    }
-                    else if (type=="newCOMP") {
-                        ret+=
-                        conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                        *
-                        ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                        *
-                        ll.newcompac_lagtable[abs(i1-i2)][abs(j1-j2)];
+                        ll.PA_table[0][abs(i1-i2)][abs(j1-j2)];
                     }
                     else {cout<<"unrecognized type."<<endl; exit(0);}
                 }
@@ -2948,32 +2594,13 @@ void testlatticepp(double shift){
         else exactret.push_back(real(interaction(m1, m3, m4, Nphi, vp, int_type)/tmp));
     }
     //get V1234 from lattice sum.
-    //1 BZ summation
     for (int i=0; i<round; i++) {
-        ll.setup_laguerre2(i);
+        ll.setup_tables(vector<int>{i}, int_type);
         if (i==0) {
-            tmp=latticepp(ll, m1, m2, m3, m4, "BZ");
-            latsum.push_back(1.);
-        }
-        else latsum.push_back(real(latticepp(ll, m1, m2, m3, m4, "BZ")/tmp));
-    }
-    //compactified
-    for (int i=0; i<round; i++) {
-        ll.setup_compac_lagtable(i);
-        if (i==0) {
-            tmp=latticepp(ll, m1, m2, m3, m4, "COMP");
-            latsumcom.push_back(1.);
-        }
-        else latsumcom.push_back(real(latticepp(ll, m1, m2, m3, m4, "COMP")/tmp));
-    }
-    //new-compactified
-    for (int i=0; i<round; i++) {
-        ll.setup_newcompac_lagtable(i,-1.,int_type);
-        if (i==0) {
-            tmp=latticepp(ll, m1, m2, m3, m4, "newCOMP");
+            tmp=latticepp(ll, m1, m2, m3, m4, int_type);
             latsumnewcom.push_back(1.);
         }
-        else latsumnewcom.push_back(real(latticepp(ll, m1, m2, m3, m4, "newCOMP")/tmp));
+        else latsumnewcom.push_back(real(latticepp(ll, m1, m2, m3, m4, int_type)/tmp));
     }
     
     //output
@@ -2981,444 +2608,26 @@ void testlatticepp(double shift){
     cout<<"m1,m2,m3,m4="<<m1<<" "<<m2<<" "<<m3<<" "<<m4<<endl;
     cout<<"lat_scale="<<lat_scale<<endl;
     cout<<"output V_{m1m2,m3m4} with m1="<<m1<<" m2="<<m2<<" m3="<<m3<<" m4="<<m4<<endl;
-//    cout<<setw(30)<<" "<<"VED"<<setw(30)<<"VBZ/VED-1"<<setw(30)<<"VC/VED-1"<<setw(30)<<"nVC/VED-1"<<endl;
     cout<<setw(30)<<" "<<"VED"<<setw(30)<<"V(lat)/VED-1"<<endl;
     for (int i=0; i<round; i++) {
-//        cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsum[i]/exactret[i]-1<<setw(30)<<latsumcom[i]/exactret[i]-1<<setw(30)<<latsumnewcom[i]/exactret[i]-1<<endl;
         cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsumnewcom[i]/exactret[i]-1<<endl;
     }
 }
-
-void LatticeSumHoplist(string filename) {//readhoplist="pairamplitude/hoplist"
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed,lat_scale,pp;
-    bool testing;
-    double theta_t, theta, alpha;
-    string type;
-    ifstream infile(filename);
-    infile>>Ne>>invNu>>theta_t>>alpha;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    infile>>lat_scale;
-    infile>>pp;
-    infile.close();
-    //initialize MC object
-    theta=theta_t*M_PI;
-    int NPhi=Ne*invNu;
-    
-    cout<<"@@@@@@ pairamplitude 2-particle ED @@@@@@"<<endl;
-    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
-    cout<<"lat_scale="<<lat_scale<<",   pp="<<pp<<endl;
-    
-    LATTICE ll(Ne, invNu, testing, type, 0, 0, theta, alpha);
-    ll.set_lat_scalex(1);//lat_scale=1.
-    ll.set_lat_scaleq(1);//lat_scale=1.
-    
-//    ll.setup_laguerre2(vector<int>{1,3});
-//    //The mth pseudo potential.
-    
-    int mlength=50;
-    int n=5;//PA.
-    double Q=50., alp;
-    vector<vector<vector<double>>> Lag_Tables = vector<vector<vector<double>>>(mlength, vector<vector<double>>(NPhi, vector<double>(NPhi)));
-    for (int a=0; a<mlength; a++) {
-        ll.compac_lagtable.clear();
-        
-        if (a==0) alp=1./sqrt(1.*NPhi);
-        else alp=1.-log(a+1)/log(mlength);
-        
-        ll.setup_compac_lagtable(n, Q, alp);
-        Lag_Tables[a]=ll.compac_lagtable;
-    }
-    
-    ll.setup_landautable();
-    
-    cout<<"\nfinish initialization."<<endl;
-    
-    vector<hop> hoplist_lat;//hoplist from latsum.
-    
-    ifstream hopinfile("pairamplitude/hoplist_"+to_string((long long int)NPhi));
-    
-    double normalization=0.;
-    for (int i=0; i<NPhi*lat_scale; i++) {
-        for (int j=0; j<NPhi*lat_scale; j++) {
-            normalization+=real(conj( ll.landautable[0][i][j] )*ll.landautable[0][i][j]);
-        }
-    }
-    
-    bool flag=false;//turn off two-body energy regularization.
-    complex<double> base=0.;
-    while (!hopinfile.eof()) {
-        double re,im;
-        hop tmp;
-        tmp.list.resize(4);
-        hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
-        hopinfile>>re>>im;
-        
-        for (int a=0; a<mlength; a++) {
-            complex<double> sum=0.;//lattice summation.
-            for (int i1=0; i1<NPhi*lat_scale; i1++)
-                for (int j1=0; j1<NPhi*lat_scale; j1++)
-                    for (int i2=0; i2<NPhi*lat_scale; i2++)
-                        for (int j2=0; j2<NPhi*lat_scale; j2++) {
-                            int m1=tmp.list[0], m2=tmp.list[1], m3=tmp.list[2], m4=tmp.list[3];
-                            
-                            sum+=
-                            conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                            *
-                            ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                            *
-                            Lag_Tables[a][abs(i1-i2)][abs(j1-j2)];
-                            //ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                            
-                            if (flag) {
-                                base+=
-                                conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                                *
-                                ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                                *
-                                //ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                                Lag_Tables[a][abs(i1-i2)][abs(j1-j2)];
-                                //I want an regularized two body energy.
-                            }
-                            
-                            sum+=
-                            conj( ll.landautable[m2][i1][j1] )*conj( ll.landautable[m1][i2][j2] )
-                            *
-                            ll.landautable[m4][i2][j2]*ll.landautable[m3][i1][j1]
-                            *
-                            //ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                            Lag_Tables[a][abs(i1-i2)][abs(j1-j2)];
-                            
-                            sum-=
-                            conj( ll.landautable[m2][i1][j1] )*conj( ll.landautable[m1][i2][j2] )
-                            *
-                            ll.landautable[m3][i2][j2]*ll.landautable[m4][i1][j1]
-                            *
-                            //ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                            Lag_Tables[a][abs(i1-i2)][abs(j1-j2)];
-                            
-                            sum-=
-                            conj( ll.landautable[m1][i1][j1] )*conj( ll.landautable[m2][i2][j2] )
-                            *
-                            ll.landautable[m4][i2][j2]*ll.landautable[m3][i1][j1]
-                            *
-                            //ll.laguerretable2[abs(i1-i2)][abs(j1-j2)];
-                            Lag_Tables[a][abs(i1-i2)][abs(j1-j2)];
-                        }
-            
-            if (abs(base)<pow(10.,-10)) base=pow(10, 20);//TODO:find a better base;
-            
-            //tmp.ele.push_back(sum/abs(base));
-            tmp.ele.push_back(sum/(normalization*normalization));
-            //tmp.ele.push_back(sum);
-        }
-        
-        hoplist_lat.push_back(tmp);
-        flag=false;
-    }
-    hopinfile.close();
-    hoplist_lat.pop_back();
-    cout<<"finish hoplist calculation"<<endl;
-    
-    //output hoplist.
-    ofstream outhop(filename+"_hoplat");
-    for (int i=0; i<hoplist_lat.size(); i++) {
-        outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
-        for (int k=0; k<hoplist_lat[i].ele.size(); k++)
-            outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
-        
-        outhop<<endl;
-    }
-    outhop.close();
-}
-void pairamplitude_MC(string filename, bool trace, int num_core, vector<int> PP) {
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed,lat_scale,pp;
-    bool testing;
-    double theta_t, theta, alpha;
-    string type;
-    ifstream infile(filename);
-    infile>>Ne>>invNu>>theta_t>>alpha;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-//    infile>>lat_scale;
-//    infile>>pp;
-    infile.close();
-    //initialize MC object
-    theta=theta_t*M_PI;
-    
-    int NPhi=Ne*invNu;
-    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
-    cout<<"alpha="<<alpha<<" theta="<<theta/M_PI<<endl;
-    
-    omp_set_num_threads(num_core);
-    vector<LATTICE> ll(num_core);
-    for (int i=0; i<num_core; i++) {
-        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
-        ll[i].set_lat_scalex(1);//force lattice sum on Nphi*Nphi lattice.
-        ll[i].set_lat_scaleq(1);
-        ll[i].setup_LagTable(PP);
-    }
-    cout<<"\nfinish initialization."<<endl;
-    
-    //    for (int i=0; i<ll[0].LagTable[0].size(); i++) {
-    //        for (int j=0; j<ll[0].LagTable[0][i].size(); j++) {
-    //            cout<<ll[0].LagTable[0][i][j]<<" ";
-    //        }
-    //        cout<<endl;
-    //    }
-    
-#pragma omp parallel for
-    for(int s=0;s<nBins;s++){
-        double e=0.,e2=0.;
-        vector<double> pair_amp (PP.size(), 0.);
-        vector<double> pair_amp2(PP.size(), 0.);
-        
-        int coren=omp_get_thread_num();
-        ll[coren].reset();
-        ll[coren].step(nWarmup);
-        
-        ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
-        
-        for(int i=0;i<nMeas;i++){
-            ll[coren].step(nSteps);
-            //            e+=ll[coren].coulomb_energy();
-            //            e2+=ll[coren].coulomb_energy()*ll[coren].coulomb_energy();
-            
-            for (int j=0; j<PP.size(); j++) {
-                pair_amp[j]+=ll[coren].pairamplitude(j);
-                pair_amp2[j]+=pow(ll[coren].pairamplitude(j), 2);
-                //                cout<<ll[coren].pairamplitude(j)<<endl;
-            }
-        }
-        
-        for (int j=0; j<PP.size(); j++)
-            pairout<<pair_amp[j]/(1.*nMeas)<<endl;
-        //TODO::L2 PA should be strictly zero. Solve this TODAY!!!
-        
-        //        pairout<<endl;
-        //        pairout<<e/(1.*nMeas*Ne)<<endl<<(e2/(1.*nMeas)-pow(e/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-        
-        pairout.close();
-    }
-}
-void pairamplitude_MC2(string filename, bool trace, int num_core, vector<int> PP, vector<double> QQ) {
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed,lat_scale,pp;
-    bool testing;
-    double theta_t, theta, alpha;
-    string type;
-    ifstream infile(filename);
-    infile>>Ne>>invNu>>theta_t>>alpha;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    infile>>lat_scale;
-    infile>>pp;
-    infile.close();
-    //initialize MC object
-    theta=theta_t*M_PI;
-    
-    int NPhi=Ne*invNu;
-    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
-    cout<<"alpha="<<alpha<<" theta="<<theta/M_PI<<endl;
-    
-    complex<double> L1,L2;
-    L1=sqrt(1.*M_PI*NPhi/sin(theta))*alpha;
-    L2=sqrt(1.*M_PI*NPhi/sin(theta))/alpha*polar(1.,theta);
-    
-    
-    if (PP.size()!=QQ.size()) {
-        cout<<"PP.size()!=QQ.size()."<<endl;
-        exit(0);
-    }
-    
-    omp_set_num_threads(num_core);
-    vector<LATTICE> ll(num_core);
-    for (int i=0; i<num_core; i++) {
-        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
-        ll[i].set_lat_scalex(1);//force lattice sum on Nphi*Nphi lattice.
-        ll[i].set_lat_scaleq(1);
-        ll[i].setup_LagTable(PP,QQ);
-    }
-    cout<<"\nfinish initialization."<<endl;
-    
-    vector<double> xiint(QQ.size());//xi = xi^mc + xi^integral. the latter is evaluated by approximating s(q)-\nu as gaussian.
-    for (int i=0; i<QQ.size(); i++) {
-        for (int qx=0; qx<NPhi; qx++)
-            for (int qy=0; qy<NPhi; qy++) {
-                double q2=2.*norm(qx/(1.*NPhi)*L1+qy/(1.*NPhi)*L2);
-                if (q2>QQ[i]*QQ[i])
-                    xiint[i]+=-2.*Laguerrel(PP[i],q2)*exp(-0.5*q2)/(1.*NPhi*(NPhi-invNu)*invNu*invNu);
-            }
-    }
-    
-#pragma omp parallel for
-    for(int s=0;s<nBins;s++){
-        double e=0.,e2=0.;
-        vector<double> pair_amp (PP.size(), 0.);
-        vector<double> pair_amp2(PP.size(), 0.);
-        
-        int coren=omp_get_thread_num();
-        ll[coren].reset();
-        ll[coren].step(nWarmup);
-        
-        ofstream pairout("pairamplitude_new/"+filename+"_"+to_string((long long int) s));
-        
-        for(int i=0;i<nMeas;i++){
-            ll[coren].step(nSteps);
-            //e+=ll[coren].coulomb_energy();
-            //e2+=ll[coren].coulomb_energy()*ll[coren].coulomb_energy();
-            
-            for (int j=0; j<PP.size(); j++) {
-                pair_amp[j]+=ll[coren].pairamplitude(j);
-                pair_amp2[j]+=pow(ll[coren].pairamplitude(j), 2);
-                //cout<<ll[coren].pairamplitude(j)<<endl;
-            }
-        }
-        
-        for (int j=0; j<PP.size(); j++)
-            pairout<<pair_amp[j]/(1.*nMeas)<<endl;
-            //pairout<<pair_amp[j]/(1.*nMeas)+xiint[j]<<endl;
-        //TODO::L2 PA should be strictly zero. Solve this TODAY!!!
-        
-        //pairout<<endl;
-        //pairout<<e/(1.*nMeas*Ne)<<endl<<(e2/(1.*nMeas)-pow(e/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne)<<endl;
-        
-        pairout.close();
-    }
-}
-void pairamplitude_ExplicitLatticeSum2(int invNu) {
+vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift1, double shift2, vector<int> PP) {
     int scalex=1, scaleq=1;
     int Ne=2, NPhi=Ne*invNu;
     int Nx=scalex*NPhi, Nq=scaleq*NPhi;
     
     cout<<"Explicit Lattice Sum, Ne=2, invNu="<<invNu<<endl;
     cout<<"lat_scalex="<<scalex<<" lat_scaleq="<<scaleq<<endl;
-    double theta=0.5*M_PI, alpha=1.;
-    LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0, theta, alpha);
-    
-    vector<int> PP=vector<int>{0,1,2,3,4,5,6,7};
-    vector<double> PA(PP.size(),0.);
-    
-    ll.set_lat_scalex(scalex);
-    ll.set_lat_scaleq(scaleq);
-    ll.setup_newLagTable(PP);
-    
-    vector<vector<complex<double>>> wfTable = vector<vector<complex<double>>> (Nx*Nx, vector<complex<double>>(Nx*Nx, 0.));
-    for (int i=0; i<Nx*Nx; i++) {
-        for (int j=0; j<Nx*Nx; j++) {
-            vector<vector<int>> zs(Ne,vector<int>(2));
-            zs[0][0]=i%Nx; zs[0][1]=i/Nx; zs[1][0]=j%Nx; zs[1][1]=j/Nx;
-            
-            //            if (scalex==1) wfTable[i][j]=ll.get_wf(zs);
-            //            else {
-            vector<vector<double>> zs_double(Ne,vector<double>(2,0.));
-            for (int k=0; k<Ne; k++) {
-                zs_double[k][0] = zs[k][0]/(1.*Nx)+0.1;
-                zs_double[k][1] = zs[k][1]/(1.*Nx)+0.5;
-            }
-            wfTable[i][j]=ll.get_laughlinwf(zs_double);
-            //            }
-            
-        }
-    }
-    
-    //    //check ortho.
-    //    LATTICE ll0(Ne, invNu, 0, "laughlin", 0, 5); ll0.set_lat_scalex(2);ll0.set_lat_scaleq(2);
-    //    LATTICE ll1(Ne, invNu, 0, "laughlin", 0, 5); ll1.set_lat_scalex(2);ll1.set_lat_scaleq(2);
-    //    vector<vector<complex<double>>> wfTable0 = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
-    //    vector<vector<complex<double>>> wfTable1 = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
-    //    complex<double> ortho=0., norm0=0., norm1=0.;
-    //    for (int i=0; i<NPhi*NPhi; i++) {
-    //        for (int j=0; j<NPhi*NPhi; j++) {
-    //            vector<vector<int>> zs(Ne,vector<int>(2));
-    //            zs[0][0]=i%NPhi; zs[0][1]=i/NPhi; zs[1][0]=j%NPhi; zs[1][1]=j/NPhi;
-    //            vector<vector<double>> zs_double(Ne,vector<double>(2,0.));
-    //            for (int k=0; k<Ne; k++) {
-    //                zs_double[k][0] = zs[k][0]/(1.*NPhi);
-    //                zs_double[k][1] = zs[k][1]/(1.*NPhi);
-    //            }
-    //            wfTable0[i][j]=ll0.get_laughlinwf(zs_double);
-    //            wfTable1[i][j]=ll1.get_laughlinwf(zs_double);
-    //        }
-    //    }
-    //    for (int i=0; i<NPhi*NPhi; i++) {
-    //        for (int j=0; j<NPhi*NPhi; j++) {
-    //            ortho += conj(wfTable0[i][j])*wfTable1[i][j];
-    //            norm0 += conj(wfTable0[i][j])*wfTable0[i][j];
-    //            norm1 += conj(wfTable1[i][j])*wfTable1[i][j];
-    //        }
-    //    }
-    //    cout<<"orthogonality: "<<ortho/norm0<<endl<<"norm0="<<norm0<<endl<<"norm1="<<norm1<<endl;
-    //    exit(0);
-    
-    //    ll.setup_LagTable(PP);
-    
-    double normalization=0.;
-    
-    //    cout<<"Nphi="<<NPhi<<endl;
-    //    for (int n=0; n<PP.size(); n++) {
-    //        cout<<"PP[n]="<<PP[n]<<endl;
-    //        for (int i=0; i<NPhi; i++) {
-    //            cout<<ll.LagTable[n][i][0]<<" ";
-    //        }
-    //        cout<<endl<<endl;
-    //    }
-    
-    ofstream outfile("data");
-    ofstream outfile2("data2");
-    
-    //    double c=100000000.;
-    
-    for (int i=0; i<Nx*Nx; i++) {
-        for (int j=0; j<Nx*Nx; j++) {
-            int x=abs(i%Nx-j%Nx), y=abs(i/Nx-j/Nx);
-            
-            x=((i%Nx-j%Nx)%Nx+Nx)%Nx;
-            y=((i/Nx-j/Nx)%Nx+Nx)%Nx;
-            
-            for (int k=0; k<PA.size(); k++) {
-                PA[k]+=real(conj(wfTable[i][j])*wfTable[i][j]*ll.LagTable[k][x][y]);
-            }
-            outfile<<real(conj(wfTable[i][j])*wfTable[i][j]*ll.LagTable[0][x][y])<<endl;
-            outfile2<<real(conj(wfTable[i][j])*wfTable[i][j])<<endl;
-            normalization+=real(conj(wfTable[i][j])*wfTable[i][j]);
-        }
-    }
-    
-    cout<<"\noutput pair-amplitude2"<<endl;
-    for (int i=0; i<PA.size(); i++)
-        cout<<"pairamplitude: v "<<PP[i]<<"   "<<setprecision(15)<<PA[i]/normalization + ll.shortrange_pairamplitude(i)<<endl;
-    
-    cout<<endl;
-    
-    for (int i=0; i<PA.size(); i++) {
-        cout<<"shortrangecutoff "<<PP[i]<<"   "<<setprecision(15)<<ll.shortrange_pairamplitude(i)<<endl;
-    }
-    
-    //    cout<<"normalization = "<<normalization<<endl;
-    
-}
-
-
-vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift1, double shift2, vector<int> PP) {
-    int scalex=1, scaleq=1;
-    int Ne=2, NPhi=Ne*invNu;
-    int Nx=scalex*NPhi, Nq=scaleq*NPhi;
-    
-//    cout<<"Explicit Lattice Sum, Ne=2, invNu="<<invNu<<endl;
-//    cout<<"lat_scalex="<<scalex<<" lat_scaleq="<<scaleq<<endl;
     LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0);
     
     vector<double> PA(PP.size(),0.);
     
     ll.set_lat_scalex(scalex);
     ll.set_lat_scaleq(scaleq);
-    ll.setup_newLagTable(PP);
+    ll.shift_ws(shift1);
+    ll.setup_tables(PP,"pa");
     
     vector<vector<complex<double>>> wfTable = vector<vector<complex<double>>> (Nx*Nx, vector<complex<double>>(Nx*Nx, 0.));
     for (int i=0; i<Nx*Nx; i++) {
@@ -3426,67 +2635,16 @@ vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift1, doubl
             vector<vector<int>> zs(Ne,vector<int>(2));
             zs[0][0]=i%Nx; zs[0][1]=i/Nx; zs[1][0]=j%Nx; zs[1][1]=j/Nx;
             
-            //            if (scalex==1) wfTable[i][j]=ll.get_wf(zs);
-            //            else {
-            
             vector<vector<double>> zs_double(Ne,vector<double>(2,0.));
             for (int k=0; k<Ne; k++) {
-                zs_double[k][0] = zs[k][0]/(1.*Nx)+shift1;
-                zs_double[k][1] = zs[k][1]/(1.*Nx)+shift2;
+                zs_double[k][0] = zs[k][0]/(1.*Nx);
+                zs_double[k][1] = zs[k][1]/(1.*Nx);
             }
             wfTable[i][j]=ll.get_laughlinwf(zs_double);
-            //            }
-            
         }
     }
     
-    //    //check ortho.
-    //    LATTICE ll0(Ne, invNu, 0, "laughlin", 0, 5); ll0.set_lat_scalex(2);ll0.set_lat_scaleq(2);
-    //    LATTICE ll1(Ne, invNu, 0, "laughlin", 0, 5); ll1.set_lat_scalex(2);ll1.set_lat_scaleq(2);
-    //    vector<vector<complex<double>>> wfTable0 = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
-    //    vector<vector<complex<double>>> wfTable1 = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
-    //    complex<double> ortho=0., norm0=0., norm1=0.;
-    //    for (int i=0; i<NPhi*NPhi; i++) {
-    //        for (int j=0; j<NPhi*NPhi; j++) {
-    //            vector<vector<int>> zs(Ne,vector<int>(2));
-    //            zs[0][0]=i%NPhi; zs[0][1]=i/NPhi; zs[1][0]=j%NPhi; zs[1][1]=j/NPhi;
-    //            vector<vector<double>> zs_double(Ne,vector<double>(2,0.));
-    //            for (int k=0; k<Ne; k++) {
-    //                zs_double[k][0] = zs[k][0]/(1.*NPhi);
-    //                zs_double[k][1] = zs[k][1]/(1.*NPhi);
-    //            }
-    //            wfTable0[i][j]=ll0.get_laughlinwf(zs_double);
-    //            wfTable1[i][j]=ll1.get_laughlinwf(zs_double);
-    //        }
-    //    }
-    //    for (int i=0; i<NPhi*NPhi; i++) {
-    //        for (int j=0; j<NPhi*NPhi; j++) {
-    //            ortho += conj(wfTable0[i][j])*wfTable1[i][j];
-    //            norm0 += conj(wfTable0[i][j])*wfTable0[i][j];
-    //            norm1 += conj(wfTable1[i][j])*wfTable1[i][j];
-    //        }
-    //    }
-    //    cout<<"orthogonality: "<<ortho/norm0<<endl<<"norm0="<<norm0<<endl<<"norm1="<<norm1<<endl;
-    //    exit(0);
-    
-    //    ll.setup_LagTable(PP);
-    
     double normalization=0.;
-    
-    //    cout<<"Nphi="<<NPhi<<endl;
-    //    for (int n=0; n<PP.size(); n++) {
-    //        cout<<"PP[n]="<<PP[n]<<endl;
-    //        for (int i=0; i<NPhi; i++) {
-    //            cout<<ll.LagTable[n][i][0]<<" ";
-    //        }
-    //        cout<<endl<<endl;
-    //    }
-    
-    ofstream outfile("data");
-    ofstream outfile2("data2");
-    
-    //    double c=100000000.;
-    
     for (int i=0; i<Nx*Nx; i++) {
         for (int j=0; j<Nx*Nx; j++) {
             int x=abs(i%Nx-j%Nx), y=abs(i/Nx-j/Nx);
@@ -3495,40 +2653,29 @@ vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift1, doubl
             y=((i/Nx-j/Nx)%Nx+Nx)%Nx;
             
             for (int k=0; k<PA.size(); k++) {
-                PA[k]+=real(conj(wfTable[i][j])*wfTable[i][j]*ll.LagTable[k][x][y]);
+                PA[k]+=real(conj(wfTable[i][j])*wfTable[i][j]*ll.PA_table[k][x][y]);
             }
-            outfile<<real(conj(wfTable[i][j])*wfTable[i][j]*ll.LagTable[0][x][y])<<endl;
-            outfile2<<real(conj(wfTable[i][j])*wfTable[i][j])<<endl;
             normalization+=real(conj(wfTable[i][j])*wfTable[i][j]);
         }
     }
-    
-//    cout<<"\noutput pair-amplitude2"<<endl;
-    for (int i=0; i<PA.size(); i++)
-//        cout<<"pairamplitude: v "<<PP[i]<<"   "<<setprecision(10)<<PA[i]/normalization + ll.shortrange_pairamplitude(i)<<endl;
-    
-//    cout<<endl;
-    
-    for (int i=0; i<PA.size(); i++) {
-//        cout<<"shortrangecutoff "<<PP[i]<<"   "<<setprecision(10)<<ll.shortrange_pairamplitude(i)<<endl;
-    }
-    
-    //    cout<<"normalization = "<<normalization<<endl;
     
     vector<double> value(PA.size(), 0.);
     for (int i=0; i<PA.size(); i++) {
-        value[i] = PA[i]/normalization + ll.shortrange_pairamplitude(i);
+        value[i] = PA[i]/normalization;
+        if (value[i]<1e-10) value[i]=0.;
     }
-    
     return value;
 }
-
-void pairamplitude_ExplicitLatticeSum3(int invNu) {
+vector<double> pairamplitude_ExplicitLatticeSum3(int invNu, double shift1, double shift2, vector<int> PP) {
     int Ne=3, NPhi=Ne*invNu;
     LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0);
-    cout<<"Explicit Lattice Sum, Ne=3, invNu"<<invNu<<endl;
-    vector<int> PP=vector<int>{0,1,2,3,4,5,6,7,9,11,13,15};
+    cout<<"Explicit Lattice Sum, Ne=3, invNu="<<invNu<<endl;
+    
     vector<double> PA(PP.size(),0.);
+    ll.set_lat_scalex(1);
+    ll.set_lat_scaleq(1);
+    ll.shift_ws(shift1);
+    ll.setup_tables(PP,"pa");
     
     vector<vector<vector<complex<double>>>> wfTable=vector<vector<vector<complex<double>>>>(NPhi*NPhi,vector<vector<complex<double>>>(NPhi*NPhi,vector<complex<double>>(NPhi*NPhi,0.)));
     
@@ -3537,194 +2684,50 @@ void pairamplitude_ExplicitLatticeSum3(int invNu) {
             for (int k=0; k<NPhi*NPhi; k++) {
                 vector<vector<int>> zs(Ne,vector<int>(2));
                 zs[0][0]=i%NPhi; zs[0][1]=i/NPhi; zs[1][0]=j%NPhi; zs[1][1]=j/NPhi; zs[2][0]=k%NPhi; zs[2][1]=k/NPhi;
-                wfTable[i][j][k]=ll.get_wf(zs);
+                
+                vector<vector<double>> zs_double(Ne,vector<double>(2,0.));
+                for (int k=0; k<Ne; k++) {
+                    zs_double[k][0] = zs[k][0]/(1.*NPhi);
+                    zs_double[k][1] = zs[k][1]/(1.*NPhi);
+                }
+                wfTable[i][j][k]=ll.get_laughlinwf(zs_double);
             }
         }
     }
-    ll.setup_newLagTable(PP); double normalization=0.;
-//    cout<<"Nphi="<<NPhi<<endl;
-//    for (int n=0; n<PP.size(); n++) {
-//        cout<<"PP[n]="<<PP[n]<<endl;
-//        for (int i=0; i<NPhi; i++) {
-//            cout<<ll.LagTable[n][i][0]<<" ";
-//        }
-//        cout<<endl<<endl;
-//    }
-//    ofstream outfile("data");
-//    ofstream outfile2("data2");
     
+    double normalization=0.;
     for (int i=0; i<NPhi*NPhi; i++) {
         for (int j=0; j<NPhi*NPhi; j++) {
             for (int k=0; k<NPhi*NPhi; k++) {
-                for (int l=0; l<PA.size(); l++) {
-                    double val=0.;
-                    val=ll.LagTable[l][abs(i%NPhi-j%NPhi)][abs(i/NPhi-j/NPhi)]
-                       +ll.LagTable[l][abs(i%NPhi-k%NPhi)][abs(i/NPhi-k/NPhi)]
-                       +ll.LagTable[l][abs(k%NPhi-j%NPhi)][abs(k/NPhi-j/NPhi)];
+                
+                int x1=((i%NPhi-j%NPhi)%NPhi+NPhi)%NPhi;
+                int y1=((i/NPhi-j/NPhi)%NPhi+NPhi)%NPhi;
+                int x2=((j%NPhi-k%NPhi)%NPhi+NPhi)%NPhi;
+                int y2=((j/NPhi-k/NPhi)%NPhi+NPhi)%NPhi;
+                int x3=((k%NPhi-i%NPhi)%NPhi+NPhi)%NPhi;
+                int y3=((k/NPhi-i/NPhi)%NPhi+NPhi)%NPhi;
+                
+                for (int m=0; m<PA.size(); m++) {
+                    double val;
+                    val=ll.PA_table[m][x1][y1]
+                       +ll.PA_table[m][x2][y2]
+                       +ll.PA_table[m][x3][y3];
                     
-                    PA[l]+=real(conj(wfTable[i][j][k])*wfTable[i][j][k]*val);
+                    PA[m]+=real(conj(wfTable[i][j][k])*wfTable[i][j][k])*val;
                 }
                 normalization+=real(conj(wfTable[i][j][k])*wfTable[i][j][k]);
             }
         }
     }
     
-    cout<<"\noutput pair-amplitude3"<<endl;
-    for (int i=0; i<PA.size(); i++)
-        cout<<"pairamplitude: v "<<PP[i]<<"   "<<setprecision(10)<<PA[i]/normalization + ll.shortrange_pairamplitude(i)<<endl;
-    
-    cout<<endl;
-    
+    vector<double> value(PA.size(), 0.);
     for (int i=0; i<PA.size(); i++) {
-        cout<<"shortrangecutoff "<<PP[i]<<"   "<<setprecision(10)<<ll.shortrange_pairamplitude(i)<<endl;
+        value[i] = PA[i]/normalization;
+        if (value[i]<1e-10) value[i]=0.;
     }
-    
+    return value;
 }
-
 /*
-//old functions
-void pairamplitudeold(string filename, bool trace, int num_core, bool pseu, bool mc) {
-    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
-    bool testing;
-    double theta_t, theta, alpha;
-    string type;
-    ifstream infile(filename);
-    infile>>Ne>>invNu>>theta_t>>alpha;
-    infile>>nWarmup>>nMeas>>nSteps>>nBins;
-    infile>>seed;
-    infile>>testing;
-    infile>>type;
-    //initialize MC object
-    theta=theta_t*M_PI;
-    
-    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<endl;
-    
-    omp_set_num_threads(num_core);
-    
-    vector<LATTICE> ll(num_core);
-    for (int i=0; i<num_core; i++) {
-        ll[i]=LATTICE(Ne, invNu, testing, type, i, 0, theta, alpha);//gs=0, seed=i.
-        ll[i].setup_laguerre_lat(); //lattice summation version.
-        //ll[i].setup_laguerre_con(); //continuous integral version.
-        ll[i].setup_landautable();
-    }
-    cout<<"\nfinish initialization."<<endl;
-    
-    int mlength=50, nlength=10;//m=alpha, n=pair angular momentum.
-    int NPhi=Ne*invNu;
-    
-    //allowed momentum set on torus, got from ed code.
-    //use this to get matrix element by lattice summation over sigma function.
-    //vector<hop> hoplist_ed;//hoplist from ed, amplitude are laugerrel-gaussian with theta function.
-    
-    vector<hop> hoplist_lat;//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
-    //vector<vector<hop>> hoplist_lat(mlength);//hoplist from latsum, amplitude are modified laugerrel-guassian with sigma.
-    
-    //do this if want to get the lattice-summation version of pseudo-potential for ed use.
-    if (pseu) {
-        ifstream hopinfile("pairamplitude/hoplist_"+to_string((long long int)NPhi));
-        //vector<complex<double>> total(mlength);//the lattice-sum is 2 large, so normalized it a little bit.
-        
-        //int count=0;
-        while (!hopinfile.eof()) {
-            double re,im;
-            hop tmp;
-            tmp.list.resize(4);
-            hopinfile>>tmp.list[0]>>tmp.list[1]>>tmp.list[2]>>tmp.list[3];
-            hopinfile>>re>>im;
-            
-            //count++;
-            //cout<<"cout = "<<count<<endl;
-            //cout<<"re, im = "<<re<<" "<<im<<endl;
-            
-            for (int a=0; a<mlength; a++) {
-                //cout<<"a="<<a<<endl;
-                complex<double> sum;//lattice summation.
-                for (int x1=0; x1<NPhi*NPhi; x1++) {
-                    for (int x2=0; x2<NPhi*NPhi; x2++) {
-                        int x11=x1/NPhi, x12=x1%NPhi, x21=x2/NPhi, x22=x2%NPhi;
-                        int x = ((x11-x21)%NPhi+NPhi)%NPhi;
-                        int y = ((x12-x22)%NPhi+NPhi)%NPhi;
-                        
-                        int m=3;//just pick the 'm_{th}' pseudo-potential.
-                        
-                        sum+=
-                        0.5*ll[0].laguerretables[m][a][x][y]
-                        *conj(ll[0].landautable[tmp.list[0]][x11][x12])
-                        *conj(ll[0].landautable[tmp.list[1]][x21][x22])
-                        *ll[0].landautable[tmp.list[2]][x21][x22]
-                        *ll[0].landautable[tmp.list[3]][x11][x12];
-                        
-                        sum+=
-                        0.5*ll[0].laguerretables[m][a][x][y]
-                        *conj(ll[0].landautable[tmp.list[1]][x11][x12])
-                        *conj(ll[0].landautable[tmp.list[0]][x21][x22])
-                        *ll[0].landautable[tmp.list[3]][x21][x22]
-                        *ll[0].landautable[tmp.list[2]][x11][x12];
-                        
-                        sum-=
-                        0.5*ll[0].laguerretables[m][a][x][y]
-                        *conj(ll[0].landautable[tmp.list[1]][x11][x12])
-                        *conj(ll[0].landautable[tmp.list[0]][x21][x22])
-                        *ll[0].landautable[tmp.list[2]][x21][x22]
-                        *ll[0].landautable[tmp.list[3]][x11][x12];
-                        
-                        sum-=
-                        0.5*ll[0].laguerretables[m][a][x][y]
-                        *conj(ll[0].landautable[tmp.list[0]][x11][x12])
-                        *conj(ll[0].landautable[tmp.list[1]][x21][x22])
-                        *ll[0].landautable[tmp.list[3]][x21][x22]
-                        *ll[0].landautable[tmp.list[2]][x11][x12];
-                    }
-                }
-                tmp.ele.push_back(sum);
-                
-            }
-            hoplist_lat.push_back(tmp);
-        }
-        hopinfile.close();
-        cout<<"finish hoplist calculation"<<endl;
-        
-        //        for (int a=0; a<mlength; a++) {
-        //            hoplist_lat[a].pop_back();
-        //            //output hoplist.
-        //            ofstream outhop("pairamplitude/hoplist_lat_" + to_string( (long long int)a ));
-        //            for (int i=0; i<hoplist_lat[a].size(); i++) {
-        //                outhop<<hoplist_lat[a][i].list[0]<<" "<<hoplist_lat[a][i].list[1]<<" "<<hoplist_lat[a][i].list[2]<<" "<<hoplist_lat[a][i].list[3]<<endl;
-        //                for (int k=0; k<hoplist_lat[a][i].ele.size(); k++)
-        //                    outhop<< setprecision(26) <<real(hoplist_lat[a][i].ele[k])<<" "<<imag(hoplist_lat[a][i].ele[k])<<" ";
-        //                outhop<<endl;
-        //            }
-        //            outhop.close();
-        //
-        //            if (a==0) {
-        //                ofstream outhop("pairamplitude/hoplist_lat");
-        //                for (int i=0; i<hoplist_lat[a].size(); i++) {
-        //                    outhop<<hoplist_lat[a][i].list[0]<<" "<<hoplist_lat[a][i].list[1]<<" "<<hoplist_lat[a][i].list[2]<<" "<<hoplist_lat[a][i].list[3]<<endl;
-        //                    for (int k=0; k<hoplist_lat[a][i].ele.size(); k++)
-        //                        outhop<< setprecision(26) <<real(hoplist_lat[a][i].ele[k])<<" "<<imag(hoplist_lat[a][i].ele[k])<<" ";
-        //                    outhop<<endl;
-        //                }
-        //            }
-        //            outhop.close();
-        //        }
-        
-        
-        hoplist_lat.pop_back();
-        //output hoplist.
-        ofstream outhop(filename+"_hoplat");
-        for (int i=0; i<hoplist_lat.size(); i++) {
-            outhop<<hoplist_lat[i].list[0]<<" "<<hoplist_lat[i].list[1]<<" "<<hoplist_lat[i].list[2]<<" "<<hoplist_lat[i].list[3]<<endl;
-            for (int k=0; k<hoplist_lat[i].ele.size(); k++)
-                outhop<< setprecision(26) <<real(hoplist_lat[i].ele[k])<<" "<<imag(hoplist_lat[i].ele[k])<<" ";
-            outhop<<endl;
-        }
-        outhop.close();
-    }
-    
-}
-*/
-
 void onebody(int m1, int m2, int NPhi, double shift, int lat_scale){
     LATTICE ll(NPhi, 1, 0, "laughlin", 1, 0, 0.5*M_PI, 1.);
     ll.set_lat_scalex(lat_scale);
@@ -3735,12 +2738,12 @@ void onebody(int m1, int m2, int NPhi, double shift, int lat_scale){
     m1=supermod(m1,NPhi);
     m2=supermod(m2,NPhi);
     
-    ll.setup_newcompac_lagtable(-1,-1.,"pa");
+    ll.setup_sb_table(-1.);
     
     complex<double> output=0., normalization=0.;
     for (int x=0; x<lat_scale*NPhi; x++) {
         for (int y=0; y<lat_scale*NPhi; y++) {
-            output+=conj(ll.landautable[m1][x][y]*ll.landautable[m2][x][y]*ll.newcompac_lagtable[x][y]);
+            output+=conj(ll.landautable[m1][x][y]*ll.landautable[m2][x][y]*ll.sb_table[x][y]);
             normalization+=real( conj(ll.landautable[m1][x][y])*ll.landautable[m1][x][y] );
         }
     }
@@ -3748,12 +2751,13 @@ void onebody(int m1, int m2, int NPhi, double shift, int lat_scale){
     
     cout<<"output="<<output<<endl;
     
-    output=0.;
-    for (int x=0; x<lat_scale*NPhi; x++) {
-        for (int y=0; y<lat_scale*NPhi; y++) {
-            output+=conj(ll.landautable[m1][x][y])*ll.landautable[m2][x][y];
-        }
-    }
+//    output=0.;
+//    for (int x=0; x<lat_scale*NPhi; x++) {
+//        for (int y=0; y<lat_scale*NPhi; y++) {
+//            output+=conj(ll.landautable[m1][x][y])*ll.landautable[m2][x][y];
+//        }
+//    }
 //    cout<<"test organ"<<output/normalization<<endl;
     
 }
+*/

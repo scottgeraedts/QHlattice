@@ -85,40 +85,40 @@ public:
 	void print_ds();
     void print_ws();
     void shift_ws(double shift);
-//    void print_landautable();
+    void print_landautable();
 //    void print_laguerreltable(int);
-    void print_laguerreltable();
-    void print_laguerreltableBZ();
-    vector<vector<vector<double>>> laguerretable;//laguerre table regularized by alpha.
-    vector<vector<double>> laguerretable2;//laguerre table for 1BZ.
-    vector<vector<double>> compac_lagtable;//compactified laguerre table.
-    vector<vector<double>> newcompac_lagtable;//new-compactified laguerre table.
-    vector<vector<vector<double>>> LagTable;
-    
-    vector<vector<vector<double>>> qtable_ce;//compactified coulomb-energy potential.
-    vector<vector<vector<double>>> qtable_pa;//compactified pair-amplitude potential.
-    vector<vector<double>> ftable;//compactified form factor.
+//    void print_laguerreltable();
+//    void print_laguerreltableBZ();
+//    vector<vector<vector<double>>> laguerretable;//laguerre table regularized by alpha.
+//    vector<vector<double>> laguerretable2;//laguerre table for 1BZ.
+//    vector<vector<double>> compac_lagtable;//compactified laguerre table.
+//    vector<vector<double>> newcompac_lagtable;//new-compactified laguerre table.
+//    vector<vector<vector<double>>> LagTable;
+//    
+//    vector<vector<vector<double>>> qtable_ce;//compactified coulomb-energy potential.
+//    vector<vector<vector<double>>> qtable_pa;//compactified pair-amplitude potential.
+//    vector<vector<double>> ftable;//compactified form factor.
     
     vector<vector<complex<double>>> Ftable;
-    vector<vector<double>> Coulombq;
-//    void print_Ftable();
+//    vector<vector<double>> Coulombq;
     
     vector<vector<vector<complex<double>>>> landautable;
     
 //    vector<vector<vector<double>>> newLagTable;
-    void setup_newLagTable(vector<int> PP);
-    void setup_newnewLagTable(vector<int> PP);
+//    void setup_newLagTable(vector<int> PP);
+//    void setup_newnewLagTable(vector<int> PP);
     
-    void setup_laguerre(int);
-    void setup_laguerre2(int);
-    void setup_laguerre2(vector<int>);
+//    void setup_laguerre(int);
+//    void setup_laguerre2(int);
+//    void setup_laguerre2(vector<int>);
     void setup_landautable();
-    void setup_compac_lagtable(int);
-    void setup_compac_lagtable(int, double);
-    void setup_compac_lagtable(int, double, double);
-    void setup_newcompac_lagtable(int n, double Q, string type);
-    void setup_LagTable(vector<int>);
-    void setup_LagTable(vector<int>, vector<double>);
+//    void setup_compac_lagtable(int);
+//    void setup_compac_lagtable(int, double);
+//    void setup_compac_lagtable(int, double, double);
+//    void setup_newcompac_lagtable(int n, double Q, string type);
+//    void setup_LagTable(vector<int>);
+//    void setup_LagTable(vector<int>, vector<double>);
+//    void setup_LagTable(int);
     
     //TODO::old functions;
     void setup_laguerre_lat();
@@ -141,9 +141,6 @@ public:
 	vector<double> get_hole();
 
 	//measurement related functions
-	double coulomb_energy();
-    double coulomb_energyHLL();
-    
 	double threebody();
 	
     double check_duncan_coulomb(int m, int n, double a);
@@ -171,25 +168,25 @@ public:
     void set_lat_scalex(int);
     void set_lat_scaleq(int);
     
-    //structure factor, pairamplitude
-    vector<int> PA;
+    //structure factor
     void update_structure_factors();
     void print_structure_factors(int nMeas, string filename="");
-    double pairamplitude(int n);
-    double shortrange_pairamplitude(int n);
-    vector<double> PA_cutoff;//cutoff for pair-amplitude BZ.
     
-    //high LL Coulomb energy things.
-    void setup_coulomb();
-    void setup_coulombHLL();
-    double shortrange_coulomb();
-    double shortrange_coulomb_maxerror();
-    int LL_ind;
-    vector<double> CE_cutoff;//cutoff for Coulomb energy BZ.
     double get_shift();
-
-    //compactification.
-    vector<vector<complex<double>>> comp_ftable(vector<vector<double>> ws);
+    //high LL Coulomb and Pair-amplitude things.
+    //these two functions set up table used by coulomb/pair-amplitude. type = "ce" or "pa".
+    void setup_table(int, double, vector<vector<double>>&, vector<vector<double>>&, string typee="ce");
+    void setup_tables(vector<int>, string typee="ce");
+    void setup_coulomb0();
+    vector<vector<double>> coulomb_table;
+    vector<vector<vector<double>>> coulomb_tableHLL;
+    vector<vector<vector<double>>> coulomb_qtable;
+    vector<vector<vector<double>>> PA_table;
+    vector<vector<vector<double>>> PA_qtable;
+    vector<double> CE_cutoff;
+    vector<double> PA_cutoff;
+    double coulomb_energy(int, string typee="ce");
+    void shortrange(int ind, double&, double&, string typee="ce");
 	
 private:
 	void init(int seed);
@@ -213,10 +210,9 @@ private:
     int gs;
     double theta, alpha;
     vector <double> pair_amp;
-	vector <vector <double> > coulomb_table, coulomb_tableHLL, sq2, sq2_mqy;
+	vector <vector <double> > sq2, sq2_mqy;
 	vector <vector <complex<double> > > sq, sq_mqy;//'minus qy', qy<=0.
 	vector <vector <vector <vector< complex<double> > > > > sq3;
-    vector <vector <double> > SMAq;
 	vector <vector<int> > sx,sx2;
 
 	vector <vector <complex<double> > > shifted_ztable;

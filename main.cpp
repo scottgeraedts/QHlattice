@@ -10,39 +10,48 @@ bool IsOdd (int i) {
 }
 int main(){
     void Ed_Coulomb();
-    void test_exact();
+    void test_exact(double);
     void testonebody();
     
-    Ed_Coulomb();
-//    test_exact();
+//    Ed_Coulomb();
+    test_exact(0.00);
+    test_exact(0.25);
+    test_exact(0.30);
 //    testonebody();
+    
   
 }
 void Ed_Coulomb(){
-    parallel_ce_pa(10, vector<int>{}, false, 0., "params_cfl");
+    parallel_ce_pa(10, vector<int>{0,2} ,vector<int>{1,3}, true, 0., "params_cfl");
 }
-void test_exact(){
-//    cout<<"pairamplitude2"<<endl;
-//    pairamplitude_ExplicitLatticeSum2(3);
-//    int m1=2, m2=7, NPhi=5, n=0;
-//    onebody(m1, m2, NPhi, n);
-//    cout<<"pairamplitude3"<<endl;
-//    pairamplitude_ExplicitLatticeSum3(5);
+void test_exact(double shift){
+//    for (double shift=0.; shift<=0.5; shift+=0.25) {
+//        cout<<"***** shift="<<shift<<" *****"<<endl;
+//        testlatticepp(shift);
+//        cout<<"**********"<<endl<<endl;
+//    }
     
-//    int NPhi=10;
-//    vector<int> PP = vector<int>{1};
-//    LATTICE ll(Nphi, 1, 0, "laughlin", 1, 0, 0.5*M_PI, 1.);
-//    ll.setup_newLagTable(PP);
-//    ll.setup_landautable();
+    cout<<"*****shift="<<shift<<"*****"<<endl;
+//    testlatticepp(shift);
     
-    for (double shift=0.; shift<=0.5; shift+=0.25) {
-        cout<<"***** shift="<<shift<<" *****"<<endl;
-        testlatticepp(shift);
-        cout<<"**********"<<endl<<endl;
+    //TODO:generalized bc works for 2 particle, but not for 3 particle. don't know y.
+    
+    vector<double> pa;
+    pa=
+    pairamplitude_ExplicitLatticeSum2(5,shift,shift,vector<int>{0,1,2,3,4,5,6,7});
+    for (int i=0; i<pa.size(); i++) {
+        cout<<"pa["<<i<<"]="<<setprecision(10)<<pa[i]<<endl;
     }
-    //VERY STRENGE THAT PERIODIC COMPACTIFICATION WORKS IF BC=1/4.
+    cout<<endl;
+    pa=
+    pairamplitude_ExplicitLatticeSum3(5,shift,shift,vector<int>{0,1,2,3,4,5,6,7});
+    for (int i=0; i<pa.size(); i++) {
+        cout<<"pa["<<i<<"]="<<setprecision(10)<<pa[i]<<endl;
+    }
+    cout<<endl;
     
 }
+/*
 void test_int_bc(){
     vector<int> PP = vector<int>{0,1,2,3,4,5,6,7};
     vector<double> value (PP.size(), 0.);
@@ -94,8 +103,18 @@ void testonebody(){
     inf>>round;
     inf>>lat_scale;
     
+    double shift;
+    
     cout<<"test one body"<<endl;
-    double shift=0.25;
+    shift=0.;
+    cout<<"*****shift="<<shift<<"*****"<<endl;
+    onebody(m1, m2, Nphi, shift, lat_scale);
+    shift=0.25;
+    cout<<"*****shift="<<shift<<"*****"<<endl;
+    onebody(m1, m2, Nphi, shift, lat_scale);
+    shift=0.5;
+    cout<<"*****shift="<<shift<<"*****"<<endl;
     onebody(m1, m2, Nphi, shift, lat_scale);
     
 }
+*/
