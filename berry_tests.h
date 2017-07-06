@@ -35,7 +35,7 @@ void single_run(string filename="params", bool trace=false);
 void structurefactor(string, int num_core=1);
 
 //Energetics
-void parallel_ce_pa(int ncore, vector<int> CE, vector<int> PP, bool bo_shift=false, double shift=0.25, string filename="params");//energy & p.a. calculator for high LL.
+void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift=false, double shift=0.25, string filename="params");//energy & p.a. calculator for high LL.
 
 //Laughlin-Hole Berry Phase
 void laughlinberryphase(string input_name, string output_name, vector<double> length, double steplength, int change_nMeas, int change_Ne, int num_core, double theta=0.5*M_PI, double alpha=1.0);
@@ -53,11 +53,12 @@ void ParticleHoleSym2();
 void Explicit();
 
 //Explicit lattice summation
-complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu, string type="pa");//this gives 'ED interaction matrix' for square torus.
-complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type);//this gives 'sigma function lattice sum interaction matrix'.
-void testlatticepp(double shift=0.);//This function tested that the matrix element V1234 got from 'sigma function lattice sum' is correct.
-vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift1, double shift2, vector<int> PP);
-vector<double> pairamplitude_ExplicitLatticeSum3(int invNu, double shift1, double shift2, vector<int> PP);
-void onebody(int m1, int m2, int NPhi, double shift, int lat_scale);
+complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu, string type="pa");
+//this gives 'ED interaction matrix' for square torus.
+complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type);
+//this gives 'sigma function lattice sum interaction matrix'.
+void testlatticepp(double shift=0.);
+vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift, vector<NQ> PP);
+vector<double> pairamplitude_ExplicitLatticeSum3(int invNu, double shift, vector<NQ> PP);
 
 #endif

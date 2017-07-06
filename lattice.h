@@ -31,7 +31,10 @@ extern"C"{
 	void get_laughlin_cm_(int *x, complex<double> *wf);
 	void jacobi_theta_(int *n, complex<double> *z, complex<double> *tau, complex<double> *theta, int *sum);
 }
-
+struct NQ{
+    int N;
+    double Q;
+};
 class LATTICE_PARAMS{
 public:
 	int Ne, invNu, seed, gs;
@@ -84,46 +87,10 @@ public:
 	//utility functions
 	void print_ds();
     void print_ws();
+    
+    //boundary conditions
     void shift_ws(double shift);
-    void print_landautable();
-//    void print_laguerreltable(int);
-//    void print_laguerreltable();
-//    void print_laguerreltableBZ();
-//    vector<vector<vector<double>>> laguerretable;//laguerre table regularized by alpha.
-//    vector<vector<double>> laguerretable2;//laguerre table for 1BZ.
-//    vector<vector<double>> compac_lagtable;//compactified laguerre table.
-//    vector<vector<double>> newcompac_lagtable;//new-compactified laguerre table.
-//    vector<vector<vector<double>>> LagTable;
-//    
-//    vector<vector<vector<double>>> qtable_ce;//compactified coulomb-energy potential.
-//    vector<vector<vector<double>>> qtable_pa;//compactified pair-amplitude potential.
-//    vector<vector<double>> ftable;//compactified form factor.
-    
-    vector<vector<complex<double>>> Ftable;
-//    vector<vector<double>> Coulombq;
-    
-    vector<vector<vector<complex<double>>>> landautable;
-    
-//    vector<vector<vector<double>>> newLagTable;
-//    void setup_newLagTable(vector<int> PP);
-//    void setup_newnewLagTable(vector<int> PP);
-    
-//    void setup_laguerre(int);
-//    void setup_laguerre2(int);
-//    void setup_laguerre2(vector<int>);
-    void setup_landautable();
-//    void setup_compac_lagtable(int);
-//    void setup_compac_lagtable(int, double);
-//    void setup_compac_lagtable(int, double, double);
-//    void setup_newcompac_lagtable(int n, double Q, string type);
-//    void setup_LagTable(vector<int>);
-//    void setup_LagTable(vector<int>, vector<double>);
-//    void setup_LagTable(int);
-    
-    //TODO::old functions;
-    void setup_laguerre_lat();
-    vector<vector<vector<vector<double>>>> laguerretables;
-    double pairamplitude(int n, int a);
+    double get_shift();
 
 	//initialization related functions
 	void make_fermi_surface(double* center_frac, int N);
@@ -132,28 +99,22 @@ public:
 	vector <vector<int> > get_ds();
 	void change_dbar_parameter(double dbarx, double dbary);
 	vector<double> get_dbar_parameter();
+    int trace;
     
     //initialization or reset related functions
 	void set_ds(vector< vector<int> > ds);
     void set_zeros(vector<double> zeros0);//for "FilledLL" state only, set zeros[0][0][0], zeros[0][0][1];
 	void set_hole(vector<double> temphole);
-    
 	vector<double> get_hole();
 
 	//measurement related functions
 	double threebody();
-	
-    double check_duncan_coulomb(int m, int n, double a);
     
 	vector <vector<int> > get_locs();
 	complex<double> formfactor(int qx, int qy);
 	complex<double> rhoq(int qx ,int qy, const vector< vector<int> > &zs);
     vector<int> dsum;//an integer defined on an NPhi lattice
-    
-    //Filled Landau Level Wavefunction (not IQH wf)
-    complex<double> FilledLL(vector<vector<int>> zs);
-	//another version of filled Landau level wavefunction, this one is normalized
-    complex<double> FilledLL2(vector<vector<int>> zs);
+
 	//product of 2 CFL wavefunctions
     complex<double> doubled_CFL(const vector<vector<int>> &zs);
     
@@ -163,28 +124,22 @@ public:
 	static vector< vector<int> > hot_start(int NPhi_t, int Ne_t, MTRand &ran);
 	static vector<int> random_move(const vector<int> &oldsite, int NPhi_t, MTRand &ran_t);
     
-    int trace;
-    int lat_scalex, lat_scaleq;
-    void set_lat_scalex(int);
-    void set_lat_scaleq(int);
-    
     //structure factor
     void update_structure_factors();
     void print_structure_factors(int nMeas, string filename="");
     
-    double get_shift();
+    //Landau table
+    void setup_landautable();
+    vector<vector<vector<complex<double>>>> landautable;
+    
     //high LL Coulomb and Pair-amplitude things.
     //these two functions set up table used by coulomb/pair-amplitude. type = "ce" or "pa".
     void setup_table(int, double, vector<vector<double>>&, vector<vector<double>>&, string typee="ce");
-    void setup_tables(vector<int>, string typee="ce");
+    void setup_tables(vector<NQ>, string typee="ce");
     void setup_coulomb0();
     vector<vector<double>> coulomb_table;
     vector<vector<vector<double>>> coulomb_tableHLL;
-    vector<vector<vector<double>>> coulomb_qtable;
     vector<vector<vector<double>>> PA_table;
-    vector<vector<vector<double>>> PA_qtable;
-    vector<double> CE_cutoff;
-    vector<double> PA_cutoff;
     double coulomb_energy(int, string typee="ce");
     void shortrange(int ind, double&, double&, string typee="ce");
 	
@@ -209,7 +164,6 @@ private:
 	string type;
     int gs;
     double theta, alpha;
-    vector <double> pair_amp;
 	vector <vector <double> > sq2, sq2_mqy;
 	vector <vector <complex<double> > > sq, sq_mqy;//'minus qy', qy<=0.
 	vector <vector <vector <vector< complex<double> > > > > sq3;
@@ -218,11 +172,16 @@ private:
 	vector <vector <complex<double> > > shifted_ztable;
 	int omega_dbar_range;
 	vector< vector<complex<double> > > omega_dbar;
+    
+    vector<vector<complex<double>>> Ftable;
+    vector<vector<vector<double>>> coulomb_qtable;
+    vector<vector<vector<double>>> PA_qtable;
+    vector<double> CE_cutoff;
+    vector<double> PA_cutoff;
 
 	Eigen::MatrixXcd oldMatrix, newMatrix;
 	complex<double> oldDeterminant, newDeterminant;
 	Eigen::FullPivLU<Eigen::MatrixXcd> detSolver;
-//    Eigen::FullPivLU<Eigen::MatrixXcd> detSolver_FLL;
 	MTRand ran;
 	vector<vector<int>> locs;//an integer defined on an NPhi lattice
 	vector<vector<double>> ws, ws0;
@@ -230,13 +189,9 @@ private:
     vector<vector<vector<double>>> zeros;//a parameter for 'FilledLL' state.
 	int one,zero;
 	vector< complex<double> > omega;
-//    int sqgrid=1;//the q in structure factor can be finer than Nphi*Nphi lattice.
-//    vector< complex<double> > omegasq;
     
     vector<vector<int> > ds;//an integer defined on an Ne lattice
-    
-    
-    
+
 };
 
 class wf_info{

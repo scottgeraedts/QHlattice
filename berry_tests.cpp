@@ -1,5 +1,4 @@
 #include "berry_tests.h"
-
 void hermitianize(Eigen::MatrixXcd &x){
 	for(int i=0;i<x.rows();i++){
 		for(int j=i+1;j<x.rows();j++){
@@ -24,8 +23,6 @@ inline double Laguerrel(int N, double x){
     }
     return v[N];
 }
-
-
 void single_run(string filename, bool trace){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
@@ -47,34 +44,11 @@ void single_run(string filename, bool trace){
 
     double theta=theta_t*M_PI, alpha=alpha_t;
     
-//    LATTICE ds_generator(Ne, invNu, testing, type, seed, gs, theta, alpha);
-//    vector< vector<int> > old_ds=ds_generator.get_ds();
-//    vector<vector<int>> old_ds;
-//    if (Ne==21) {
-//        old_ds.clear();
-//        for (int i=-3; i<4; i++) {
-//            for (int j=-1; j<2; j++) {
-//                old_ds.push_back(vector<int>{i,j});
-//            }
-//        }
-//    }
-//    if (Ne==17) {
-//        old_ds.clear();
-//        for (int i=-2; i<3; i++) {
-//            for (int j=0; j<2; j++) {
-//                old_ds.push_back(vector<int>{i,j});
-//            }
-//        }
-//        for (int i=-1; i<2; i++) {
-//            old_ds.push_back(vector<int>{i,-1});
-//            old_ds.push_back(vector<int>{i,2});
-//        }
-//        old_ds.push_back(vector<int>{2,-1});
-//    }
-    
     LATTICE ll(Ne, invNu, testing, type, seed, gs, theta, alpha, trace);
     ll.setup_coulomb0();
-    ll.setup_tables(vector<int>{0,2}, "ce");
+    
+    vector<NQ> N_Q(2); N_Q[0].N=0; N_Q[0].Q=-1.; N_Q[1].N=2; N_Q[1].Q=-1.;
+    ll.setup_tables(N_Q, "ce");
 //    ll.set_ds(old_ds);
 //    ll.print_ds();
     
@@ -138,7 +112,7 @@ void single_run(string filename, bool trace){
     eout.close();
     outfile.close();
 }
-void parallel_ce_pa(int ncore, vector<int> CE, vector<int> PP, bool bo_shift, double shift, string filename){
+void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, double shift, string filename){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, alpha_t;
@@ -193,9 +167,6 @@ void parallel_ce_pa(int ncore, vector<int> CE, vector<int> PP, bool bo_shift, do
     for (int i=0; i<ncore; i++) {
         seed=i;
         ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, false);
-        
-        ll[i].set_lat_scalex(1);//force lattice sum on Nphi*Nphi lattice.
-        ll[i].set_lat_scaleq(1);//force lattice sum on Nphi*Nphi lattice.
         
         if (!bo_shift) {
             if (NPhi%2==0)
@@ -280,8 +251,8 @@ void parallel_ce_pa(int ncore, vector<int> CE, vector<int> PP, bool bo_shift, do
         short_error/=(1.*Ne);
         double MCerror=sqrt(EEtotal[c]/(1.*nMeas)-pow(Etotal[c]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne);
         
-        outfile<<"n="<<CE[c]<<" COULOMB-ENERGY."<<endl;
-        outfile<<"cutoff="<<ll[0].CE_cutoff[c]<<endl;
+        outfile<<"n="<<CE[c].N<<" COULOMB-ENERGY."<<endl;
+        outfile<<"cutoff="<<CE[c].Q<<endl;
         outfile<<"truncation value  ="<<setprecision(10)<<short_value<<endl;
         outfile<<"truncation error  = "<<setprecision(10)<<short_error<<endl;
         outfile<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
@@ -295,8 +266,8 @@ void parallel_ce_pa(int ncore, vector<int> CE, vector<int> PP, bool bo_shift, do
         short_error/=(1.*Ne);
         double MCerror=sqrt(PAPAtotal[p]/(1.*nMeas)-pow(PAtotal[p]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne);
         
-        outpa<<"n="<<PP[p]<<" PAIR-AMPLITUDE."<<endl;
-        outpa<<"cutoff="<<ll[0].PA_cutoff[p]<<endl;
+        outpa<<"n="<<PP[p].N<<" PAIR-AMPLITUDE."<<endl;
+        outpa<<"cutoff="<<PP[p].Q<<endl;
         outpa<<"truncation value  ="<<setprecision(10)<<short_value<<endl;
         outpa<<"truncation error  = "<<setprecision(10)<<short_error<<endl;
         outpa<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
@@ -341,8 +312,8 @@ void structurefactor(string intputfilename, int num_core){//fielname='params_sq_
 #pragma omp parallel for
     for(int s=0;s<nBins;s++){
         int coren=omp_get_thread_num();
-//        printf("coren=%d\n",coren);
-//        ll[coren].change_dbar_parameter(s*0.1,s*0.1);
+        //printf("coren=%d\n",coren);
+        //ll[coren].change_dbar_parameter(s*0.1,s*0.1);
         ll[coren].reset();
         ll[coren].step(nWarmup);
 
@@ -362,12 +333,6 @@ void laughlinberryphase(string input_name, string output_name, vector<double> le
     //The first contains phase, amp, energy for each step each bin, and final berry matrix.
     //The second is same as the first, but in a format friend to Mathematica.
     //The third is matrix element in each step each bin.
-    
-//    ofstream outfile(output_name.c_str());
-//    string outfile2name=output_name+"_Mathmatica";//output data in format easy for Mathematica to deal with.
-//    ofstream outfile2(outfile2name.c_str());
-//    string outfile3name=output_name+"_Matrix";//output matrix element in each step.
-//    ofstream outfile3(outfile3name.c_str());
     
     int Ne,Ne_t,invNu,nWarmup,nMeas,nMeas_t,nSteps,nBins,seed;
     bool testing;
@@ -475,58 +440,6 @@ void laughlinberryphase(string input_name, string output_name, vector<double> le
         double avephase=0.;
         Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(berrymatrix_integral);
         
-//        //write into outfile.
-//        outfile<<"----------\nnBin="<<nbin<<" theta, alpha="<<theta/M_PI<<"pi, "<<alpha<<endl;
-//        outfile<<"Ne="<<Ne<<" nMea="<<nMeas<<" length="<<length[0]<<" "<<length[1]<<" ncore="<<num_core<<endl;
-//        for (int b=0; b<nds; b++) {
-//            outfile<<b<<" phases = "; for (int i=0; i<invNu; i++) outfile<<datas[b].ang[i]<<" ";
-//            outfile<<endl;
-//            outfile<<b<<" amplitude = "; for (int i=0; i<invNu; i++) outfile<<datas[b].amp[i]<<" ";
-//            outfile<<endl;
-//            //                outfile<<"\n          energy = "<<energy[b]/(1.*nMeas*Ne)<<endl;
-//        }
-//        outfile<<"phase sum = "; for (int i=0; i<invNu; i++) {outfile<<phases[i]<<" "; avephase+=phases[i]/(1.*invNu);} outfile<<"\nphase average = "<<avephase<<endl;
-//        
-//        datas[0].ang_trace = arg(berrymatrix_integral.trace());
-//        //    datas[0].det = arg(berrymatrix_integral.determinant());
-//        outfile<<endl;
-//        outfile<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
-//        outfile<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) outfile<<abs(es.eigenvalues()[i])<<" "; outfile<<endl;
-//        outfile<<"arg(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) outfile<<arg(es.eigenvalues()[i])<<" "; outfile<<endl;
-//        avephase=0.; for (int i=0; i<invNu; i++) avephase+=arg(es.eigenvalues()[i])/(1.*invNu); outfile<<"ave arg(berrymatrix_integral.eigenvalue) = "<<avephase<<endl;
-//        outfile<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
-//        outfile<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
-//        outfile<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl<<endl;
-//        
-//        //write into outfile2. Same data, just for Mathematica convenience.
-//        outfile2<<"nBin="<<nbin<<", Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<" theta, alpha="<<theta/M_PI<<"pi, "<<alpha<<endl;
-//        for (int b=0; b<nds; b++) {
-//            for (int i=0; i<invNu; i++) outfile2<<datas[b].ang[i]<<" ";//output phases in each step.
-//            outfile2<<endl;
-//            for (int i=0; i<invNu; i++) outfile2<<datas[b].amp[i]<<" ";//output amplitude in each step.
-//            outfile2<<endl;
-//            //                outfile2<<energy[b]/(1.*nMeas*Ne)<<endl;
-//        }
-//        
-//        //write into outfile3. Matrix Element in each step.
-//        outfile3<<"nBin="<<nbin<<", Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<" theta, alpha="<<theta/M_PI<<"pi, "<<alpha<<endl;
-//        for (int b=0; b<nds; b++) {
-//            outfile3<<b<<" "<<real(berrymatrix_step[b](0,0))<<" "<<imag(berrymatrix_step[b](0,0))<<" "<<real(berrymatrix_step[b](1,1))<<" "<<imag(berrymatrix_step[b](1,1))<<" "<<real(berrymatrix_step[b](1,0))<<" "<<imag(berrymatrix_step[b](1,0))<<" "<<real(berrymatrix_step[b](0,1))<<" "<<imag(berrymatrix_step[b](0,1))<<endl;
-//        }
-
-        //output (not ofstream)
-//    datas[0].ang_trace = arg(berrymatrix_integral.trace());
-//    datas[0].det = arg(berrymatrix_integral.determinant());
-//    cout<<"\n\n Ne="<<Ne<<" nMea="<<nMeas<<" nStep="<<nSteps<<" ncore="<<num_core<<endl;
-//    cout<<"phase sum = "; for (int i=0; i<invNu; i++) {cout<<phases[i]<<" "; avephase+=phases[i]/(1.*invNu);} cout<<"\nphase average = "<<avephase<<endl;
-//    cout<<"berrymatrix_integral\n"<<berrymatrix_integral<<endl;
-//    cout<<"amp(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<abs(es.eigenvalues()[i])<<" "; cout<<endl;
-//    cout<<"arg(berrymatrix_integral.eigenvalue) = "; for (int i=0; i<invNu; i++) cout<<arg(es.eigenvalues()[i])<<" ";cout<<endl;
-//    avephase=0.; for (int i=0; i<invNu; i++) avephase+=arg(es.eigenvalues()[i])/(1.*invNu); cout<<"sum arg(berrymatrix_integral.eigenvalue) = "<<avephase<<endl;
-//    cout<<"arg(trace) = "<<arg(berrymatrix_integral.trace())<<endl;
-//    cout<<"amp(trace) = "<<abs(berrymatrix_integral.trace())<<endl;
-//    cout<<"arg(det) = "<<arg(berrymatrix_integral.determinant())<<endl;
-        
         if (arg(berrymatrix_integral.trace())<0)
             trace_phase[nbin]=arg(berrymatrix_integral.trace())+2.*M_PI;
         else
@@ -542,10 +455,6 @@ void laughlinberryphase(string input_name, string output_name, vector<double> le
         phase2_mean+=trace_phase[nbin]*trace_phase[nbin]/(1.*nBins);
     }
     cout<<"phase mean:\nphase std:\n"<<phase_mean<<"\n"<<sqrt( phase2_mean-pow(phase_mean,2) )/sqrt(1.*nBins)<<endl;
-    
-//    outfile.close();
-//    outfile2.close();
-//    outfile3.close();
 }
 void laughlin_bp_single_state(int gs, vector<double> length, double steplength, vector<data> &datas){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
@@ -698,34 +607,6 @@ void two_holes(string input_name, string str, int nmeasurement, data& test){
         }
 //        cout<<"round="<<round<<endl;
     }
-    
-////    Eigen::Matrix3cd berryloop = Eigen::Matrix3cd::Identity(3,3);
-//    for (int b=0; b<nds; b++) {
-//        for (int l=0; l<2; l++) overlaps[b][l]/=(1.*nMeas);
-//        for (int gs1=0; gs1<invNu; gs1++) {
-//            for (int gs2=0; gs2<invNu; gs2++) {
-//                overlaps[b][0](gs1,gs2)/=sqrt(abs(overlaps[b][1](gs1,gs2)));
-//            }
-//        }
-////        berryloop*=overlaps[b][0];
-//        
-//        //output the amplitude and phase of each step.
-//        bout<<abs(overlaps[b][0](0,0))<<" "<<arg(overlaps[b][0](0,0))<<endl;
-//    }
-//    bout.close();
-    
-    
-//        cout<<"\nberryloop=\n"<<berryloop<<endl;
-//        cout<<"determinant=\n"<<arg(berryloop.determinant())<<endl;
-//    
-//    for (int b=0; b<nds; b++) {
-//        Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(overlaps[b][2]);
-//        bout<<holes[b][0]<<" "<<holes[b][1]<<" "<<abs(es.eigenvalues()[0])<<" "<<arg(es.eigenvalues()[0])<<" "<<abs(es.eigenvalues()[1])<<" "<<arg(es.eigenvalues()[1])<<" "<<abs(es.eigenvalues()[2])<<" "<<arg(es.eigenvalues()[2])<<endl;
-//        //        for (int i=0; i<3; i++) {
-//        //            test.amp[i]=abs(es.eigenvalues()[i]);
-//        //            test.ang[i]=arg(es.eigenvalues()[i]);
-//        //        }
-//    }
     
 }
 //CFL Berry Phase Calculator, Core Part.
@@ -2530,11 +2411,7 @@ complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu
 }
 complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string type) {
     complex<double> ret=0.;
-    if (ll.lat_scalex!=ll.lat_scaleq || ll.lat_scalex!=1) {
-        cout<<"lat_scalex != lat_scaleq != 1"<<endl;
-        exit(0);
-    }
-    int N=ll.NPhi*ll.lat_scalex;
+    int N=ll.NPhi;
     
     for (int i1=0; i1<N; i1++)
         for (int j1=0; j1<N; j1++)
@@ -2563,21 +2440,16 @@ complex<double> latticepp(LATTICE ll, int m1, int m2, int m3, int m4, string typ
 }
 void testlatticepp(double shift){
     ifstream inf("para");
-    int Nphi, m1, m2, m3, m4, m5, m6, m7, m8, Kx, Ky, round, lat_scale;
-    double Kq;
+    int Nphi, m1, m2, m3, m4, m5, m6, m7, m8, round;
     string int_type;
     complex<double> tmp=0.;
     
     inf>>Nphi;
     inf>>m1>>m2>>m3>>m4;
-    inf>>Kx>>Ky>>Kq;
     inf>>round;
-    inf>>lat_scale;
     inf>>int_type;
     
     LATTICE ll(Nphi, 1, 0, "laughlin", 1, 0, 0.5*M_PI, 1.);
-    ll.set_lat_scalex(lat_scale);
-    ll.set_lat_scaleq(lat_scale);
     ll.shift_ws(shift);
     ll.setup_landautable();
     
@@ -2593,7 +2465,8 @@ void testlatticepp(double shift){
     }
     //get V1234 from lattice sum.
     for (int i=0; i<round; i++) {
-        ll.setup_tables(vector<int>{i}, int_type);
+        vector<NQ> N_Q(1); N_Q[0].N=i; N_Q[0].Q=-1.;
+        ll.setup_tables(N_Q, int_type);
         if (i==0) {
             tmp=latticepp(ll, m1, m2, m3, m4, int_type);
             latsumnewcom.push_back(1.);
@@ -2604,58 +2477,46 @@ void testlatticepp(double shift){
     //output
     cout<<"Nphi="<<Nphi<<" round="<<round<<endl;
     cout<<"m1,m2,m3,m4="<<m1<<" "<<m2<<" "<<m3<<" "<<m4<<endl;
-    cout<<"lat_scale="<<lat_scale<<endl;
     cout<<"output V_{m1m2,m3m4} with m1="<<m1<<" m2="<<m2<<" m3="<<m3<<" m4="<<m4<<endl;
     cout<<setw(30)<<" "<<"VED"<<setw(30)<<"V(lat)/VED-1"<<endl;
     for (int i=0; i<round; i++) {
         cout<<"n="<<i<<setw(30)<<setprecision(15)<<exactret[i]<<setw(30)<<latsumnewcom[i]/exactret[i]-1<<endl;
     }
 }
-vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift1, double shift2, vector<int> PP) {
-    int scalex=1, scaleq=1;
+vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift, vector<NQ> PP) {
     int Ne=2, NPhi=Ne*invNu;
-    int Nx=scalex*NPhi, Nq=scaleq*NPhi;
-    
-    cout<<"Explicit Lattice Sum, Ne=2, invNu="<<invNu<<endl;
-    cout<<"lat_scalex="<<scalex<<" lat_scaleq="<<scaleq<<endl;
     LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0);
+    cout<<"Explicit Lattice Sum, Ne=2, invNu="<<invNu<<endl;
     
     vector<double> PA(PP.size(),0.);
-    
-    ll.set_lat_scalex(scalex);
-    ll.set_lat_scaleq(scaleq);
-    ll.shift_ws(shift1);
+    ll.shift_ws(shift);
     ll.setup_tables(PP,"pa");
     
-    vector<vector<complex<double>>> wfTable = vector<vector<complex<double>>> (Nx*Nx, vector<complex<double>>(Nx*Nx, 0.));
-    for (int i=0; i<Nx*Nx; i++) {
-        for (int j=0; j<Nx*Nx; j++) {
+    vector<vector<complex<double>>> wfTable = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
+    for (int i=0; i<NPhi*NPhi; i++) {
+        for (int j=0; j<NPhi*NPhi; j++) {
             vector<vector<int>> zs(Ne,vector<int>(2));
-            zs[0][0]=i%Nx; zs[0][1]=i/Nx; zs[1][0]=j%Nx; zs[1][1]=j/Nx;
+            zs[0][0]=i%NPhi; zs[0][1]=i/NPhi; zs[1][0]=j%NPhi; zs[1][1]=j/NPhi;
             
             vector<vector<double>> zs_double(Ne,vector<double>(2,0.));
             for (int k=0; k<Ne; k++) {
-                zs_double[k][0] = zs[k][0]/(1.*Nx);
-                zs_double[k][1] = zs[k][1]/(1.*Nx);
+                zs_double[k][0] = zs[k][0]/(1.*NPhi);
+                zs_double[k][1] = zs[k][1]/(1.*NPhi);
             }
             wfTable[i][j]=ll.get_laughlinwf(zs_double);
         }
     }
     
     double normalization=0.;
-    for (int i=0; i<Nx*Nx; i++) {
-        for (int j=0; j<Nx*Nx; j++) {
-            int x=abs(i%Nx-j%Nx), y=abs(i/Nx-j/Nx);
-            
-            x=((i%Nx-j%Nx)%Nx+Nx)%Nx;
-            y=((i/Nx-j/Nx)%Nx+Nx)%Nx;
+    for (int i=0; i<NPhi*NPhi; i++)
+        for (int j=0; j<NPhi*NPhi; j++) {
+            int x=supermod(i%NPhi-j%NPhi,NPhi), y=supermod(i/NPhi-j/NPhi,NPhi);
             
             for (int k=0; k<PA.size(); k++) {
                 PA[k]+=real(conj(wfTable[i][j])*wfTable[i][j]*ll.PA_table[k][x][y]);
             }
             normalization+=real(conj(wfTable[i][j])*wfTable[i][j]);
         }
-    }
     
     vector<double> value(PA.size(), 0.);
     for (int i=0; i<PA.size(); i++) {
@@ -2664,21 +2525,19 @@ vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift1, doubl
     }
     return value;
 }
-vector<double> pairamplitude_ExplicitLatticeSum3(int invNu, double shift1, double shift2, vector<int> PP) {
+vector<double> pairamplitude_ExplicitLatticeSum3(int invNu, double shift, vector<NQ> PP) {
     int Ne=3, NPhi=Ne*invNu;
     LATTICE ll(Ne, invNu, 0, "laughlin", 0, 0);
     cout<<"Explicit Lattice Sum, Ne=3, invNu="<<invNu<<endl;
     
     vector<double> PA(PP.size(),0.);
-    ll.set_lat_scalex(1);
-    ll.set_lat_scaleq(1);
-    ll.shift_ws(shift1);
+    ll.shift_ws(shift);
     ll.setup_tables(PP,"pa");
     
     vector<vector<vector<complex<double>>>> wfTable=vector<vector<vector<complex<double>>>>(NPhi*NPhi,vector<vector<complex<double>>>(NPhi*NPhi,vector<complex<double>>(NPhi*NPhi,0.)));
     
-    for (int i=0; i<NPhi*NPhi; i++) {
-        for (int j=0; j<NPhi*NPhi; j++) {
+    for (int i=0; i<NPhi*NPhi; i++)
+        for (int j=0; j<NPhi*NPhi; j++)
             for (int k=0; k<NPhi*NPhi; k++) {
                 vector<vector<int>> zs(Ne,vector<int>(2));
                 zs[0][0]=i%NPhi; zs[0][1]=i/NPhi; zs[1][0]=j%NPhi; zs[1][1]=j/NPhi; zs[2][0]=k%NPhi; zs[2][1]=k/NPhi;
@@ -2690,12 +2549,10 @@ vector<double> pairamplitude_ExplicitLatticeSum3(int invNu, double shift1, doubl
                 }
                 wfTable[i][j][k]=ll.get_laughlinwf(zs_double);
             }
-        }
-    }
     
     double normalization=0.;
-    for (int i=0; i<NPhi*NPhi; i++) {
-        for (int j=0; j<NPhi*NPhi; j++) {
+    for (int i=0; i<NPhi*NPhi; i++)
+        for (int j=0; j<NPhi*NPhi; j++)
             for (int k=0; k<NPhi*NPhi; k++) {
                 
                 int x1=((i%NPhi-j%NPhi)%NPhi+NPhi)%NPhi;
@@ -2715,8 +2572,6 @@ vector<double> pairamplitude_ExplicitLatticeSum3(int invNu, double shift1, doubl
                 }
                 normalization+=real(conj(wfTable[i][j][k])*wfTable[i][j][k]);
             }
-        }
-    }
     
     vector<double> value(PA.size(), 0.);
     for (int i=0; i<PA.size(); i++) {
@@ -2725,37 +2580,3 @@ vector<double> pairamplitude_ExplicitLatticeSum3(int invNu, double shift1, doubl
     }
     return value;
 }
-/*
-void onebody(int m1, int m2, int NPhi, double shift, int lat_scale){
-    LATTICE ll(NPhi, 1, 0, "laughlin", 1, 0, 0.5*M_PI, 1.);
-    ll.set_lat_scalex(lat_scale);
-    ll.set_lat_scaleq(lat_scale);
-    ll.shift_ws(shift);
-    ll.setup_landautable();
-    
-    m1=supermod(m1,NPhi);
-    m2=supermod(m2,NPhi);
-    
-    ll.setup_sb_table(-1.);
-    
-    complex<double> output=0., normalization=0.;
-    for (int x=0; x<lat_scale*NPhi; x++) {
-        for (int y=0; y<lat_scale*NPhi; y++) {
-            output+=conj(ll.landautable[m1][x][y]*ll.landautable[m2][x][y]*ll.sb_table[x][y]);
-            normalization+=real( conj(ll.landautable[m1][x][y])*ll.landautable[m1][x][y] );
-        }
-    }
-    output/=normalization;
-    
-    cout<<"output="<<output<<endl;
-    
-//    output=0.;
-//    for (int x=0; x<lat_scale*NPhi; x++) {
-//        for (int y=0; y<lat_scale*NPhi; y++) {
-//            output+=conj(ll.landautable[m1][x][y])*ll.landautable[m2][x][y];
-//        }
-//    }
-//    cout<<"test organ"<<output/normalization<<endl;
-    
-}
-*/
