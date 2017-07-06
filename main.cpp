@@ -16,10 +16,6 @@ int main(){
 //    Ed_Coulomb();
     test_exact(0.00);
     test_exact(0.25);
-    test_exact(0.30);
-    test_exact(0.50);
-    
-  
 }
 void Ed_Coulomb(){
     parallel_ce_pa(10, vector<int>{0,2} ,vector<int>{1,3}, true, 0., "params_cfl");
