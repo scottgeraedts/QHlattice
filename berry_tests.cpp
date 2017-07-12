@@ -262,9 +262,10 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
     for (int p=0; p<PA_type; p++) {
         double short_value, short_error;
         ll[0].shortrange(p, short_value, short_error, "pa");
-        short_value/=(1.*Ne);
-        short_error/=(1.*Ne);
-        double MCerror=sqrt(PAPAtotal[p]/(1.*nMeas)-pow(PAtotal[p]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne);
+        //pair-amplitude calculation does not need to devide Ne.
+        //short_value/=(1.*Ne);
+        //short_error/=(1.*Ne);
+        double MCerror=sqrt(PAPAtotal[p]/(1.*nMeas)-pow(PAtotal[p]/(1.*nMeas),2))/sqrt(1.*nMeas);
         
         outpa<<"n="<<PP[p].N<<" PAIR-AMPLITUDE."<<endl;
         outpa<<"cutoff="<<PP[p].Q<<endl;
@@ -272,7 +273,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
         outpa<<"truncation error  = "<<setprecision(10)<<short_error<<endl;
         outpa<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
         
-        outpa<<"PA="<<setprecision(10)<<PAtotal[p]/(1.*nMeas*Ne)+short_value<<" var="<<sqrt( MCerror*MCerror + short_error*short_error)<<endl<<endl;
+        outpa<<"PA="<<setprecision(10)<<PAtotal[p]/(1.*nMeas)+short_value<<" var="<<sqrt( MCerror*MCerror + short_error*short_error)<<endl<<endl;
     }
     outfile.close();
     outpa.close();
