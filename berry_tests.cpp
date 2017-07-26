@@ -167,6 +167,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
     for (int i=0; i<ncore; i++) {
         seed=i;
         ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, false);
+//        exit(0);
         
         if (!bo_shift) {
             if (NPhi%2==0)
@@ -180,11 +181,10 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
         if (Ne==8 && type=="CFL") ll[i].set_ds(ds);
         if (Ne==16&& type=="CFL") ll[i].set_ds(ds);
         
-        
         ll[i].setup_tables(CE, "ce");
         ll[i].setup_tables(PP, "pa");
-        
     }
+    cout<<"finish preliminary"<<endl;
     
     int Coul_type=CE.size();
     vector<vector<double>> E(Coul_type, vector<double>(nBins,0.)), EE(Coul_type, vector<double>(nBins,0.));
@@ -240,7 +240,6 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
     outpa<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
     outfile<<"shift="<<ll[0].get_shift()<<endl<<endl;
     outpa<<"shift="<<ll[0].get_shift()<<endl<<endl;
-    
     
     nMeas*=nBins;
     

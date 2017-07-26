@@ -24,7 +24,7 @@ void Ed_Coulomb(){
     NQCE[0].N=0; NQCE[1].N=2;
     NQCE[0].Q=4.75; NQCE[1].Q=4.75;
     
-    int n=4;
+    int n=0;
     vector<NQ> NQPA(n);
     for (int i=0; i<n; i++) {
         NQPA[i].N=2*i+1;
@@ -34,7 +34,7 @@ void Ed_Coulomb(){
         }
     }
     
-    parallel_ce_pa(10, NQCE, NQPA, true, 0.25, "params_cfl");
+    parallel_ce_pa(1, NQCE, NQPA, true, 0., "params_cfl");
 }
 void test_exact(double shift){
     cout<<"*****shift="<<shift<<"*****"<<endl;
