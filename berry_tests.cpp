@@ -135,11 +135,12 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
     
     vector<vector<int>> ds;
     if (Ne==8) {
-        ds=vector<vector<int>> (8,vector<int>(2,0));
-        for (int i=0; i<8; i++) {
+        ds=vector<vector<int>> (9,vector<int>(2,0));
+        for (int i=0; i<9; i++) {
             ds[i][0]=i/3-1;
             ds[i][1]=i%3-1;
         }
+        ds.erase(remove(ds.begin(),ds.end(),vector<int>{1,1}),ds.end());
     }
     if (Ne==16) {
         ds.clear();
@@ -165,18 +166,8 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
     
     vector<LATTICE> ll(ncore);
     for (int i=0; i<ncore; i++) {
-        seed=i;
-        ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, false);
-//        exit(0);
-        
-        if (!bo_shift) {
-            if (NPhi%2==0)
-                shift=0.25;
-            else
-                shift=0.;
-        }
-        
-        ll[i].shift_ws(shift);
+        double shiftx=0.1, shifty=0.1;
+        ll[i]=LATTICE(Ne, invNu, testing, type, i, gs, theta, alpha, shiftx, shifty);
         
         if (Ne==8 && type=="CFL") ll[i].set_ds(ds);
         if (Ne==16&& type=="CFL") ll[i].set_ds(ds);
@@ -238,8 +229,8 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
     ofstream outpa("out_pa_"+filename);
     outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
     outpa<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
-    outfile<<"shift="<<ll[0].get_shift()<<endl<<endl;
-    outpa<<"shift="<<ll[0].get_shift()<<endl<<endl;
+    outfile<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<endl<<endl;
+    outpa<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<endl<<endl;
     
     nMeas*=nBins;
     
@@ -248,7 +239,8 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
         ll[0].shortrange(c, short_value, short_error, "ce");
         short_value/=(1.*Ne);
         short_error/=(1.*Ne);
-        double MCerror=sqrt(EEtotal[c]/(1.*nMeas)-pow(Etotal[c]/(1.*nMeas),2))/sqrt(1.*nMeas)/(1.*Ne);
+        double MCerror=sqrt( EEtotal[c]/(1.*nMeas)-pow(Etotal[c]/(1.*nMeas),2) )/sqrt(1.*nMeas)/(1.*Ne);
+        //Cauchy inequality garunatee it's non-nagnetive. If nan, there must be somewhere wrong.
         
         outfile<<"n="<<CE[c].N<<" COULOMB-ENERGY."<<endl;
         outfile<<"cutoff="<<CE[c].Q<<endl;
@@ -264,7 +256,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
         //pair-amplitude calculation does not need to devide Ne.
         //short_value/=(1.*Ne);
         //short_error/=(1.*Ne);
-        double MCerror=sqrt(PAPAtotal[p]/(1.*nMeas)-pow(PAtotal[p]/(1.*nMeas),2))/sqrt(1.*nMeas);
+        double MCerror=sqrt( PAPAtotal[p]/(1.*nMeas)-pow(PAtotal[p]/(1.*nMeas),2) )/sqrt(1.*nMeas);
         
         outpa<<"n="<<PP[p].N<<" PAIR-AMPLITUDE."<<endl;
         outpa<<"cutoff="<<PP[p].Q<<endl;
@@ -277,6 +269,282 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
     outfile.close();
     outpa.close();
 }
+void print_d(vector<vector<int>> d){
+    ofstream outfile("ds");
+    for (int i=0; i<d.size(); i++) {
+        outfile<<d[i][0]<<" "<<d[i][1]<<endl;
+    }
+    outfile.close();
+    exit(0);
+}
+vector<vector<vector<int>>> output_dset(int Ne){
+    vector<vector<int>> d;
+    vector<vector<vector<int>>> dset;
+    
+    //generate circular Fermi surface.
+    int invNu=2, testing=0, seed=0, gs=0;
+    LATTICE templl(Ne, invNu, testing, "CFL", seed, gs);
+    vector<vector<int> > old_ds=templl.get_ds();
+    templl.print_ds();
+
+    if (Ne==9) {
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{0,1}),d.end());
+        d.push_back(vector<int>{-1,2});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{0,-1}),d.end());
+        d.erase(remove(d.begin(),d.end(),vector<int>{0,1}),d.end());
+        d.push_back(vector<int>{-1,-2});
+        d.push_back(vector<int>{-1,2});
+        dset.push_back(d);
+        
+        return dset;
+    }
+    else if (Ne==8) {
+        LATTICE temp(9, invNu, testing, "CFL", seed, gs);
+        vector<vector<int>> d0=temp.get_ds();
+        
+        d=d0;
+        d.erase(remove(d.begin(),d.end(),vector<int>{0,1}),d.end());
+        dset.push_back(d);
+        
+        d=d0;
+        d.erase(remove(d.begin(),d.end(),vector<int>{1,0}),d.end());
+        d.erase(remove(d.begin(),d.end(),vector<int>{1,1}),d.end());
+        d.erase(remove(d.begin(),d.end(),vector<int>{0,0}),d.end());
+        d.push_back(vector<int>{0,2}); d.push_back(vector<int>{1,2});
+        dset.push_back(d);
+        
+    }
+    else if (Ne==37) {
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+        d.push_back(vector<int>{2,3});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+        d.push_back(vector<int>{3,2});
+        dset.push_back(d);
+        
+        return dset;
+    }
+    else if (Ne==97) {
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{5,0}),d.end());
+        d.push_back(vector<int>{6,0});
+        dset.push_back(d);
+    }
+    else {
+        cout<<"output_dset not set for this particle number."<<endl;
+        exit(0);
+    }
+}
+
+void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<double> a){
+    int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
+    bool testing;
+    double theta_t, alpha_t;
+    string type;
+    
+    ifstream infile(filename);
+    infile>>Ne>>invNu>>theta_t>>alpha_t;
+    infile>>nWarmup>>nMeas>>nSteps>>nBins;
+    infile>>seed;
+    infile>>testing;
+    infile>>type;
+    //initialize MC object
+    
+    double shiftx=0.1, shifty=0.1;
+    cout<<"***pomeranchunk instability***   shift = "<<shiftx<<" "<<shifty<<endl;
+    cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<" nBins="<<nBins<<" ncore="<<ncore<<endl;
+    
+    int gs=0;
+    int NPhi=Ne*invNu;
+    if (type!="CFL") {
+        cout<<"type!=CFL"<<endl;
+        exit(0);
+    }
+    
+    double theta=theta_t*M_PI, alpha=alpha_t;
+    vector<vector<vector<int>>> dset=output_dset(Ne);
+    int Nn=dset.size();
+    
+    vector<LATTICE> ll(ncore);
+    
+    for (int i=0; i<ncore; i++) {
+        seed=i;
+        bool trace=false, correlatedsampling=true;
+        
+        ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, shiftx, shifty, trace, correlatedsampling);
+        //Energy does not dependent on shift. But if want to use the same Coulomb_table for all excited states, boundary conditions must be the same.
+        
+        if (Ne==8) {
+            LATTICE temp(9, invNu, testing, "CFL", seed, gs);
+            vector<vector<int>> tmp=temp.get_ds();
+            tmp.erase(remove(tmp.begin(),tmp.end(),vector<int>{1,1}),tmp.end());
+            ll[i].set_ds(tmp);
+        }
+        
+        ll[i].setup_tables(CE, "ce");
+        ll[i].setup_nonsamplestates(dset, a);
+    }
+    
+    cout<<"Tables Initialized."<<endl;
+    ll[0].print_ds();
+    
+    int Coul_type=CE.size();
+    vector<vector<vector<double>>> E(Nn+1, vector<vector<double>>(Coul_type, vector<double>(nBins, 0.))), EE(Nn+1, vector<vector<double>>(Coul_type, vector<double>(nBins, 0.)));
+    //one dimension higher: different excited states. *[Nn] is for the GC.
+    
+    //weight
+    vector<vector<double>> W(Nn+1, vector<double>(nBins, 0.));
+    //correlation, O^n, n=0,1,2
+    vector<vector<vector<vector<double>>>> Wii(3, vector<vector<vector<double>>>(Nn+1, vector<vector<double>>(Coul_type, vector<double>(nBins, 0.))));
+    vector<vector<vector<vector<double>>>> Wi0(3, vector<vector<vector<double>>>(Nn+1, vector<vector<double>>(Coul_type, vector<double>(nBins, 0.))));
+    
+    omp_set_num_threads(ncore);
+#pragma omp parallel for
+    for(int s=0;s<nBins;s++){
+        int coren=omp_get_thread_num();
+        ll[coren].reset();
+        ll[coren].step(nWarmup);
+        
+        for(int i=0;i<nMeas;i++){
+            ll[coren].step(nSteps);
+            //W.
+            vector<double> weit=ll[coren].get_runweis(), ratio=ll[coren].get_ratio();
+            double weit0=ll[coren].running_weight, den=ratio[Nn];
+            for (int j=0; j<Nn; j++) den+=ratio[j]*exp(weit[j]-weit0);
+            for (int j=0; j<Nn; j++) W[j][s]+=ratio[j]*exp(weit[j]-weit0)/den; W[Nn][s]+=ratio[Nn]/den;
+            //
+            for (int c=0; c<Coul_type; c++) {
+                double e=ll[coren].coulomb_energy(c,"ce");
+                //energy.
+                for (int j=0; j<Nn; j++) E[j][c][s]+=e*ratio[j]*exp(weit[j]-weit0)/den;
+                E[Nn][c][s]+=e*ratio[Nn]/den;
+                //WW. n<Nn
+                for (int j=0; j<Nn; j++) {
+                    double temp1=ratio[j]*exp(weit[j]-weit0)/den;
+                    double temp2=temp1*ratio[Nn]/den;
+                    
+                    for (int k=0; k<3; k++) {
+                        if (e==0) {
+                            Wii[0][j][c][s]+=pow(temp1,2);
+                            Wi0[0][j][c][s]+=temp2;
+                        }
+                        else {
+                            Wii[k][j][c][s]+=pow(e,k)*pow(temp1,2);
+                            Wi0[k][j][c][s]+=pow(e,k)*temp2;
+                        }
+                    }
+                    
+                }
+                //WW. n=Nn
+                if (e==0) {
+                    Wii[0][Nn][c][s]+=pow(ratio[Nn]/den, 2);
+                    Wi0[0][Nn][c][s]+=pow(ratio[Nn]/den, 2);
+                }
+                else {
+                    for (int k=0; k<3; k++) {
+                        Wii[k][Nn][c][s]+=pow(e,k)*pow(ratio[Nn]/den, 2);
+                        Wi0[k][Nn][c][s]+=pow(e,k)*pow(ratio[Nn]/den, 2);
+                    }
+                }
+                //
+            }
+            
+        }
+    }
+    cout<<"finish roop"<<endl;
+
+    vector<vector<double>> Etotal(Nn+1, vector<double>(Coul_type, 0.)), EEtotal(Nn+1, vector<double>(Coul_type, 0.));
+    vector<vector<vector<double>>> Wiitotal(3, vector<vector<double>>(Nn+1, vector<double>(Coul_type, 0.)));
+    vector<vector<vector<double>>> Wi0total(3, vector<vector<double>>(Nn+1, vector<double>(Coul_type, 0.)));
+    vector<double> Wtotal(Nn+1, 0.);
+    
+    
+    for (int s=0; s<nBins; s++) {
+        for (int n=0; n<=Nn; n++) {
+            Wtotal[n]+=W[n][s]/(1.*nMeas*nBins);
+            for (int c=0; c<Coul_type; c++) {
+                Etotal[n][c]+=E[n][c][s]/(1.*nMeas*nBins);
+                for (int k=0; k<3; k++) {
+                    Wiitotal[k][n][c]+=Wii[k][n][c][s]/(1.*nMeas*nBins);
+                    Wi0total[k][n][c]+=Wi0[k][n][c][s]/(1.*nMeas*nBins);
+                }
+            }
+        }
+    }
+    
+    double Wsum=0.;
+    for (int n=0; n<=Nn; n++) Wsum+=Wtotal[n];
+    //cout<<"Wsum="<<Wsum<<endl;//This should be 1, as a check.
+    
+    for (int c=0; c<Coul_type; c++) {
+        for (int n=0; n<Nn+1; n++) {
+            for (int k=0; k<3; k++) {
+                Wiitotal[k][n][c]/=Wtotal[n]*Wtotal[n];
+                Wi0total[k][n][c]/=Wtotal[n]*Wtotal[Nn];
+                
+            }
+            Etotal[n][c]/=Wtotal[n];
+        }
+    }
+    
+    //variance
+    vector<vector<double>> variance(Nn+1, vector<double>(Coul_type, 0.));
+    for (int c=0; c<Coul_type; c++) {
+        for (int n=0; n<Nn; n++) {
+            variance[n][c]+=Wiitotal[2][n][c]+Wiitotal[2][Nn][c]-2.*Wi0total[2][n][c];
+            
+            variance[n][c]+=Wiitotal[0][n][c]*pow(Etotal[n][c],2)+Wiitotal[0][Nn][c]*pow(Etotal[Nn][c],2)-2.*Wi0total[0][n][c]*Etotal[n][c]*Etotal[Nn][c];
+            
+            double temp=Wiitotal[1][n][c]*Etotal[n][c]+Wiitotal[1][Nn][c]*Etotal[Nn][c]-Wi0total[1][n][c]*(Etotal[n][c]+Etotal[Nn][c]);
+            
+            variance[n][c]-=2.*temp;
+        }
+        variance[Nn][c]=Wiitotal[2][Nn][c]+Wiitotal[0][Nn][c]*pow(Etotal[Nn][c],2)-2*Wiitotal[1][Nn][c]*Etotal[Nn][c];
+    }
+    
+    //outfile part.
+    ofstream outfile("out_"+filename);
+    outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
+    outfile<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<" ratio=";
+    for (int i=0; i<ll[0].get_ratio().size(); i++) outfile<<ll[0].get_ratio()[i]<<" ";
+    outfile<<endl;
+    
+    nMeas*=nBins;
+    
+    for (int c=0; c<Coul_type; c++) {
+        double short_value, short_error;
+        ll[0].shortrange(c, short_value, short_error, "ce");
+        short_value/=(1.*Ne);
+        short_error/=(1.*Ne);
+        
+        outfile<<"------"<<endl;
+        outfile<<"LL="<<CE[c].N<<" COULOMB-ENERGY."<<endl;
+        outfile<<"cutoff="<<CE[c].Q<<endl;
+        outfile<<"SM-error  = "<<setprecision(10)<<short_error<<endl<<endl;
+        
+        double MCerror=sqrt( variance[Nn][c] )/sqrt(1.*nMeas)/(1.*Ne);
+        //Cauchy inequality garunatee it's non-nagnetive. If nan, there must be somewhere wrong.
+        
+        outfile<<"GS"<<" "<<"\nMC-error  = "<<setprecision(10)<<MCerror<<endl;
+        outfile<<"*Energy="<<setprecision(10)<<Etotal[Nn][c]/(1.*Ne)+short_value<<"\n*var="<<sqrt( MCerror*MCerror + short_error*short_error)<<endl<<endl;
+        
+        for (int n=0; n<Nn; n++) {
+            MCerror=sqrt( variance[n][c] )/sqrt(1.*nMeas)/(1.*Ne);//TODO: the deviation of excitation energy.
+            outfile<<"ES"<<n<<"\nMC-error  = "<<setprecision(10)<<MCerror<<endl;
+            outfile<<"*deltaE="<<setprecision(10)<<Etotal[n][c]/(1.*Ne)+short_value<<"\n*var="<<sqrt( MCerror*MCerror + short_error*short_error)<<endl<<endl;//TODO:MC error should be doubled.
+        }
+    }
+    outfile.close();
+}
+
+/*
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
@@ -2450,7 +2718,6 @@ void testlatticepp(double shift){
     inf>>int_type;
     
     LATTICE ll(Nphi, 1, 0, "laughlin", 1, 0, 0.5*M_PI, 1.);
-    ll.shift_ws(shift);
     ll.setup_landautable();
     
     vector<double> exactret, latsum, latsumcom, latsumnewcom;
@@ -2489,7 +2756,6 @@ vector<double> pairamplitude_ExplicitLatticeSum2(int invNu, double shift, vector
     cout<<"Explicit Lattice Sum, Ne=2, invNu="<<invNu<<endl;
     
     vector<double> PA(PP.size(),0.);
-    ll.shift_ws(shift);
     ll.setup_tables(PP,"pa");
     
     vector<vector<complex<double>>> wfTable = vector<vector<complex<double>>> (NPhi*NPhi, vector<complex<double>>(NPhi*NPhi, 0.));
@@ -2531,7 +2797,6 @@ vector<double> pairamplitude_ExplicitLatticeSum3(int invNu, double shift, vector
     cout<<"Explicit Lattice Sum, Ne=3, invNu="<<invNu<<endl;
     
     vector<double> PA(PP.size(),0.);
-    ll.shift_ws(shift);
     ll.setup_tables(PP,"pa");
     
     vector<vector<vector<complex<double>>>> wfTable=vector<vector<vector<complex<double>>>>(NPhi*NPhi,vector<vector<complex<double>>>(NPhi*NPhi,vector<complex<double>>(NPhi*NPhi,0.)));
@@ -2580,3 +2845,4 @@ vector<double> pairamplitude_ExplicitLatticeSum3(int invNu, double shift, vector
     }
     return value;
 }
+ */

@@ -8,11 +8,10 @@ inline double laguerre(int n, double x){
     }
     return result;
 }
-
-LATTICE::LATTICE() {
+LATTICE::LATTICE():shiftx(0.),shifty(0.){
     Ne=0;
 }
-LATTICE::LATTICE(LATTICE_PARAMS params){
+LATTICE::LATTICE(LATTICE_PARAMS params):shiftx(0.),shifty(0.){
 	Ne=params.Ne;
 	invNu=params.invNu;
 	testing=params.testing;
@@ -28,16 +27,19 @@ LATTICE::LATTICE(LATTICE_PARAMS params){
 
 	init(params.seed);
 }
-
-LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t, bool trace_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t),trace(trace_t){
+LATTICE::LATTICE(int Ne_t, int invNu_t, bool testing_t, string type_t, int seed, int gs_t, double theta_t, double alpha_t, double shift_x, double shift_y, bool trace_t, bool correlatedsampling_t):Ne(Ne_t),invNu(invNu_t),testing(testing_t),type(type_t),gs(gs_t),theta(theta_t),alpha(alpha_t),shiftx(shift_x),shifty(shift_y),trace(trace_t),correlatedsampling(correlatedsampling_t){
 
  	init(seed);
-  in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
+    in_determinant_rescaling=get_in_det_rescaling(Ne, invNu);
 }
 void LATTICE::init(int seed){
 
 	if(trace)
 		cout<<"WARNING! Trace=true is no longer supported, use lattice_wrapper instead"<<endl;
+    if (correlatedsampling && (type!="CFL")) {
+        cout<<"correlatedsampling is enabled for CFL only"<<endl;
+        exit(0);
+    }
 
 	//various parameters from input file
  	NPhi=Ne*invNu;
@@ -90,8 +92,12 @@ void LATTICE::init(int seed){
         ws0[i][1]=gs/(1.*invNu)+imag(w_delta)*lil_sign(gs)*lil_sign(i);
     }
     
-    //boundary condition. zero by default.
-    shift=0.;
+    //change the boundary condition. For CFL state, bc is set by set_ds().
+    ws=ws0;
+    for (int i=0; i<invNu; i++) {
+        ws[i][0]+=shiftx/(1.*invNu);
+        ws[i][1]+=shifty/(1.*invNu);
+    }
     
     //alternatively, in the CFL case we can access different ground states by moving the ds (to do this uncomment the next line)
    // if(type=="CFL") for(int i=0; i<Ne; i++) ds[i][1]+=gs;
@@ -99,8 +105,6 @@ void LATTICE::init(int seed){
         set_ds(ds);//set ds, and reset ws.
     else if (type=="FilledLL")
         set_zeros(vector<double>{0., 0.});
-    else
-        ws=ws0;
     
     wsum=vector<double>(2,0.);
     for (int i=0; i<invNu; i++) {
@@ -121,22 +125,8 @@ void LATTICE::init(int seed){
     sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi, 0));
     sq2_mqy=vector<vector<double>>(NPhi, vector<double>(NPhi, 0));
 }
-void LATTICE::shift_ws(double shift_s){
-    shift=shift_s;
-    for (int i=0; i<invNu; i++) {
-        ws[i][0]+=shift/(1.*invNu);
-        ws[i][1]+=shift/(1.*invNu);
-    }
-    wsum=vector<double>(2,0.);
-    for (int i=0; i<invNu; i++) {
-        wsum[0]+=ws[i][0];
-        wsum[1]+=ws[i][1];
-    }
-//    cout<<"wsum="<<wsum[0]<<" "<<wsum[1]<<endl;
-}
-double LATTICE::get_shift(){
-    return shift;
-}
+vector<double> LATTICE::get_shift(){return vector<double>{shiftx, shifty};}
+vector<double> LATTICE::get_bc(){if (type=="CFL" or type=="doubledCFL") return vector<double>{wsum[0]-dsum[0]/(1.*NPhi), wsum[1]-dsum[1]/(1.*NPhi)}; else return wsum;}
 double LATTICE::get_in_det_rescaling(int Ne, int invNu){
     double rescaling=1.;
     if (type=="CFL") {
@@ -144,18 +134,17 @@ double LATTICE::get_in_det_rescaling(int Ne, int invNu){
             rescaling=1.0;
         }
         else if (invNu==2) {
-//            if (Ne<40) rescaling=0.85;
-//            else if (Ne>=40 && Ne<=50) rescaling=0.2;
-//            else if (Ne<90) rescaling=0.18;
-//            else if (Ne==97) rescaling=0.15;
-//            else {rescaling=0.15; cout<<"Please set in_determinant_rescaling if doing berry phase."<<endl;}
+            if (Ne<40) rescaling=0.25;//0.85
+            else if (Ne>=40 && Ne<=50) rescaling=0.2;
+            else if (Ne<90) rescaling=0.18;
+            else if (Ne==97) rescaling=0.15;
+            else {rescaling=0.15; cout<<"Please set in_determinant_rescaling if doing berry phase."<<endl;}
         }
         else if (invNu==4) {
             if (Ne<15) rescaling=0.1;
             else if (Ne>=15 && Ne<=21) rescaling=0.08;
             else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
         }
-//        else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
     }
     else if (type=="laughlin"||type=="laughlin-hole") {
         if (invNu==3) {
@@ -183,22 +172,97 @@ void LATTICE::step(int Nsteps){
 	for(int i=0;i<Nsteps*Ne;i++){
 		tries++;
 		accepts+=simple_update();
-//        cout<<"acctpes="<<accepts<<endl;
 	}
 }
 int LATTICE::simple_update(){
 	//find a new position for a randomly chosen electron
-	int electron;
+    int electron;
 	if(type=="doubledCFL") electron=ran.randInt(2*Ne-1);
 	else electron=ran.randInt(Ne-1);
-	vector<int> oldloc, newloc=random_move(locs[electron], NPhi, ran);
-	vector< vector<int> >::iterator it=find(locs.begin(),locs.end(),newloc);
+	vector<int> newloc=random_move(locs[electron], NPhi, ran);
+	vector<vector<int>>::iterator it=find(locs.begin(),locs.end(),newloc);
 	if(it!=locs.end()) return 0;
-
-	double prob=0;
-	complex<double> temp;
-    newMatrix=oldMatrix;
-
+    bool update=false;
+    
+    //newMatrix=oldMatrix, newDet=oldDet; they're global.
+    update_matdet(false);
+    if (correlatedsampling) for (int i=0; i<nonsamplestates.size(); i++) nonsamplestates[i].update_matdet(false);
+    
+    double prob=updateweight(electron, newloc);
+    //this function changes newMatrix. whether oldMatrix is changed or not dependent on if update.
+    
+    if (testing && !correlatedsampling)
+        cout<<running_weight<<" "<<get_weight(locs)<<" "<<log(norm(get_wf(locs)))<<endl;
+    else if (testing && correlatedsampling) {
+        cout<<c_running_weight<<" "<<get_correlated_weight()<<endl;
+        cout<<"gs ="<<running_weight<<" "<<get_weight(locs)<<" "<<log(norm(get_wf(locs)))<<endl;
+        for (int i=0; i<nonsamplestates.size(); i++) {
+            cout<<"i="<<i<<" "<<nonsamplestates[i].running_weight<<" "<<nonsamplestates[i].get_weight(locs)<<" "<<log(norm(nonsamplestates[i].get_wf(locs)))<<" ";
+            
+            vector<vector<int>> tmp=nonsamplestates[i].get_locs();
+            for (int j=0; j<tmp.size(); j++) {
+                cout<<tmp[j][0]<<" "<<tmp[j][1]<<" ";
+            }
+            cout<<endl;
+        }
+    }
+    
+    if (!correlatedsampling) {
+        //*******************update or not(prob)
+        if(prob>0) update=true;
+        else if(ran.rand()<exp(prob)) update=true;
+        
+        if(update){
+            locs[electron]=newloc;
+            running_weight+=prob;
+            update_matdet();
+        }
+        //else if(type=="doubledCFL") locs[electron]=oldloc;
+    }
+    else if (correlatedsampling) {
+        double prob_c=0.;//correlated sampling probablity;
+        
+        int Nn=nonsamplestates.size();
+        vector<double> dif_wt(Nn, 0.), ins_wt(Nn, 0.);
+        //dif_wt[i]=running_weight[i]-running_weight; ins_wt[i]=updateweight[i]. i labels nonsampled sates.
+        
+        for (int i=0; i<Nn; i++) {
+            dif_wt[i]=nonsamplestates[i].running_weight-running_weight;
+            ins_wt[i]=nonsamplestates[i].updateweight(electron, newloc);
+        }
+        //till this line, gs and excited states' newMatrix/newDeterminant got updated.
+        
+        double den=ratio[nonsamplestates.size()], num=ratio[nonsamplestates.size()]*exp(prob);
+        for (int i=0; i<Nn; i++) {
+            den+=ratio[i]*exp(dif_wt[i]);
+            num+=ratio[i]*exp(ins_wt[i]+dif_wt[i]);//TODO:correlated-sampling
+        }
+        prob_c=log(num/den);
+        
+        //*******************update or not (prob_c)
+        if (prob_c>0) update=true;
+        else if(ran.rand()<exp(prob_c)) update=true;
+        
+        if (update) {
+            running_weight+=prob;
+            c_running_weight+=prob_c;
+            
+            locs[electron]=newloc;
+            update_matdet();//update Matrix/Det for ground state.
+            for (int i=0; i<nonsamplestates.size(); i++) {
+                nonsamplestates[i].change_locs(locs);
+                nonsamplestates[i].running_weight+=ins_wt[i];
+                nonsamplestates[i].update_matdet();
+            }
+        }
+    }
+    
+    return update? 1:0;
+}
+double LATTICE::updateweight(const int &electron, const vector<int> &newloc){
+    double out=0.;
+    complex<double> temp;
+    
     if (type=="FilledLL") {
         //Here I just use 'newDeterminant' to store the FilledLL wf value, though it has nothing to do with determinant.
         for (int n=0; n<NPhi; n++) {
@@ -209,24 +273,28 @@ int LATTICE::simple_update(){
         }
         detSolver.compute(newMatrix);
         newDeterminant=detSolver.determinant();
-        prob+=log(norm(newDeterminant/oldDeterminant));
+        out+=log(norm(newDeterminant/oldDeterminant));
     }else if(type=="doubledCFL"){
-    	oldloc=locs[electron];
-    	locs[electron]=newloc;
-    	newDeterminant=get_wf(locs);
-    	prob+=log(norm(newDeterminant/oldDeterminant));
+        //oldloc=locs[electron];
+        vector<vector<int>> newlocs=locs;
+        newlocs[electron]=newloc;
+        newDeterminant=get_wf(newlocs);
+        
+        //locs[electron]=newloc;
+        //newDeterminant=get_wf(locs);
+        out+=log(norm(newDeterminant/oldDeterminant));
     }else {
         //***************hole part
-        double dx,dy; //TODO: this calls z_function every time, should speed that up
+        double dx,dy;
         if(type=="laughlin-hole"){
             dx=(locs[electron][0]/(1.*NPhi)-hole[0]);
             dy=(locs[electron][1]/(1.*NPhi)-hole[1]);
             z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-            prob-=log(norm(temp));
+            out-=log(norm(temp));
             dx=(newloc[0]/(1.*NPhi)-hole[0]);
             dy=(newloc[1]/(1.*NPhi)-hole[1]);
             z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-            prob+=log(norm(temp));
+            out+=log(norm(temp));
         }
         
         //***************vandermode part
@@ -244,7 +312,7 @@ int LATTICE::simple_update(){
                     xi=-xi; yi=-yi;
                 }
                 temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
-                prob-=log(norm( pow(temp,vandermonde_exponent) ));
+                out-=log(norm( pow(temp,vandermonde_exponent) ));
                 
                 //multiply new part
                 xi=(locs[i][0]-newloc[0]);
@@ -253,7 +321,7 @@ int LATTICE::simple_update(){
                     xi=-xi; yi=-yi;
                 }
                 temp=lattice_z_(&NPhi,&xi,&yi,&L1,&L2,&one);
-                prob+=log(norm( pow(temp,vandermonde_exponent) ));
+                out+=log(norm( pow(temp,vandermonde_exponent) ));
             }
         }
         
@@ -276,11 +344,11 @@ int LATTICE::simple_update(){
                     dx=oldCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
                     dy=oldCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    prob-=log(norm(temp));
+                    out-=log(norm(temp));
                     dx=newCOM[0]/(1.*NPhi)-ws[i][0]+hole[0]/(1.*invNu);
                     dy=newCOM[1]/(1.*NPhi)-ws[i][1]+hole[1]/(1.*invNu);
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    prob+=log(norm(temp));
+                    out+=log(norm(temp));
                 }
             }else{
                 double dx,dy;
@@ -288,11 +356,11 @@ int LATTICE::simple_update(){
                     dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
                     dy=oldCOM[1]/(1.*NPhi)-ws[i][1];
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    prob-=log(norm(temp));
+                    out-=log(norm(temp));
                     dx=newCOM[0]/(1.*NPhi)-ws[i][0];
                     dy=newCOM[1]/(1.*NPhi)-ws[i][1];
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
-                    prob+=log(norm(temp));
+                    out+=log(norm(temp));
                 }
                 //get_laughlin_cm_(oldCOM,&temp);
                 //prob-=log(norm(temp));
@@ -308,7 +376,7 @@ int LATTICE::simple_update(){
             complex<double> w_comp0=w_comp;
             complex<double> sum=0, product;
             for (int k=0; k<invNu; k++) {
-            	product=1.;
+                product=1.;
                 for( int i=0;i<invNu;i++){
                     dx=oldCOM[0]/(1.*NPhi)-ws[i][0];
                     dy=oldCOM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
@@ -322,10 +390,10 @@ int LATTICE::simple_update(){
                 else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
                 sum+=product;
             }
-            prob-=log(norm(sum));
+            out-=log(norm(sum));
            	sum=0.;
             for (int k=0; k<invNu; k++) {
-            	product=1.;
+                product=1.;
                 for( int i=0;i<invNu;i++){
                     dx=newCOM[0]/(1.*NPhi)-ws[i][0];
                     dy=newCOM[1]/(1.*NPhi)-ws[i][1]-k/(1.*invNu);
@@ -339,34 +407,17 @@ int LATTICE::simple_update(){
                 else if (type=="CFL") product*=exp(1./(2.*NPhi)*( conj(w_comp - dsum_comp)*zcom_comp - (w_comp - dsum_comp)*conj(zcom_comp) ));
                 sum+=product;
             }
-            prob+=log(norm(sum));
+            out+=log(norm(sum));
         }
         
         ///***********determinant part
         if(type=="CFL"){
             make_CFL_det(newMatrix, newloc, electron, newDeterminant, locs);
-            prob+=log(norm(newDeterminant/oldDeterminant));
+            out+=log(norm(newDeterminant/oldDeterminant));
         }
     }
     
-    if(testing) cout<<running_weight<<" "<<get_weight(locs)<<" "<<log(norm(get_wf(locs)))<<endl;
-    
-    //*******************update or not
-	bool update=false;
-	if(prob>0) update=true;
-	else if(ran.rand()<exp(prob)) update=true;
-    
-	if(update){
-		locs[electron]=newloc;
-		running_weight+=prob;
-        oldDeterminant=newDeterminant;
-        oldMatrix=newMatrix;
-	}
-	else{
-		if(type=="doubledCFL") locs[electron]=oldloc;
-	}
-    
-    return update? 1:0;
+    return out;
 }
 
 //very similar to simple update (above), but it uses a provided set of zs, instead of this objects version
@@ -376,7 +427,7 @@ complex<double> LATTICE::update_weight(const vector< vector<int> > &zs, int elec
 	complex<double> temp;
 
     //***************hole part
-    double dx,dy; //TODO: this calls z_function every time, should speed that up
+    double dx,dy;
     if(type=="laughlin-hole"){
         dx=(zs[electron][0]/(1.*NPhi)-hole[0]);
         dy=(zs[electron][1]/(1.*NPhi)-hole[1]);
@@ -593,10 +644,9 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
                 
                 //......
                 if (type=="laughlin"||type=="laughlin-hole") {
-//                    temp*=pow(in_determinant_rescaling, vandermonde_exponent*(Ne-1));
+                    //temp*=pow(in_determinant_rescaling, vandermonde_exponent*(Ne-1));
                     temp*=pow(in_determinant_rescaling, Ne-1);
                 }
-                
                 out+=log(norm( temp ));
             }
         }
@@ -655,20 +705,20 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
                     product=1;
                     for(int k=0;k<Ne;k++){
                         if(k==i) continue;
-                        //                    x=det_helper(zs[i][0],zs[k][0],ds[j][0],dsum[0])/(1.*NPhi);
-                        //                    y=det_helper(zs[i][1],zs[k][1],ds[j][1],dsum[1])/(1.*NPhi);
                         x=det_helper(zs[i][0],zs[k][0],ds[j][0],dbar_parameter[0])/(1.*NPhi);
                         y=det_helper(zs[i][1],zs[k][1],ds[j][1],dbar_parameter[1])/(1.*NPhi);
                         z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-                        //					cout<<temp<<" "<<x<<" "<<y<<endl;
                         product*=temp;
                     }
                     //this part is only valid on a square torus!
-                    M(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
+                    M(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne));
                 }
             }
+//            M/=pow(10,19);
+//            cout<<"Matrix=\n"<<M<<endl;
             detSolver.compute(M);
             temp=detSolver.determinant();
+//            cout<<"det="<<temp<<endl;exit(0);
             //ameliorate large determinants by shrinking before taking their norm
             oldDivisor=abs(real(temp))+abs(imag(temp));
             out+=log(norm(temp/oldDivisor))+2*log(oldDivisor);
@@ -850,11 +900,9 @@ void LATTICE::sum_locs(int out[]){
 		out[0]+=locs[i][0];
 		out[1]+=locs[i][1];
 	}
-//	out[0]=out[0]%NPhi;
-//	out[1]=out[1]%NPhi;
 }
 vector< vector<int> > LATTICE::get_locs(){return locs;}
-vector< vector<int> > LATTICE::get_ds(){return ds;}//'ds' are private, so call 'get_ds' function.
+vector< vector<int> > LATTICE::get_ds(){return ds;}
 
 //Coulomb Energy/ Pair-Amplitude Calculator
 void LATTICE::setup_coulomb0(){
@@ -876,8 +924,8 @@ void LATTICE::setup_table(int n, double cutoff, vector<vector<double>>& qtable, 
 
     //boundary conditions.
     complex<double> ph1, ph2;
-    ph1=polar(1., +2.*M_PI*wsum[1]);
-    ph2=polar(1., -2.*M_PI*wsum[0]);
+    ph1=polar(1., +2.*M_PI*get_bc()[1]);
+    ph2=polar(1., -2.*M_PI*get_bc()[0]);
 //    cout<<"***** wsum *****"<<endl;
 //    cout<<wsum[0]<<" "<<wsum[1]<<endl;
 //    cout<<"**********"<<endl<<endl;
@@ -1210,59 +1258,42 @@ void LATTICE::reset(){
     }
     else {
         locs=hot_start(locs.size(), NPhi, ran);
-//        cold_start();
+        //cold_start();
     }
     
 	//**** setting up the initial determinant matrix
 	running_weight=-1e11;
+    c_running_weight=-1e11;
 	int site=0;
 	int initial_state_counter=0;
     
-    while(running_weight<-1e10){
+    while( (!correlatedsampling && running_weight<-1e10) || (correlatedsampling && c_running_weight<-1e10) ){
 	//for some sizes the configuration specified by cold_start has zero weight
 	//if that happens fiddle around until you find a better configuration, thats why theres a while loop
         
-        if (site==Ne-1) {
-            locs[site][0]=locs[0][0];
-        }
-        else {
-            locs[site][0]=locs[site+1][0];
-        }
-        
+        if (site==Ne-1) locs[site][0]=locs[0][0];
+        else locs[site][0]=locs[site+1][0];
         site++;
 
         if(site==Ne) {
             cout<<"couldn't easily find a good configuration!"<<endl;
             exit(0);
-            
         }
 		
-		if(type=="CFL"){
-			complex<double> temp,product;
-			double x,y;
-			oldMatrix=Eigen::MatrixXcd(Ne,Ne);
-			for(int i=0;i<Ne;i++){
-				for(int j=0;j<Ne;j++){
-					product=1;
-					for(int k=0;k<Ne;k++){
-						if(k==i) continue;
-                        x=det_helper(locs[i][0],locs[k][0],ds[j][0],dbar_parameter[0])/(1.*NPhi);
-                        y=det_helper(locs[i][1],locs[k][1],ds[j][1],dbar_parameter[1])/(1.*NPhi);
-						z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
-						product*=temp;
-					}
-					oldMatrix(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), M_PI*(locs[i][1]*ds[j][0] - locs[i][0]*ds[j][1])/(1.*NPhi) );
-				}
-			}
-			detSolver.compute(oldMatrix);
-			newMatrix=oldMatrix;
-			oldDeterminant=detSolver.determinant();
-			newDeterminant=oldDeterminant;
-//			cout<<in_determinant_rescaling<<" "<<oldDeterminant<<endl;
-		}
+        //initialize the Matrix/ Determinant for the ground state.
+        if(type=="CFL") init_matdet();
         
-		running_weight=get_weight(locs);
-		//cout<<running_weight<<endl;
+        //initialize running_weight for the ground state. If correlated-sampling=true, excited both c_running_weight and running_weight for the excited states are initialized too (in function get_correlated_weight).
+        //get_correlated_weight does a lot for excited states: synthocize locs, initialize new/old Matrix/Det, and the running_weight. Returns c_running_weight.
+        running_weight=get_weight(locs);
+        if (correlatedsampling) {
+            for (int i=0; i<nonsamplestates.size(); i++) {
+                nonsamplestates[i].change_locs(locs);
+                nonsamplestates[i].init_matdet();
+                nonsamplestates[i].running_weight=nonsamplestates[i].get_weight(locs);
+            }
+            c_running_weight=get_correlated_weight();
+        }
         
         if (type=="FilledLL") {
             oldMatrix=Eigen::MatrixXcd(NPhi, NPhi);
@@ -1288,13 +1319,44 @@ void LATTICE::reset(){
 	}
 
 	//cout<<"starting weight"<<running_weight<<endl;
-    if(testing) cout<<"starting weight"<<running_weight<<" "<<oldDeterminant<<" "<<newDeterminant<<endl;
+    if (testing && !correlatedsampling)
+        cout<<"starting weight "<<running_weight<<" "<<get_weight(locs)<<" "<<log(norm(get_wf(locs)))<<endl;
+    else if (testing && correlatedsampling) {
+        cout<<c_running_weight<<" "<<get_correlated_weight()<<endl;
+        cout<<"gs starting weight "<<running_weight<<" "<<get_weight(locs)<<" "<<log(norm(get_wf(locs)))<<endl;
+        cout<<"es starting weight ";
+        for (int i=0; i<nonsamplestates.size(); i++) {
+            cout<<nonsamplestates[i].running_weight<<" "<<nonsamplestates[i].get_weight(locs)<<" "<<log(norm(nonsamplestates[i].get_wf(locs)))<<endl;
+        }
+    }
 
-    sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
-    sq2=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
-    sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
-    sq2_mqy=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
+    //sq=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
+    //sq2=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
+    //sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0));
+    //sq2_mqy=vector<vector<double>>(NPhi, vector<double>(NPhi,0));
     check_sanity();
+}
+void LATTICE::init_matdet(){
+    complex<double> temp,product;
+    double x,y;
+    oldMatrix=Eigen::MatrixXcd(Ne,Ne);
+    for(int i=0;i<Ne;i++){
+        for(int j=0;j<Ne;j++){
+            product=1;
+            for(int k=0;k<Ne;k++){
+                if(k==i) continue;
+                x=det_helper(locs[i][0],locs[k][0],ds[j][0],dbar_parameter[0])/(1.*NPhi);
+                y=det_helper(locs[i][1],locs[k][1],ds[j][1],dbar_parameter[1])/(1.*NPhi);
+                z_function_(&x,&y,&L1,&L2,&zero,&NPhi,&temp);
+                product*=temp;
+            }
+            oldMatrix(i,j)=product*polar(pow(in_determinant_rescaling,Ne-1), M_PI*(locs[i][1]*ds[j][0] - locs[i][0]*ds[j][1])/(1.*NPhi) );
+        }
+    }
+    detSolver.compute(oldMatrix);
+    newMatrix=oldMatrix;
+    oldDeterminant=detSolver.determinant();
+    newDeterminant=oldDeterminant;
 }
 //same as above, only sets up the starting determinants
 void LATTICE::reset(const vector< vector<int> > &zs){
@@ -1339,6 +1401,34 @@ void LATTICE::check_sanity(){
     if(type=="FilledLL" && (zeros.size()!=(unsigned)NPhi || Ne!=NPhi)) {
         cout<<"Filled LL zeros size or Ne/NPhi wrong."<<endl;
         exit(0);
+    }
+    double pre=1e-15;
+    if ( abs(get_shift()[0]-get_bc()[0])>pre or abs(get_shift()[1]-get_bc()[1])>pre ) {
+        cout<<"shift!=bc."<<endl;
+        cout<<"shift="<<get_shift()[0]<<" "<<get_shift()[1]<<" bc="<<get_bc()[0]<<" "<<get_bc()[1]<<endl;
+        cout<<get_shift()[0]-get_bc()[0]<<" "<<get_shift()[1]-get_bc()[1]<<endl;
+        exit(0);
+    }
+    
+    //check boundary conditions for correlated sampling.
+    if (correlatedsampling) {
+        bool tmp=true;
+        for (int i=0; i<nonsamplestates.size(); i++) {
+            if ( abs(nonsamplestates[i].get_bc()[0]-shiftx)>1e-15 or abs(nonsamplestates[i].get_shift()[0]-shiftx)>1e-15 ) tmp=false;
+            if ( abs(nonsamplestates[i].get_bc()[1]-shifty)>1e-15 or abs(nonsamplestates[i].get_shift()[1]-shifty)>1e-15 ) tmp=false;
+        }
+        if (!tmp) {
+            cout<<"Excited states' shift != B.C."<<endl;
+            cout<<"shift="<<shiftx<<" "<<shifty<<endl;
+            for (int i=0; i<nonsamplestates.size(); i++) {
+                cout<<nonsamplestates[i].get_shift()[0]<<" "<<nonsamplestates[i].get_shift()[1]<<" "<<nonsamplestates[i].get_bc()[0]<<" "<<nonsamplestates[i].get_bc()[1]<<endl;
+            }
+            exit(0);
+        }
+        if (ratio.size()!=nonsamplestates.size()+1) {
+            cout<<"ratio.size() wrong."<<endl;
+            exit(0);
+        }
     }
 }
 //changes the dbar (which ordinarily is the sum of d's) to whatever we want
@@ -1390,7 +1480,15 @@ void LATTICE::set_ds(vector< vector<int> > tds){
     }
     
     //shift ws.
-    shift_ws(shift);
+    for (int i=0; i<invNu; i++) {
+        ws[i][0]+=shiftx/(1.*invNu);
+        ws[i][1]+=shifty/(1.*invNu);
+    }
+    wsum=vector<double>(2,0.);
+    for (int i=0; i<invNu; i++) {
+        wsum[0]+=ws[i][0];
+        wsum[1]+=ws[i][1];
+    }
 }
 void LATTICE::set_zeros(vector<double> zeros0){
     if (zeros0.size()!=2) {
@@ -1535,8 +1633,10 @@ void LATTICE::setup_landautable(){
     //ZEROS[m][ind][i]: m-state index, ind-zero index, i-x or y.
     for (int ind_state=0; ind_state<NPhi; ind_state++) {
         for (int ind_zero=0; ind_zero<NPhi; ind_zero++) {
-            ZEROS[ind_state][ind_zero][0]=(ind_zero+0.5)/(1.*NPhi)-0.5 + wsum[0]/(1.*NPhi);
-            ZEROS[ind_state][ind_zero][1]=ind_state/(1.*NPhi) + wsum[1]/(1.*NPhi);
+            
+            ZEROS[ind_state][ind_zero][0]=(ind_zero+0.5)/(1.*NPhi)-0.5 + get_bc()[0]/(1.*NPhi);
+            ZEROS[ind_state][ind_zero][1]=ind_state/(1.*NPhi) + get_bc()[1]/(1.*NPhi);
+            
         }
     }
     
@@ -1635,12 +1735,57 @@ complex<double> LATTICE::doubled_CFL(const vector< vector<int> > &bothzs){
     return out;
 }
 void LATTICE::update(){
-	if(type=="CFL"){
+    if(type=="CFL"){
 		oldMatrix=newMatrix;
 		oldDeterminant=newDeterminant;
 	}
 }
-
+//for Correlated Sampling
+vector<double> LATTICE::get_ratio(){return ratio;}
+void LATTICE::change_locs(const vector<vector<int>> &locs_t){locs=locs_t;}
+void LATTICE::update_matdet(bool bo){
+    if (bo) {
+        oldMatrix=newMatrix;
+        oldDeterminant=newDeterminant;
+    }
+    else {
+        newMatrix=oldMatrix;
+        newDeterminant=oldDeterminant;
+    }
+}
+void LATTICE::setup_nonsamplestates(vector<vector<vector<int>>> ds_t, vector<double> ratio_t){
+    nonsamplestates=vector<LATTICE>(ds_t.size());
+    for (int i=0; i<nonsamplestates.size(); i++) {
+        bool tr=false, cor=false;//trace, correlatedsampling (can be true, does not affect result).
+        int seed=0;//seed is not important.
+        nonsamplestates[i]=LATTICE(Ne, invNu, 0, "CFL", seed, gs, theta, alpha, shiftx, shifty, tr, cor);
+        if (ds_t[i].size()!=Ne) {cout<<"dset size wrong"<<endl; exit(0);}
+        nonsamplestates[i].set_ds(ds_t[i]);
+    }
+    ratio=vector<double>(nonsamplestates.size()+1, 0.);
+    ratio=ratio_t;//ratio is weight for the correlated sampling function.
+}
+double LATTICE::get_correlated_weight(){
+    double out=ratio[nonsamplestates.size()]*exp(running_weight);
+    double temp=1.;
+    for (int i=0; i<nonsamplestates.size(); i++) {
+        //out+=ratio[i]*exp(nonsamplestates[i].running_weight);
+        
+        temp+=ratio[i]/ratio[nonsamplestates.size()]*exp(nonsamplestates[i].running_weight-running_weight);
+        //TODO:correlated-sampling
+    }
+    
+    //return log(out);
+    return log(ratio[nonsamplestates.size()])+running_weight+log(temp);
+}
+vector<double> LATTICE::get_runweis(){
+    vector<double> out(nonsamplestates.size(), 0.);
+    for (int i=0; i<nonsamplestates.size(); i++) {
+        out[i]=nonsamplestates[i].running_weight;
+    }
+    return out;
+}
 LATTICE::~LATTICE(){
-    if(testing) cout<<"acceptance rate: "<<accepts/(1.*tries)<<endl;
+    if(testing)
+        cout<<"acceptance rate: "<<accepts/(1.*tries)<<endl;
 }
