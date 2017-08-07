@@ -12,18 +12,12 @@ bool IsOdd (int i) {
 int main(){
     void Ed_Coulomb();
     
-    clock_t t1,t2;
-    t1=clock();
-    //code goes here
     Ed_Coulomb();
-    t2=clock();
-    float diff ((float)t2-(float)t1);
-    cout<<"\nTIME="<<diff/CLOCKS_PER_SEC<<endl;
 }
 void Ed_Coulomb(){
     vector<NQ> NQCE(3);
     NQCE[0].N=0; NQCE[1].N=1; NQCE[2].N=2;
-    NQCE[0].Q=4.5; NQCE[1].Q=4.5; NQCE[2].Q=4.5;
+    NQCE[0].Q=4.5; NQCE[1].Q=4.5; NQCE[2].Q=4.;
     
     int n=0;
     vector<NQ> NQPA(n);
@@ -35,9 +29,37 @@ void Ed_Coulomb(){
 //        }
 //    }
     
-    //parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl0");
+    clock_t t1,t2,t3,t4;
+    
+//    t1=clock();
+//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl00");//Ne=37, 50
+//    t2=clock();
+//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl10");//Ne=69, 50
+//    t3=clock();
+//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl20");//Ne=97, 50
+//    t4=clock();
+//    cout<<"\nTIME="<<((float)t2-(float)t1)/CLOCKS_PER_SEC<<" "<<((float)t3-(float)t2)/CLOCKS_PER_SEC<<" "<<((float)t4-(float)t3)/CLOCKS_PER_SEC<<endl;
+//    
+//    t1=clock();
+//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl01");//Ne=37, 200
+//    t2=clock();
+//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl11");//Ne=69, 200
+//    t3=clock();
+//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl21");//Ne=97, 200
+//    t4=clock();
+//    cout<<"\nTIME="<<((float)t2-(float)t1)/CLOCKS_PER_SEC<<" "<<((float)t3-(float)t2)/CLOCKS_PER_SEC<<" "<<((float)t4-(float)t3)/CLOCKS_PER_SEC<<endl;
+    
 
+    t1=clock();
     pomeranchuk_instability(2, NQCE, "params_cfl", vector<double>{1,1,1});
+    t2=clock();
+    cout<<"\nTIME="<<((float)t2-(float)t1)/CLOCKS_PER_SEC<<endl;
+    
+//    NQCE[0].Q=10.; NQCE[1].Q=10.; NQCE[2].Q=10.;
+//    t1=clock();
+//    pomeranchuk_instability(2, NQCE, "params_cfll", vector<double>{1,1});
+//    t2=clock();
+//    cout<<"\nTIME="<<((float)t2-(float)t1)/CLOCKS_PER_SEC<<endl;
 }
 /*
 void test_exact(double shift){

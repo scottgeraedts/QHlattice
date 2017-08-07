@@ -344,6 +344,8 @@ vector<vector<vector<int>>> output_dset(int Ne){
 }
 
 void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<double> a){
+//    int u=1;//TODO:modify Wi0.
+    
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, alpha_t;
@@ -426,6 +428,7 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
                 for (int j=0; j<Nn; j++) E[j][c][s]+=e*ratio[j]*exp(weit[j]-weit0)/den;
                 E[Nn][c][s]+=e*ratio[Nn]/den;
                 //WW. n<Nn
+//                double temp3=ratio[u]*exp(weit[u]-weit0)/den;//TODO:modify Wi0
                 for (int j=0; j<Nn; j++) {
                     double temp1=ratio[j]*exp(weit[j]-weit0)/den;
                     double temp2=temp1*ratio[Nn]/den;
@@ -433,11 +436,13 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
                     for (int k=0; k<3; k++) {
                         if (e==0) {
                             Wii[0][j][c][s]+=pow(temp1,2);
-                            Wi0[0][j][c][s]+=temp2;
+                            Wi0[0][j][c][s]+=temp2;//TODO:modify Wi0
+//                            Wi0[0][j][c][s]+=temp1*temp3;
                         }
                         else {
                             Wii[k][j][c][s]+=pow(e,k)*pow(temp1,2);
-                            Wi0[k][j][c][s]+=pow(e,k)*temp2;
+                            Wi0[k][j][c][s]+=pow(e,k)*temp2;//TODO:modify Wi0
+//                            Wi0[k][j][c][s]+=pow(e,k)*temp1*temp3;
                         }
                     }
                     
@@ -445,12 +450,14 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
                 //WW. n=Nn
                 if (e==0) {
                     Wii[0][Nn][c][s]+=pow(ratio[Nn]/den, 2);
-                    Wi0[0][Nn][c][s]+=pow(ratio[Nn]/den, 2);
+                    Wi0[0][Nn][c][s]+=pow(ratio[Nn]/den, 2);//TODO:modify Wi0
+//                    Wi0[0][Nn][c][s]+=ratio[Nn]/den*temp3;
                 }
                 else {
                     for (int k=0; k<3; k++) {
                         Wii[k][Nn][c][s]+=pow(e,k)*pow(ratio[Nn]/den, 2);
-                        Wi0[k][Nn][c][s]+=pow(e,k)*pow(ratio[Nn]/den, 2);
+                        Wi0[k][Nn][c][s]+=pow(e,k)*pow(ratio[Nn]/den, 2);//TODO:modify Wi0
+//                        Wi0[k][Nn][c][s]+=pow(e,k)*ratio[Nn]/den*temp3;
                     }
                 }
                 //
@@ -487,7 +494,8 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
         for (int n=0; n<Nn+1; n++) {
             for (int k=0; k<3; k++) {
                 Wiitotal[k][n][c]/=Wtotal[n]*Wtotal[n];
-                Wi0total[k][n][c]/=Wtotal[n]*Wtotal[Nn];
+                Wi0total[k][n][c]/=Wtotal[n]*Wtotal[Nn];//TODO:modify Wi0
+//                Wi0total[k][n][c]/=Wtotal[n]*Wtotal[u];
                 
             }
             Etotal[n][c]/=Wtotal[n];
@@ -498,11 +506,14 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
     vector<vector<double>> variance(Nn+1, vector<double>(Coul_type, 0.));
     for (int c=0; c<Coul_type; c++) {
         for (int n=0; n<Nn; n++) {
-            variance[n][c]+=Wiitotal[2][n][c]+Wiitotal[2][Nn][c]-2.*Wi0total[2][n][c];
+            variance[n][c]+=Wiitotal[2][n][c]+Wiitotal[2][Nn][c]-2.*Wi0total[2][n][c];//TODO:modifyWi0
+//            variance[n][c]+=Wiitotal[2][n][c]+Wiitotal[2][u][c]-2.*Wi0total[2][n][c];
             
-            variance[n][c]+=Wiitotal[0][n][c]*pow(Etotal[n][c],2)+Wiitotal[0][Nn][c]*pow(Etotal[Nn][c],2)-2.*Wi0total[0][n][c]*Etotal[n][c]*Etotal[Nn][c];
+            variance[n][c]+=Wiitotal[0][n][c]*pow(Etotal[n][c],2)+Wiitotal[0][Nn][c]*pow(Etotal[Nn][c],2)-2.*Wi0total[0][n][c]*Etotal[n][c]*Etotal[Nn][c];//TODO:modifyWi0
+//            variance[n][c]+=Wiitotal[0][n][c]*pow(Etotal[n][c],2)+Wiitotal[0][u][c]*pow(Etotal[u][c],2)-2.*Wi0total[0][n][c]*Etotal[n][c]*Etotal[u][c];
             
-            double temp=Wiitotal[1][n][c]*Etotal[n][c]+Wiitotal[1][Nn][c]*Etotal[Nn][c]-Wi0total[1][n][c]*(Etotal[n][c]+Etotal[Nn][c]);
+            double temp=Wiitotal[1][n][c]*Etotal[n][c]+Wiitotal[1][Nn][c]*Etotal[Nn][c]-Wi0total[1][n][c]*(Etotal[n][c]+Etotal[Nn][c]);//TODO:modifyWi0
+//            double temp=Wiitotal[1][n][c]*Etotal[n][c]+Wiitotal[1][u][c]*Etotal[u][c]-Wi0total[1][n][c]*(Etotal[n][c]+Etotal[u][c]);
             
             variance[n][c]-=2.*temp;
         }

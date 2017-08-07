@@ -134,7 +134,7 @@ double LATTICE::get_in_det_rescaling(int Ne, int invNu){
             rescaling=1.0;
         }
         else if (invNu==2) {
-            if (Ne<40) rescaling=0.25;//0.85
+            if (Ne<40) rescaling=0.25;
             else if (Ne>=40 && Ne<=50) rescaling=0.2;
             else if (Ne<90) rescaling=0.18;
             else if (Ne==97) rescaling=0.15;
