@@ -112,7 +112,7 @@ void single_run(string filename, bool trace){
     eout.close();
     outfile.close();
 }
-void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, double shift, string filename){
+void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, string filename, int ind){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, alpha_t;
@@ -134,6 +134,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
     double theta=theta_t*M_PI, alpha=alpha_t;
     
     vector<vector<int>> ds;
+    vector<vector<vector<int>>> dset;
     if (Ne==8) {
         ds=vector<vector<int>> (9,vector<int>(2,0));
         for (int i=0; i<9; i++) {
@@ -142,7 +143,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
         }
         ds.erase(remove(ds.begin(),ds.end(),vector<int>{1,1}),ds.end());
     }
-    if (Ne==16) {
+    else if (Ne==16) {
         ds.clear();
         for (int i=-2; i<=2; i++) {
             vector<int> temp1(2,0), temp2(2,0);
@@ -159,18 +160,19 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
             ds.push_back(temp2);
         }
     }
-//    for (int i=0; i<ds.size(); i++) {
-//        cout<<ds[i][0]<<" "<<ds[i][1]<<endl;
-//    }
-//    exit(0);
+    else if (Ne==37) {
+        dset=output_dset(37);
+    }
     
     vector<LATTICE> ll(ncore);
     for (int i=0; i<ncore; i++) {
         double shiftx=0.1, shifty=0.1;
-        ll[i]=LATTICE(Ne, invNu, testing, type, i, gs, theta, alpha, shiftx, shifty);
+        int seed=i;
+        ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, shiftx, shifty);
         
         if (Ne==8 && type=="CFL") ll[i].set_ds(ds);
         if (Ne==16&& type=="CFL") ll[i].set_ds(ds);
+        if (Ne==37&& type=="CFL" &&ind>=0) ll[i].set_ds(dset[ind]);//for Ne37, if ind=-1, cal GS.
         
         ll[i].setup_tables(CE, "ce");
         ll[i].setup_tables(PP, "pa");
@@ -225,8 +227,8 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, bool bo_shift, doub
     }
     
     //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
-    ofstream outfile("out_"+filename);
-    ofstream outpa("out_pa_"+filename);
+    ofstream outfile("out_"+filename+to_string((long long int)(ind)));
+    ofstream outpa("out_pa_"+filename+to_string((long long int)(ind)));
     outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
     outpa<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
     outfile<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<endl<<endl;
@@ -321,12 +323,42 @@ vector<vector<vector<int>>> output_dset(int Ne){
     else if (Ne==37) {
         d=old_ds;
         d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+        d.push_back(vector<int>{3,2});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
         d.push_back(vector<int>{2,3});
         dset.push_back(d);
         
         d=old_ds;
         d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
-        d.push_back(vector<int>{3,2});
+        d.push_back(vector<int>{-2,3});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+        d.push_back(vector<int>{-3,2});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+        d.push_back(vector<int>{-3,-2});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+        d.push_back(vector<int>{-2,-3});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+        d.push_back(vector<int>{-2,-3});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+        d.push_back(vector<int>{3,-2});
         dset.push_back(d);
         
         return dset;

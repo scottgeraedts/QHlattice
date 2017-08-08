@@ -28,38 +28,11 @@ void Ed_Coulomb(){
 //            NQPA[i].Q=4.25;
 //        }
 //    }
-    
-    clock_t t1,t2,t3,t4;
-    
-//    t1=clock();
-//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl00");//Ne=37, 50
-//    t2=clock();
-//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl10");//Ne=69, 50
-//    t3=clock();
-//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl20");//Ne=97, 50
-//    t4=clock();
-//    cout<<"\nTIME="<<((float)t2-(float)t1)/CLOCKS_PER_SEC<<" "<<((float)t3-(float)t2)/CLOCKS_PER_SEC<<" "<<((float)t4-(float)t3)/CLOCKS_PER_SEC<<endl;
-//    
-//    t1=clock();
-//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl01");//Ne=37, 200
-//    t2=clock();
-//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl11");//Ne=69, 200
-//    t3=clock();
-//    parallel_ce_pa(2, NQCE, NQPA, false, 0., "params_cfl21");//Ne=97, 200
-//    t4=clock();
-//    cout<<"\nTIME="<<((float)t2-(float)t1)/CLOCKS_PER_SEC<<" "<<((float)t3-(float)t2)/CLOCKS_PER_SEC<<" "<<((float)t4-(float)t3)/CLOCKS_PER_SEC<<endl;
-    
 
-    t1=clock();
-    pomeranchuk_instability(2, NQCE, "params_cfl", vector<double>{1,1,1});
-    t2=clock();
-    cout<<"\nTIME="<<((float)t2-(float)t1)/CLOCKS_PER_SEC<<endl;
-    
-//    NQCE[0].Q=10.; NQCE[1].Q=10.; NQCE[2].Q=10.;
-//    t1=clock();
-//    pomeranchuk_instability(2, NQCE, "params_cfll", vector<double>{1,1});
-//    t2=clock();
-//    cout<<"\nTIME="<<((float)t2-(float)t1)/CLOCKS_PER_SEC<<endl;
+    int ncore=20; double shift=0.25;
+    for (int i=-1; i<=5; i++) {
+        parallel_ce_pa(ncore, NQCE, NQPA, shift, "params_cfl", -1);
+    }
 }
 /*
 void test_exact(double shift){
