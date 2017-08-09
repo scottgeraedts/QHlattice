@@ -14,18 +14,20 @@ int main(){
     Ed_Coulomb();
 }
 void Ed_Coulomb(){
-    vector<double> screen;
+    vector<double> screen, screen2;
     for (int i=0; i<10; i++) {
         screen.push_back(0.5*i);
+        if (i==0) screen2.push_back(0.1);
+        else screen2.push_back(0.5*i);
     }
     vector<NQ> NQCE(5);
     vector<NQ> NQPA(0);
     
     NQCE[0].N=0; NQCE[0].Q=10.0; NQCE[0].screen=screen;
     NQCE[1].N=1; NQCE[1].Q=5.50; NQCE[1].screen=screen;
-    NQCE[2].N=2; NQCE[2].Q=4.50; NQCE[2].screen=screen;
-    NQCE[3].N=2; NQCE[3].Q=4.25; NQCE[3].screen=screen;
-    NQCE[4].N=2; NQCE[4].Q=4.00; NQCE[4].screen=screen;
+    NQCE[2].N=2; NQCE[2].Q=4.50; NQCE[2].screen=screen2;
+    NQCE[3].N=2; NQCE[3].Q=4.25; NQCE[3].screen=screen2;
+    NQCE[4].N=2; NQCE[4].Q=4.00; NQCE[4].screen=screen2;
 
     int ncore=1; double shift=0.25;
     for (int i=-1; i<=5; i++) {

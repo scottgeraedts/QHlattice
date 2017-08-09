@@ -133,18 +133,17 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, strin
     
     double theta=theta_t*M_PI, alpha=alpha_t;
     
+    //setup ds.
     vector<vector<int>> ds;
     if (Ne==8) {
         for (int i=-1; i<2; i++) for (int j=-1; j<2; j++) ds.push_back(vector<int>{i,j});
         ds.erase(remove(ds.begin(),ds.end(),vector<int>{1,1}),ds.end());
     }
+    //setup dset.
     vector<vector<vector<int>>> dset;
-    if (Ne==8) {
-        dset=output_dset(8);
-    }
-    else if (Ne==37) {
-        dset=output_dset(37);
-    }
+    if (Ne==8) dset=output_dset(8);
+    else if (Ne==37) dset=output_dset(37);
+    else if (Ne==69) dset=output_dset(69);
     
     vector<LATTICE> ll(ncore);
     for (int i=0; i<ncore; i++) {
@@ -155,151 +154,152 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, strin
         if (Ne==8 && type=="CFL" &&ind>=0) ll[i].set_ds(dset[ind]);//if ind=-1, cal GS. else, ES.
         else if (Ne==8 && type=="CFL" &&ind==-1) ll[i].set_ds(ds);
         if (Ne==37&& type=="CFL" &&ind>=0) ll[i].set_ds(dset[ind]);//if ind=-1, cal GS. else, ES.
+        if (Ne==69&& type=="CFL" &&ind>=0) ll[i].set_ds(dset[ind]);//if ind=-1, cal GS. else, ES.
         
         ll[i].setup_tables(CE, "ce");
         ll[i].setup_tables(PP, "pa");
     }
     cout<<"finish preliminary"<<endl;
     
-    int Coul_type=CE.size();
-    vector<vector<vector<double>>>E(Coul_type,vector<vector<double>>(nBins));
-    vector<vector<vector<double>>>EE(Coul_type,vector<vector<double>>(nBins));
-    for (int c=0; c<Coul_type; c++) {
-        for (int b=0; b<nBins; b++) {
-            E[c][b]=vector<double>(CE[c].screen.size(),0.);
-            EE[c][b]=vector<double>(CE[c].screen.size(),0.);
-        }
-    }
-    //vector<vector<double>> E(Coul_type, vector<double>(nBins,0.)), EE(Coul_type, vector<double>(nBins,0.));
-    
-    int PA_type=PP.size();
-    vector<vector<vector<double>>>PA(PA_type,vector<vector<double>>(nBins));
-    vector<vector<vector<double>>>PAPA(PA_type,vector<vector<double>>(nBins));
-    for (int p=0; p<PA_type; p++) {
-        for (int b=0; b<nBins; b++) {
-            PA[p][b]=vector<double>(PP[p].screen.size(),0.);
-            PAPA[p][b]=vector<double>(PP[p].screen.size(),0.);
-        }
-    }
-    //vector<vector<double>> PA(PA_type, vector<double>(nBins,0.)), PAPA(PA_type, vector<double>(nBins,0.));
-
-    omp_set_num_threads(ncore);
-#pragma omp parallel for
-    for(int s=0;s<nBins;s++){
-        int coren=omp_get_thread_num();
-        ll[coren].reset();
-        ll[coren].step(nWarmup);
-        
-        for(int i=0;i<nMeas;i++){
-            ll[coren].step(nSteps);
-            
-            //Coulomb Energy
-            for (int c=0; c<Coul_type; c++) {
-                //double e=ll[coren].coulomb_energy(c,"ce")[0];
-                vector<double>e=ll[coren].coulomb_energy(c,"ce");
-                for (int screen=0; screen<E[c][s].size(); screen++) {
-                    E[c][s][screen]+=e[screen];
-                    EE[c][s][screen]+=e[screen]*e[screen];
-                }
-            }
-            
-            //Pair Amplitude
-            for (int p=0; p<PA_type; p++) {
-                //double pa=ll[coren].coulomb_energy(p,"pa")[0];
-                vector<double> pa=ll[coren].coulomb_energy(p,"pa");
-                for (int screen=0; screen<PA[p][s].size(); screen++) {
-                    PA[p][s][screen]+=pa[screen];
-                    PAPA[p][s][screen]+=pa[screen]*pa[screen];
-                }
-            }
-            
-        }
-    }
-    
-    //vector<double> Etotal(Coul_type,0.), EEtotal(Coul_type,0.);
-    //vector<double> PAtotal(PA_type,0.), PAPAtotal(PA_type,0.);
-    
-    vector<vector<double>> Etotal(Coul_type), EEtotal(Coul_type);
-    for (int c=0; c<Coul_type; c++) {
-        Etotal[c]=vector<double>(CE[c].screen.size());
-        EEtotal[c]=vector<double>(CE[c].screen.size());
-    }
-    vector<vector<double>> PAtotal(PA_type), PAPAtotal(PA_type);
-    for (int p=0; p<PA_type; p++) {
-        PAtotal[p]=vector<double>(PP[p].screen.size());
-        PAPAtotal[p]=vector<double>(PP[p].screen.size());
-    }
-    
-    for (int s=0; s<nBins; s++) {
-        for (int i=0; i<Coul_type; i++) {
-            for (int screen=0; screen<CE[i].screen.size(); screen++) {
-                Etotal[i][screen]+=E[i][s][screen];
-                EEtotal[i][screen]+=EE[i][s][screen];
-            }
-        }
-        for (int p=0; p<PA_type; p++) {
-            for (int screen=0; screen<PP[p].screen.size(); screen++) {
-                PAtotal[p][screen]+=PA[p][s][screen];
-                PAPAtotal[p][screen]+=PAPA[p][s][screen];
-            }
-        }
-    }
-    
-    //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
-    ofstream outfile("out_"+filename+to_string((long long int)ind));
-    ofstream outpa("out_pa_"+filename+to_string((long long int)ind));
-    outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
-    outpa<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
-    outfile<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<endl<<endl;
-    outpa<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<endl<<endl;
-    
-    nMeas*=nBins;
-    
-    for (int c=0; c<Coul_type; c++) {
-        outfile<<"**********"<<endl;
-        vector<double> short_value, short_error;
-        double MCerror;
-        ll[0].shortrange(c, short_value, short_error, "ce");
-        
-        outfile<<"n="<<CE[c].N<<" COULOMB-ENERGY."<<endl;
-        outfile<<"cutoff="<<CE[c].Q<<endl;
-        for (int i=0; i<CE[c].screen.size(); i++) {
-            short_value[i]/=(1.*Ne);
-            short_error[i]/=(1.*Ne);
-            
-            MCerror=sqrt( EEtotal[c][i]/(1.*nMeas)-pow(Etotal[c][i]/(1.*nMeas),2) )/sqrt(1.*nMeas)/(1.*Ne);
-            outfile<<"Eta="<<CE[c].screen[i]<<endl;
-            outfile<<"truncation value  ="<<setprecision(10)<<short_value[i]<<endl;
-            outfile<<"truncation error  = "<<setprecision(10)<<short_error[i]<<endl;
-            outfile<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
-            
-            outfile<<"E="<<setprecision(10)<<Etotal[c][i]/(1.*nMeas*Ne)+short_value[i]<<" var="<<sqrt( MCerror*MCerror + short_error[i]*short_error[i])<<endl<<endl;
-        }
-    }
-    for (int p=0; p<PA_type; p++) {
-        outfile<<"**********"<<endl;
-        vector<double> short_value, short_error;
-        double MCerror;
-        ll[0].shortrange(p, short_value, short_error, "pa");
-        
-        outpa<<"n="<<PP[p].N<<" PAIR-AMPLITUDE."<<endl;
-        outpa<<"cutoff="<<PP[p].Q<<endl;
-        for (int i=0; i<PP[p].screen.size(); i++) {
-            //pair-amplitude calculation does not need to devide Ne.
-            //short_value/=(1.*Ne);
-            //short_error/=(1.*Ne);
-            
-            MCerror=sqrt( PAPAtotal[p][i]/(1.*nMeas)-pow(PAtotal[p][i]/(1.*nMeas),2) )/sqrt(1.*nMeas);
-            outfile<<"Eta="<<PP[p].screen[i]<<endl;
-            outpa<<"truncation value  ="<<setprecision(10)<<short_value[i]<<endl;
-            outpa<<"truncation error  = "<<setprecision(10)<<short_error[i]<<endl;
-            outpa<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
-            
-            outpa<<"PA="<<setprecision(10)<<PAtotal[p][i]/(1.*nMeas)+short_value[i]<<" var="<<sqrt( MCerror*MCerror + short_error[i]*short_error[i])<<endl<<endl;
-        }
-    }
-    outfile.close();
-    outpa.close();
+//    int Coul_type=CE.size();
+//    vector<vector<vector<double>>>E(Coul_type,vector<vector<double>>(nBins));
+//    vector<vector<vector<double>>>EE(Coul_type,vector<vector<double>>(nBins));
+//    for (int c=0; c<Coul_type; c++) {
+//        for (int b=0; b<nBins; b++) {
+//            E[c][b]=vector<double>(CE[c].screen.size(),0.);
+//            EE[c][b]=vector<double>(CE[c].screen.size(),0.);
+//        }
+//    }
+//    //vector<vector<double>> E(Coul_type, vector<double>(nBins,0.)), EE(Coul_type, vector<double>(nBins,0.));
+//    
+//    int PA_type=PP.size();
+//    vector<vector<vector<double>>>PA(PA_type,vector<vector<double>>(nBins));
+//    vector<vector<vector<double>>>PAPA(PA_type,vector<vector<double>>(nBins));
+//    for (int p=0; p<PA_type; p++) {
+//        for (int b=0; b<nBins; b++) {
+//            PA[p][b]=vector<double>(PP[p].screen.size(),0.);
+//            PAPA[p][b]=vector<double>(PP[p].screen.size(),0.);
+//        }
+//    }
+//    //vector<vector<double>> PA(PA_type, vector<double>(nBins,0.)), PAPA(PA_type, vector<double>(nBins,0.));
+//
+//    omp_set_num_threads(ncore);
+//#pragma omp parallel for
+//    for(int s=0;s<nBins;s++){
+//        int coren=omp_get_thread_num();
+//        ll[coren].reset();
+//        ll[coren].step(nWarmup);
+//        
+//        for(int i=0;i<nMeas;i++){
+//            ll[coren].step(nSteps);
+//            
+//            //Coulomb Energy
+//            for (int c=0; c<Coul_type; c++) {
+//                //double e=ll[coren].coulomb_energy(c,"ce")[0];
+//                vector<double>e=ll[coren].coulomb_energy(c,"ce");
+//                for (int screen=0; screen<E[c][s].size(); screen++) {
+//                    E[c][s][screen]+=e[screen];
+//                    EE[c][s][screen]+=e[screen]*e[screen];
+//                }
+//            }
+//            
+//            //Pair Amplitude
+//            for (int p=0; p<PA_type; p++) {
+//                //double pa=ll[coren].coulomb_energy(p,"pa")[0];
+//                vector<double> pa=ll[coren].coulomb_energy(p,"pa");
+//                for (int screen=0; screen<PA[p][s].size(); screen++) {
+//                    PA[p][s][screen]+=pa[screen];
+//                    PAPA[p][s][screen]+=pa[screen]*pa[screen];
+//                }
+//            }
+//            
+//        }
+//    }
+//    
+//    //vector<double> Etotal(Coul_type,0.), EEtotal(Coul_type,0.);
+//    //vector<double> PAtotal(PA_type,0.), PAPAtotal(PA_type,0.);
+//    
+//    vector<vector<double>> Etotal(Coul_type), EEtotal(Coul_type);
+//    for (int c=0; c<Coul_type; c++) {
+//        Etotal[c]=vector<double>(CE[c].screen.size());
+//        EEtotal[c]=vector<double>(CE[c].screen.size());
+//    }
+//    vector<vector<double>> PAtotal(PA_type), PAPAtotal(PA_type);
+//    for (int p=0; p<PA_type; p++) {
+//        PAtotal[p]=vector<double>(PP[p].screen.size());
+//        PAPAtotal[p]=vector<double>(PP[p].screen.size());
+//    }
+//    
+//    for (int s=0; s<nBins; s++) {
+//        for (int i=0; i<Coul_type; i++) {
+//            for (int screen=0; screen<CE[i].screen.size(); screen++) {
+//                Etotal[i][screen]+=E[i][s][screen];
+//                EEtotal[i][screen]+=EE[i][s][screen];
+//            }
+//        }
+//        for (int p=0; p<PA_type; p++) {
+//            for (int screen=0; screen<PP[p].screen.size(); screen++) {
+//                PAtotal[p][screen]+=PA[p][s][screen];
+//                PAPAtotal[p][screen]+=PAPA[p][s][screen];
+//            }
+//        }
+//    }
+//    
+//    //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
+//    ofstream outfile("out_"+filename+to_string((long long int)ind));
+//    ofstream outpa("out_pa_"+filename+to_string((long long int)ind));
+//    outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
+//    outpa<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
+//    outfile<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<endl<<endl;
+//    outpa<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<endl<<endl;
+//    
+//    nMeas*=nBins;
+//    
+//    for (int c=0; c<Coul_type; c++) {
+//        outfile<<"**********"<<endl;
+//        vector<double> short_value, short_error;
+//        double MCerror;
+//        ll[0].shortrange(c, short_value, short_error, "ce");
+//        
+//        outfile<<"n="<<CE[c].N<<" COULOMB-ENERGY."<<endl;
+//        outfile<<"cutoff="<<CE[c].Q<<endl;
+//        for (int i=0; i<CE[c].screen.size(); i++) {
+//            short_value[i]/=(1.*Ne);
+//            short_error[i]/=(1.*Ne);
+//            
+//            MCerror=sqrt( EEtotal[c][i]/(1.*nMeas)-pow(Etotal[c][i]/(1.*nMeas),2) )/sqrt(1.*nMeas)/(1.*Ne);
+//            outfile<<"Eta="<<CE[c].screen[i]<<endl;
+//            outfile<<"truncation value  ="<<setprecision(10)<<short_value[i]<<endl;
+//            outfile<<"truncation error  = "<<setprecision(10)<<short_error[i]<<endl;
+//            outfile<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
+//            
+//            outfile<<"E="<<setprecision(10)<<Etotal[c][i]/(1.*nMeas*Ne)+short_value[i]<<" var="<<sqrt( MCerror*MCerror + short_error[i]*short_error[i])<<endl<<endl;
+//        }
+//    }
+//    for (int p=0; p<PA_type; p++) {
+//        outfile<<"**********"<<endl;
+//        vector<double> short_value, short_error;
+//        double MCerror;
+//        ll[0].shortrange(p, short_value, short_error, "pa");
+//        
+//        outpa<<"n="<<PP[p].N<<" PAIR-AMPLITUDE."<<endl;
+//        outpa<<"cutoff="<<PP[p].Q<<endl;
+//        for (int i=0; i<PP[p].screen.size(); i++) {
+//            //pair-amplitude calculation does not need to devide Ne.
+//            //short_value/=(1.*Ne);
+//            //short_error/=(1.*Ne);
+//            
+//            MCerror=sqrt( PAPAtotal[p][i]/(1.*nMeas)-pow(PAtotal[p][i]/(1.*nMeas),2) )/sqrt(1.*nMeas);
+//            outfile<<"Eta="<<PP[p].screen[i]<<endl;
+//            outpa<<"truncation value  ="<<setprecision(10)<<short_value[i]<<endl;
+//            outpa<<"truncation error  = "<<setprecision(10)<<short_error[i]<<endl;
+//            outpa<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
+//            
+//            outpa<<"PA="<<setprecision(10)<<PAtotal[p][i]/(1.*nMeas)+short_value[i]<<" var="<<sqrt( MCerror*MCerror + short_error[i]*short_error[i])<<endl<<endl;
+//        }
+//    }
+//    outfile.close();
+//    outpa.close();
 }
 void print_d(vector<vector<int>> d){
     ofstream outfile("ds");
@@ -389,6 +389,49 @@ vector<vector<vector<int>>> output_dset(int Ne){
         d=old_ds;
         d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
         d.push_back(vector<int>{3,-2});
+        dset.push_back(d);
+        
+        return dset;
+    }
+    else if (Ne==69) {
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{4,3});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{3,4});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{-3,4});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{-4,3});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{-4,-3});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{-3,-4});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{3,-4});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{4,-3});
         dset.push_back(d);
         
         return dset;
