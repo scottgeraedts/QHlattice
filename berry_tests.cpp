@@ -134,7 +134,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, strin
     double theta=theta_t*M_PI, alpha=alpha_t;
     
     vector<vector<int>> ds;
-    if (Ne=8) {
+    if (Ne==8) {
         for (int i=-1; i<2; i++) for (int j=-1; j<2; j++) ds.push_back(vector<int>{i,j});
         ds.erase(remove(ds.begin(),ds.end(),vector<int>{1,1}),ds.end());
     }
@@ -148,7 +148,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, strin
     
     vector<LATTICE> ll(ncore);
     for (int i=0; i<ncore; i++) {
-        double shiftx=0.1, shifty=0.1;
+        double shiftx=shift, shifty=shift;
         int seed=i;
         ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, shiftx, shifty);
         

@@ -5,7 +5,6 @@ using namespace std;
 #include "berry_tests.h"
 #include "time.h"
 
-
 bool IsOdd (int i) {
     return ((i%2)==1);
 }
@@ -23,11 +22,10 @@ void Ed_Coulomb(){
     vector<NQ> NQPA(0);
     
     NQCE[0].N=0; NQCE[0].Q=10.0; NQCE[0].screen=screen;
-    NQCE[1].N=1; NQCE[1].Q=6.00; NQCE[1].screen=screen;
-    NQCE[2].N=1; NQCE[2].Q=4.50; NQCE[2].screen=screen;
-    NQCE[3].N=2; NQCE[3].Q=4.50; NQCE[3].screen=screen;
-    NQCE[4].N=2; NQCE[4].Q=4.25; NQCE[4].screen=screen;
-    NQCE[5].N=2; NQCE[5].Q=4.00; NQCE[5].screen=screen;
+    NQCE[1].N=1; NQCE[1].Q=5.50; NQCE[1].screen=screen;
+    NQCE[2].N=2; NQCE[2].Q=4.50; NQCE[2].screen=screen;
+    NQCE[3].N=2; NQCE[3].Q=4.25; NQCE[3].screen=screen;
+    NQCE[4].N=2; NQCE[4].Q=4.00; NQCE[4].screen=screen;
 
     int ncore=1; double shift=0.25;
     for (int i=-1; i<=5; i++) {
