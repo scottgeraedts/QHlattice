@@ -34,6 +34,7 @@ extern"C"{
 struct NQ{
     int N;
     double Q;
+    vector<double> screen;
 };
 class LATTICE_PARAMS{
 public:
@@ -144,15 +145,15 @@ public:
     
     //high LL Coulomb and Pair-amplitude things.
     //these two functions set up table used by coulomb/pair-amplitude. type = "ce" or "pa".
-    void setup_table(int, double, vector<vector<double>>&, vector<vector<double>>&, string typee="ce");
+    void setup_table(NQ, vector<vector<vector<double>>>&, vector<vector<vector<double>>>&, string typee="ce");
     void setup_tables(vector<NQ>, string typee="ce");
+    
     void setup_coulomb0();
     vector<vector<double>> coulomb_table;
-    vector<vector<vector<double>>> coulomb_tableHLL;
-    vector<vector<vector<double>>> PA_table;
-    double coulomb_energy(int, string typee="ce");
-    void shortrange(int ind, double&, double&, string typee="ce");
-    //TODO:coutout.
+    vector<vector<vector<vector<double>>>> coulomb_tableHLL;//[LLN][Screen][x][y]
+    vector<vector<vector<vector<double>>>> PA_table;
+    vector<double> coulomb_energy(int, string typee="ce");
+    void shortrange(int ind, vector<double>&, vector<double>&, string);
     double get_correlated_weight();
 	
 private:
@@ -190,8 +191,8 @@ private:
 	vector< vector<complex<double> > > omega_dbar;
     
     vector<vector<complex<double>>> Ftable;
-    vector<vector<vector<double>>> coulomb_qtable;
-    vector<vector<vector<double>>> PA_qtable;
+    vector<vector<vector<vector<double>>>> coulomb_qtable;
+    vector<vector<vector<vector<double>>>> PA_qtable;
     vector<double> CE_cutoff;
     vector<double> PA_cutoff;
 

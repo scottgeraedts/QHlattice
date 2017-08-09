@@ -15,49 +15,22 @@ int main(){
     Ed_Coulomb();
 }
 void Ed_Coulomb(){
-    vector<NQ> NQCE(3);
-    NQCE[0].N=0; NQCE[1].N=1; NQCE[2].N=2;
-    NQCE[0].Q=4.5; NQCE[1].Q=4.5; NQCE[2].Q=4.;
+    vector<double> screen;
+    for (int i=0; i<10; i++) {
+        screen.push_back(0.5*i);
+    }
+    vector<NQ> NQCE(5);
+    vector<NQ> NQPA(0);
     
-    int n=0;
-    vector<NQ> NQPA(n);
-//    for (int i=0; i<n; i++) {
-//        NQPA[i].N=2*i+1;
-//        NQPA[i].Q=4.;
-//        if (NQPA[i].N>8) {
-//            NQPA[i].Q=4.25;
-//        }
-//    }
+    NQCE[0].N=0; NQCE[0].Q=10.0; NQCE[0].screen=screen;
+    NQCE[1].N=1; NQCE[1].Q=6.00; NQCE[1].screen=screen;
+    NQCE[2].N=1; NQCE[2].Q=4.50; NQCE[2].screen=screen;
+    NQCE[3].N=2; NQCE[3].Q=4.50; NQCE[3].screen=screen;
+    NQCE[4].N=2; NQCE[4].Q=4.25; NQCE[4].screen=screen;
+    NQCE[5].N=2; NQCE[5].Q=4.00; NQCE[5].screen=screen;
 
-    int ncore=20; double shift=0.25;
+    int ncore=1; double shift=0.25;
     for (int i=-1; i<=5; i++) {
-        parallel_ce_pa(ncore, NQCE, NQPA, shift, "params_cfl", -1);
+        parallel_ce_pa(ncore, NQCE, NQPA, shift, "params_cfl", i);
     }
 }
-/*
-void test_exact(double shift){
-    cout<<"*****shift="<<shift<<"*****"<<endl;
-//    testlatticepp(shift);
-    
-    int n=9;
-    vector<NQ> N_Q(n);
-    for (int i=0; i<n; i++) {
-        N_Q[i].N=i;
-        N_Q[i].Q=-1.;
-    }
-    
-    vector<double> pa;
-    pa=
-    pairamplitude_ExplicitLatticeSum3(3,shift,N_Q);
-    for (int i=0; i<pa.size(); i++) {
-        cout<<"pa["<<i<<"]="<<setprecision(10)<<pa[i]<<endl;
-    }
-    cout<<endl;
-//    pa=
-//    pairamplitude_ExplicitLatticeSum3(3,shift,N_Q);
-//    for (int i=0; i<pa.size(); i++) {
-//        cout<<"pa["<<i<<"]="<<setprecision(10)<<pa[i]<<endl;
-//    }
-//    cout<<endl;
-}
-*/

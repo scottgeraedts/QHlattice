@@ -55,12 +55,12 @@ void LATTICE::init(int seed){
  	
 	//********calls to duncan's functions
 	set_l_(&NPhi, &L1, &L2);
-	setup_z_function_table_();
+    setup_z_function_table_();
 	int *sl2z=new int[4];
 	sl2z[0]=1; sl2z[1]=0; sl2z[2]=0; sl2z[3]=1;
 	if(type!="laughlin-hole") setup_laughlin_state_(&Ne,&invNu,sl2z,&gs);
 //	cout<<"starting weight "<<running_weight<<endl;
-    delete [] sl2z; 
+    delete [] sl2z;
     
 	ran.seed(seed);
 	fermions=true;
@@ -192,7 +192,7 @@ int LATTICE::simple_update(){
     //this function changes newMatrix. whether oldMatrix is changed or not dependent on if update.
     
     if (testing && !correlatedsampling)
-        cout<<running_weight<<" "<<get_weight(locs)<<" "<<log(norm(get_wf(locs)))<<endl;
+        cout<<running_weight<<" "<<get_weight(locs)<<" "<<log(norm(get_wf(locs)))<<endl<<endl;
     else if (testing && correlatedsampling) {
         cout<<c_running_weight<<" "<<get_correlated_weight()<<endl;
         cout<<"gs ="<<running_weight<<" "<<get_weight(locs)<<" "<<log(norm(get_wf(locs)))<<endl;
@@ -416,10 +416,8 @@ double LATTICE::updateweight(const int &electron, const vector<int> &newloc){
             out+=log(norm(newDeterminant/oldDeterminant));
         }
     }
-    
     return out;
 }
-
 //very similar to simple update (above), but it uses a provided set of zs, instead of this objects version
 //and it is also provided with an position to update
 complex<double> LATTICE::update_weight(const vector< vector<int> > &zs, int electron, vector<int> newloc){
@@ -725,7 +723,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
         }
     }
 	return out;
-} 
+}
 //given both a set of positions and a set of ds, computes the wavefunction (NOT the norm of the wavefunction)
 complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
     if (type!="doubledCFL" and (signed)zs.size()!=Ne) {
@@ -916,21 +914,97 @@ void LATTICE::setup_coulomb0(){
 		}
 	}
 }
-void LATTICE::setup_table(int n, double cutoff, vector<vector<double>>& qtable, vector<vector<double>>& output, string typee){
+//void LATTICE::setup_table(int n, double cutoff, vector<vector<double>>& qtable, vector<vector<double>>& output, string typee, double screen){
+//    if (typee!="ce" && typee!="pa") {
+//        cout<<"only coulomb energy and pair-amplitude are calculable."<<endl;
+//        exit(0);
+//    }
+//    
+//    //boundary conditions.
+//    complex<double> ph1, ph2;
+//    ph1=polar(1., +2.*M_PI*get_bc()[1]);
+//    ph2=polar(1., -2.*M_PI*get_bc()[0]);
+//    //    cout<<"***** wsum *****"<<endl;
+//    //    cout<<wsum[0]<<" "<<wsum[1]<<endl;
+//    //    cout<<"**********"<<endl<<endl;
+//    
+//    qtable=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
+//    Ftable=vector<vector<complex<double>>>(NPhi,vector<complex<double>>(NPhi,0.));
+//    
+//    int round=5;
+//    for (int qx=0; qx<round*NPhi; qx++) {
+//        for (int qy=0; qy<round*NPhi; qy++) {
+//            int Qx=qx, Qy=qy;
+//            if (2*Qx>round*NPhi) Qx-=round*NPhi;
+//            if (2*Qy>round*NPhi) Qy-=round*NPhi;
+//            double q2=2.*norm(Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2);
+//            
+//            int phy_qx=qx%NPhi, phy_qy=qy%NPhi;
+//            if (2*phy_qx>NPhi) phy_qx-=NPhi;
+//            if (2*phy_qy>NPhi) phy_qy-=NPhi;
+//            int ind_m = (Qx-phy_qx)/NPhi;
+//            int ind_n = (Qy-phy_qy)/NPhi;
+//            
+//            double sign = pow(-1., phy_qx*ind_n-phy_qy*ind_m)*pow(-1., NPhi*(ind_m*ind_n+ind_m+ind_n) );
+//            Ftable[qx%NPhi][qy%NPhi] += sign * exp(-0.25*q2) * pow(ph1, ind_m) * pow(ph2, ind_n);
+//            
+//            if (typee=="ce")
+//                qtable[qx%NPhi][qy%NPhi]+=1.*exp(-screen*sqrt(q2))/sqrt(q2)*pow(laguerre(n,0.5*q2),2)*exp(-0.5*q2)/(1.*NPhi);
+//            else if (typee=="pa")
+//                qtable[qx%NPhi][qy%NPhi]+=2.*laguerre(n, q2)*exp(-0.5*q2)/(1.*NPhi);
+//            //NPhi comes from (2pi)/(2pi*Nphi), where numerator is from def of interaction (?), denormator is from sumq.
+//        }
+//    }
+//    if (typee=="ce")
+//        qtable[0][0]=0.;//Coulomb energy exclude (0,0) point. Replaced by Madelung energy.
+//    
+//    output=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
+//    for (int qx=0; qx<NPhi; qx++)
+//        for (int qy=0; qy<NPhi; qy++)
+//            for (int i=0; i<NPhi; i++)
+//                for (int j=0; j<NPhi; j++) {
+//                    
+//                    int Qx=qx,Qy=qy;
+//                    if (2*Qx>NPhi) Qx-=NPhi;
+//                    if (2*Qy>NPhi) Qy-=NPhi;
+//                    complex<double> z=Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
+//                    double x=sqrt(2.)*abs(z);
+//                    
+//                    double epsilon=1e-30;
+//                    if (norm(Ftable[qx][qy])<epsilon) {
+//                        continue;//exclude points that [f0]_N=0.
+//                    }
+//                    else if (cutoff<0. || x<cutoff) {
+//                        //if cutoff is less than zero, no BZ cutoff.
+//                        output[i][j]+=qtable[qx][qy]/norm(Ftable[qx][qy]) * cos( (2.*M_PI)/(1.*NPhi)*(qx*j-qy*i) );
+//                    }
+//                }
+//    
+//    //if calculating the LLL Coulomb energy, use Duncan's table;
+//    if (typee=="ce" && n==0) {
+//        //output=coulomb_table;
+//        //output[0][0]=0.;
+//    }
+//}
+void LATTICE::setup_table(NQ NQCE, vector<vector<vector<double>>>& qtable, vector<vector<vector<double>>>& output, string typee){
     if (typee!="ce" && typee!="pa") {
         cout<<"only coulomb energy and pair-amplitude are calculable."<<endl;
         exit(0);
     }
-
+    
+    int n=NQCE.N;
+    double cutoff=NQCE.Q;
+    vector<double> screen=NQCE.screen;
+    
     //boundary conditions.
     complex<double> ph1, ph2;
     ph1=polar(1., +2.*M_PI*get_bc()[1]);
     ph2=polar(1., -2.*M_PI*get_bc()[0]);
-//    cout<<"***** wsum *****"<<endl;
-//    cout<<wsum[0]<<" "<<wsum[1]<<endl;
-//    cout<<"**********"<<endl<<endl;
+    //cout<<"***** wsum *****"<<endl;
+    //cout<<wsum[0]<<" "<<wsum[1]<<endl;
+    //cout<<"**********"<<endl<<endl;
     
-    qtable=vector<vector<double>>(NPhi,vector<double>(NPhi,0.));
+    qtable=vector<vector<vector<double>>>(screen.size(),vector<vector<double>>(NPhi,vector<double>(NPhi,0.)));
     Ftable=vector<vector<complex<double>>>(NPhi,vector<complex<double>>(NPhi,0.));
     
     int round=5;
@@ -950,35 +1024,42 @@ void LATTICE::setup_table(int n, double cutoff, vector<vector<double>>& qtable, 
             double sign = pow(-1., phy_qx*ind_n-phy_qy*ind_m)*pow(-1., NPhi*(ind_m*ind_n+ind_m+ind_n) );
             Ftable[qx%NPhi][qy%NPhi] += sign * exp(-0.25*q2) * pow(ph1, ind_m) * pow(ph2, ind_n);
             
-            if (typee=="ce")
-                qtable[qx%NPhi][qy%NPhi]+=1./sqrt(q2)*pow(laguerre(n,0.5*q2),2)*exp(-0.5*q2)/(1.*NPhi);
-            else if (typee=="pa")
-                qtable[qx%NPhi][qy%NPhi]+=2.*laguerre(n, q2)*exp(-0.5*q2)/(1.*NPhi);
-            //NPhi comes from (2pi)/(2pi*Nphi), where numerator is from def of interaction (?), denormator is from sumq.
+            for (int s=0; s<screen.size(); s++) {
+                if (typee=="ce")
+                    qtable[s][qx%NPhi][qy%NPhi]+=1.*exp(-screen[s]*sqrt(q2))/sqrt(q2)*pow(laguerre(n,0.5*q2),2)*exp(-0.5*q2)/(1.*NPhi);
+                else if (typee=="pa")
+                    qtable[s][qx%NPhi][qy%NPhi]+=2.*laguerre(n, q2)*exp(-0.5*q2)/(1.*NPhi);
+                //NPhi comes from (2pi)/(2pi*Nphi), where numerator is from def of interaction (?), denormator is from sumq.
+            }
+
         }
     }
-    if (typee=="ce")
-        qtable[0][0]=0.;//Coulomb energy exclude (0,0) point. Replaced by Madelung energy.
+    if (typee=="ce") {
+        for (int s=0; s<screen.size(); s++)
+            qtable[s][0][0]=0.;//Coulomb energy exclude (0,0) point. Replaced by Madelung energy.
+    }
     
-    output=vector<vector<double>>(NPhi, vector<double>(NPhi,0.));
+    output=vector<vector<vector<double>>>(screen.size(),vector<vector<double>>(NPhi,vector<double>(NPhi,0.)));
     for (int qx=0; qx<NPhi; qx++)
         for (int qy=0; qy<NPhi; qy++)
             for (int i=0; i<NPhi; i++)
                 for (int j=0; j<NPhi; j++) {
-
+                    
                     int Qx=qx,Qy=qy;
                     if (2*Qx>NPhi) Qx-=NPhi;
                     if (2*Qy>NPhi) Qy-=NPhi;
                     complex<double> z=Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
                     double x=sqrt(2.)*abs(z);
-
+                    
                     double epsilon=1e-30;
                     if (norm(Ftable[qx][qy])<epsilon) {
                         continue;//exclude points that [f0]_N=0.
                     }
                     else if (cutoff<0. || x<cutoff) {
-                        //if cutoff is less than zero, no BZ cutoff.
-                        output[i][j]+=qtable[qx][qy]/norm(Ftable[qx][qy]) * cos( (2.*M_PI)/(1.*NPhi)*(qx*j-qy*i) );
+                        for (int s=0; s<screen.size(); s++) {
+                            //if cutoff is less than zero, no BZ cutoff.
+                            output[s][i][j]+=qtable[s][qx][qy]/norm(Ftable[qx][qy]) * cos( (2.*M_PI)/(1.*NPhi)*(qx*j-qy*i) );
+                        }
                     }
                 }
     
@@ -991,57 +1072,59 @@ void LATTICE::setup_table(int n, double cutoff, vector<vector<double>>& qtable, 
 void LATTICE::setup_tables(vector<NQ> N_Q, string typee) {
     
     if (typee=="ce") {
-        coulomb_tableHLL.clear();
+        coulomb_tableHLL.clear();//[NQ_ind][Screen_ind][3][4]
         coulomb_qtable.clear();
         CE_cutoff.clear();
-        for (int i=0; i<N_Q.size(); i++)
-            CE_cutoff.push_back(N_Q[i].Q);
+        for (int i=0; i<N_Q.size(); i++) CE_cutoff.push_back(N_Q[i].Q);
     }
     else if (typee=="pa") {
         PA_table.clear();
         PA_qtable.clear();
         PA_cutoff.clear();
-        for (int i=0; i<N_Q.size(); i++)
-            PA_cutoff.push_back(N_Q[i].Q);
+        for (int i=0; i<N_Q.size(); i++) PA_cutoff.push_back(N_Q[i].Q);
     }
     
     for (int i=0; i<N_Q.size(); i++) {
-        vector<vector<double>> qtable, table;
+        vector<vector<vector<double>>> qtable, table;
+        setup_table(N_Q[i], qtable, table, "ce");
         if (typee=="ce") {
-            setup_table(N_Q[i].N, N_Q[i].Q, qtable, table, "ce");
             coulomb_qtable.push_back(qtable);
             coulomb_tableHLL.push_back(table);
         }
         else if (typee=="pa"){
-            setup_table(N_Q[i].N, N_Q[i].Q, qtable, table, "pa");
+            setup_table(N_Q[i], qtable, table, "pa");
             PA_qtable.push_back(qtable);
             PA_table.push_back(table);
         }
     }
-    
 }
-double LATTICE::coulomb_energy(int ind, string typee){
-    double out=0.;
+vector<double> LATTICE::coulomb_energy(int ind, string typee){
+    vector<double>out(coulomb_tableHLL[ind].size());
+    //double out=0.;
     int m,n;
     for(int i=0;i<Ne;i++){
         for(int j=0;j<i;j++){
             m=supermod(locs[i][0]-locs[j][0], NPhi);
             n=supermod(locs[i][1]-locs[j][1], NPhi);
             
-            if (typee=="ce")
-                out+=coulomb_tableHLL[ind][m][n];
-            else if (typee=="pa")
-                out+=PA_table[ind][m][n];
+            for (int s=0; s<coulomb_tableHLL[ind].size(); s++) {
+                if (typee=="ce")
+                    out[s]+=coulomb_tableHLL[ind][s][m][n];
+                else if (typee=="pa")
+                    out[s]+=PA_table[ind][s][m][n];
+            }
         }
     }
-    
     if (typee=="ce") {
-        return out+0.5*Ne*coulomb_table[0][0];
+        for (int s=0; s<coulomb_tableHLL[ind].size(); s++) {
+            out[s]+=0.5*Ne*coulomb_table[0][0];
+        }
     }
-    else return out;
+    return out;
 }
-void LATTICE::shortrange(int ind, double& value, double& error, string typee){
-    value=0.; error=0.;
+void LATTICE::shortrange(int ind, vector<double>& value, vector<double>& error, string typee){
+    value=vector<double>(coulomb_tableHLL[ind].size());
+    error=vector<double>(coulomb_tableHLL[ind].size());
     
     double Smax, nu=1./(1.*invNu), Sinf=nu*(1.-nu);
     if (type=="CFL") Smax=0.8;
@@ -1059,13 +1142,15 @@ void LATTICE::shortrange(int ind, double& value, double& error, string typee){
             complex<double> z=Qx/(1.*NPhi)*L1+Qy/(1.*NPhi)*L2;
             double x=sqrt(2.)*abs(z);
             
-            if (typee=="ce" && x>CE_cutoff[ind]) {
-                value += -0.5*NPhi/pow(1.*invNu,2)*coulomb_qtable[ind][qx][qy];
-                error += 0.5*NPhi*abs(coulomb_qtable[ind][qx][qy])*bound;
-            }
-            else if (typee=="pa" && x>PA_cutoff[ind]){
-                value += -0.5*NPhi/pow(1.*invNu,2)*PA_qtable[ind][qx][qy];
-                error += 0.5*NPhi*abs(PA_qtable[ind][qx][qy])*bound;
+            for (int s=0; s<coulomb_tableHLL[ind].size(); s++) {
+                if (typee=="ce" && x>CE_cutoff[ind]) {
+                    value[s]+=-0.5*NPhi/pow(1.*invNu,2)*coulomb_qtable[ind][s][qx][qy];
+                    error[s]+= 0.5*NPhi*abs(coulomb_qtable[ind][s][qx][qy])*bound;
+                }
+                else if (typee=="pa" && x>PA_cutoff[ind]){
+                    value[s]+=-0.5*NPhi/pow(1.*invNu,2)*PA_qtable[ind][s][qx][qy];
+                    error[s]+= 0.5*NPhi*abs(PA_qtable[ind][s][qx][qy])*bound;
+                }
             }
         }
 }
