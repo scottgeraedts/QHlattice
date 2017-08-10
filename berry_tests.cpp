@@ -112,7 +112,7 @@ void single_run(string filename, bool trace){
     eout.close();
     outfile.close();
 }
-void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, string filename, int ind){
+void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, string filename, int ind, int seed_t){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, alpha_t;
@@ -148,7 +148,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, strin
     vector<LATTICE> ll(ncore);
     for (int i=0; i<ncore; i++) {
         double shiftx=shift, shifty=shift;
-        int seed=i;
+        int seed=i+seed_t;
         ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, shiftx, shifty);
         
         if (Ne==8 && type=="CFL" &&ind>=0) ll[i].set_ds(dset[ind]);//if ind=-1, cal GS. else, ES.
@@ -246,60 +246,63 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, strin
     }
     
     //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
-    ofstream outfile("out_"+filename+to_string((long long int)ind));
-    ofstream outpa("out_pa_"+filename+to_string((long long int)ind));
-    outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
-    outpa<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
+    ofstream outfile("output/out_"+filename+"_"+to_string((long long int)ind)+"_"+to_string((long long int)seed_t));
+//    ofstream outpa("out_pa_"+filename+to_string((long long int)ind));
+    outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<" ncore="<<ncore<<endl;
+//    outpa<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
     outfile<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<endl<<endl;
-    outpa<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<endl<<endl;
+//    outpa<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<endl<<endl;
     
     nMeas*=nBins;
     
     for (int c=0; c<Coul_type; c++) {
-        outfile<<"**********"<<endl;
+//        outfile<<"**********"<<endl;
         vector<double> short_value, short_error;
         double MCerror;
         ll[0].shortrange(c, short_value, short_error, "ce");
         
-        outfile<<"n="<<CE[c].N<<" COULOMB-ENERGY."<<endl;
-        outfile<<"cutoff="<<CE[c].Q<<endl;
+//        outfile<<"n="<<CE[c].N<<" COULOMB-ENERGY."<<endl;
+//        outfile<<"cutoff="<<CE[c].Q<<endl;
         for (int i=0; i<CE[c].screen.size(); i++) {
             short_value[i]/=(1.*Ne);
             short_error[i]/=(1.*Ne);
             
             MCerror=sqrt( EEtotal[c][i]/(1.*nMeas)-pow(Etotal[c][i]/(1.*nMeas),2) )/sqrt(1.*nMeas)/(1.*Ne);
-            outfile<<"Eta="<<CE[c].screen[i]<<endl;
-            outfile<<"truncation value  ="<<setprecision(10)<<short_value[i]<<endl;
-            outfile<<"truncation error  = "<<setprecision(10)<<short_error[i]<<endl;
-            outfile<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
+//            outfile<<"Eta="<<CE[c].screen[i]<<endl;
+//            outfile<<"truncation value  ="<<setprecision(10)<<short_value[i]<<endl;
+//            outfile<<"truncation error  = "<<setprecision(10)<<short_error[i]<<endl;
+//            outfile<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
+            outfile<<CE[c].N<<" "<<CE[c].Q<<" "<<CE[c].screen[i]<<endl;
+            outfile<<setprecision(10)<<short_value[i]<<" "<<short_error[i]<<" "<<MCerror<<" "<<Etotal[c][i]/(1.*nMeas*Ne);
+            outfile<<endl;
             
-            outfile<<"E="<<setprecision(10)<<Etotal[c][i]/(1.*nMeas*Ne)+short_value[i]<<" var="<<sqrt( MCerror*MCerror + short_error[i]*short_error[i])<<endl<<endl;
+//            outfile<<"E="<<setprecision(10)<<Etotal[c][i]/(1.*nMeas*Ne)+short_value[i]<<" var="<<sqrt( MCerror*MCerror + short_error[i]*short_error[i])<<endl<<endl;
         }
     }
-    for (int p=0; p<PA_type; p++) {
-        outfile<<"**********"<<endl;
-        vector<double> short_value, short_error;
-        double MCerror;
-        ll[0].shortrange(p, short_value, short_error, "pa");
-        
-        outpa<<"n="<<PP[p].N<<" PAIR-AMPLITUDE."<<endl;
-        outpa<<"cutoff="<<PP[p].Q<<endl;
-        for (int i=0; i<PP[p].screen.size(); i++) {
-            //pair-amplitude calculation does not need to devide Ne.
-            //short_value/=(1.*Ne);
-            //short_error/=(1.*Ne);
-            
-            MCerror=sqrt( PAPAtotal[p][i]/(1.*nMeas)-pow(PAtotal[p][i]/(1.*nMeas),2) )/sqrt(1.*nMeas);
-            outfile<<"Eta="<<PP[p].screen[i]<<endl;
-            outpa<<"truncation value  ="<<setprecision(10)<<short_value[i]<<endl;
-            outpa<<"truncation error  = "<<setprecision(10)<<short_error[i]<<endl;
-            outpa<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
-            
-            outpa<<"PA="<<setprecision(10)<<PAtotal[p][i]/(1.*nMeas)+short_value[i]<<" var="<<sqrt( MCerror*MCerror + short_error[i]*short_error[i])<<endl<<endl;
-        }
-    }
+//    for (int p=0; p<PA_type; p++) {
+//        outfile<<"**********"<<endl;
+//        vector<double> short_value, short_error;
+//        double MCerror;
+//        ll[0].shortrange(p, short_value, short_error, "pa");
+//        
+//        outpa<<"n="<<PP[p].N<<" PAIR-AMPLITUDE."<<endl;
+//        outpa<<"cutoff="<<PP[p].Q<<endl;
+//        for (int i=0; i<PP[p].screen.size(); i++) {
+//            //pair-amplitude calculation does not need to devide Ne.
+//            //short_value/=(1.*Ne);
+//            //short_error/=(1.*Ne);
+//            
+//            MCerror=sqrt( PAPAtotal[p][i]/(1.*nMeas)-pow(PAtotal[p][i]/(1.*nMeas),2) )/sqrt(1.*nMeas);
+//            outfile<<"Eta="<<PP[p].screen[i]<<endl;
+//            outpa<<"truncation value  ="<<setprecision(10)<<short_value[i]<<endl;
+//            outpa<<"truncation error  = "<<setprecision(10)<<short_error[i]<<endl;
+//            outpa<<"MonteCarlo error  = "<<setprecision(10)<<MCerror<<endl;
+//            
+//            outpa<<"PA="<<setprecision(10)<<PAtotal[p][i]/(1.*nMeas)+short_value[i]<<" var="<<sqrt( MCerror*MCerror + short_error[i]*short_error[i])<<endl<<endl;
+//        }
+//    }
     outfile.close();
-    outpa.close();
+//    outpa.close();
 }
 void print_d(vector<vector<int>> d){
     ofstream outfile("ds");

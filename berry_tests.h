@@ -35,7 +35,7 @@ void single_run(string filename="params", bool trace=false);
 void structurefactor(string, int num_core=1);
 
 //Energetics
-void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift=0.25, string filename="params", int ind=-1);//energy & p.a. calculator for high LL.
+void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift=0.25, string filename="params", int ind=-1, int seed=0);//energy & p.a. calculator for high LL.
 //void parallel_ce_pa_screen(int ncore, vector<NQ> CE, vector<NQ> PP, double shift=0.25, string filename="params", int ind=-1);//energy & p.a. calculator for high LL.
 
 //Pomeranchuk Instability.

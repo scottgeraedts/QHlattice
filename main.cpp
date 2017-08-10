@@ -10,7 +10,6 @@ bool IsOdd (int i) {
 }
 int main(){
     void Ed_Coulomb();
-    
     Ed_Coulomb();
 }
 void Ed_Coulomb(){
@@ -27,12 +26,11 @@ void Ed_Coulomb(){
     NQCE[3].N=2; NQCE[3].Q=4.25; NQCE[3].screen=vector<double>{0.,0.1};
     NQCE[4].N=2; NQCE[4].Q=4.00; NQCE[4].screen=vector<double>{0.,0.1};
 
-    int ncore=1; double shift=0.25;
+    int ncore=10; double shift=0.25;
     for (int i=-1; i<=5; i++) {
-        parallel_ce_pa(ncore, NQCE, NQPA, shift, "params_cfl", i);
+        parallel_ce_pa(ncore, NQCE, NQPA, shift, "params_cfl", i, 0);
     }
     for (int i=-1; i<=5; i++) {
-        parallel_ce_pa(ncore, NQCE, NQPA, shift, "params_cfl2", i);
+        //parallel_ce_pa(ncore, NQCE, NQPA, shift, "params_cfl2", i);
     }
-    
 }
