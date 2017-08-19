@@ -1145,7 +1145,7 @@ void LATTICE::shortrange(int ind, vector<double>& value, vector<double>& error, 
             for (int s=0; s<coulomb_tableHLL[ind].size(); s++) {
                 if (typee=="ce" && x>CE_cutoff[ind]) {
                     value[s]+=-0.5*NPhi/pow(1.*invNu,2)*coulomb_qtable[ind][s][qx][qy];
-                    error[s]+= 0.5*NPhi*abs(coulomb_qtable[ind][s][qx][qy])*bound;
+                    error[s]+= 0.5*NPhi*abs(coulomb_qtable[ind][s][qx][qy])*bound;//NPhi comes from structure factor. From exp(ir)->S(q), there is a factor of NPhi. 
                 }
                 else if (typee=="pa" && x>PA_cutoff[ind]){
                     value[s]+=-0.5*NPhi/pow(1.*invNu,2)*PA_qtable[ind][s][qx][qy];

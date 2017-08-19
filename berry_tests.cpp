@@ -246,7 +246,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, strin
     }
     
     //while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
-    ofstream outfile("output/out_"+filename+"_"+to_string((long long int)ind)+"_"+to_string((long long int)seed_t));
+    ofstream outfile("output/out_j_"+filename+"_"+to_string((long long int)ind)+"_"+to_string((long long int)seed_t));
 //    ofstream outpa("out_pa_"+filename+to_string((long long int)ind));
     outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<" ncore="<<ncore<<endl;
 //    outpa<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
