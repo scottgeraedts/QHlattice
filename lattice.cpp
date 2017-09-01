@@ -201,7 +201,7 @@ int LATTICE::simple_update(){
             
             vector<vector<int>> tmp=nonsamplestates[i].get_locs();
             for (int j=0; j<tmp.size(); j++) {
-                cout<<tmp[j][0]<<" "<<tmp[j][1]<<" ";
+                //cout<<tmp[j][0]<<" "<<tmp[j][1]<<" ";
             }
             cout<<endl;
         }
@@ -252,6 +252,7 @@ int LATTICE::simple_update(){
             for (int i=0; i<nonsamplestates.size(); i++) {
                 nonsamplestates[i].change_locs(locs);
                 nonsamplestates[i].running_weight+=ins_wt[i];
+                //cout<<"nonsamplestates[i].running_weight="<<nonsamplestates[i].running_weight<<endl;
                 nonsamplestates[i].update_matdet();
             }
         }
@@ -360,6 +361,12 @@ double LATTICE::updateweight(const int &electron, const vector<int> &newloc){
                     dx=newCOM[0]/(1.*NPhi)-ws[i][0];
                     dy=newCOM[1]/(1.*NPhi)-ws[i][1];
                     z_function_(&dx,&dy,&L1,&L2,&zero,&NPhi,&temp);
+                    //while (temp<1e-15) {TODO: what if wf(COM) = 0.}
+                    if (abs(temp)<1e-15) {
+//                        cout<<"COM=0"<<endl;
+//                        exit(0);
+                        return -10000;
+                    }
                     out+=log(norm(temp));
                 }
                 //get_laughlin_cm_(oldCOM,&temp);
@@ -693,6 +700,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
             }
             out+=log(norm(sum));
         }
+        
         //determinant part
         double oldDivisor;
         if(type=="CFL"){
@@ -721,6 +729,7 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
             oldDivisor=abs(real(temp))+abs(imag(temp));
             out+=log(norm(temp/oldDivisor))+2*log(oldDivisor);
         }
+        
     }
 	return out;
 }
@@ -1121,6 +1130,12 @@ vector<double> LATTICE::coulomb_energy(int ind, string typee){
         }
     }
     return out;
+}
+Eigen::VectorXd LATTICE::coulomb_energy_eigen(int ind, string typee){
+    vector<double>out=coulomb_energy(ind, typee);
+    Eigen::VectorXd output=Eigen::VectorXd::Zero(out.size());
+    for (int i=0; i<out.size(); i++) output(i)=out[i];
+    return output;
 }
 void LATTICE::shortrange(int ind, vector<double>& value, vector<double>& error, string typee){
     value=vector<double>(coulomb_tableHLL[ind].size());
@@ -1859,8 +1874,6 @@ double LATTICE::get_correlated_weight(){
         temp+=ratio[i]/ratio[nonsamplestates.size()]*exp(nonsamplestates[i].running_weight-running_weight);
         //TODO:correlated-sampling
     }
-    
-    //return log(out);
     return log(ratio[nonsamplestates.size()])+running_weight+log(temp);
 }
 vector<double> LATTICE::get_runweis(){
@@ -1868,6 +1881,17 @@ vector<double> LATTICE::get_runweis(){
     for (int i=0; i<nonsamplestates.size(); i++) {
         out[i]=nonsamplestates[i].running_weight;
     }
+    return out;
+}
+vector<double> LATTICE::get_w(){
+    //returns un-normalized w_i, i=0,1,...,Nn.
+    int Nn=nonsamplestates.size();
+    vector<double> out(Nn+1, 0.);
+    
+    vector<double> weit=get_runweis(); weit.push_back(running_weight);
+    double den=0.;
+    for (int i=0; i<Nn+1; i++) den+=ratio[i]*exp(weit[i]-running_weight);
+    for (int i=0; i<Nn+1; i++) out[i]=exp(weit[i]-weit[Nn])/den;
     return out;
 }
 LATTICE::~LATTICE(){

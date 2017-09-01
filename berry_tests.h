@@ -5,6 +5,7 @@
 #include "lattice.h"
 #include <complex>
 #include <Eigen/Core>
+#include <Eigen/Dense>
 
 struct data{
     int num;

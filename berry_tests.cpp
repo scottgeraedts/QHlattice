@@ -144,6 +144,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, strin
     if (Ne==8) dset=output_dset(8);
     else if (Ne==37) dset=output_dset(37);
     else if (Ne==69) dset=output_dset(69);
+    else if (Ne==9 ) dset=output_dset(9);
     
     vector<LATTICE> ll(ncore);
     for (int i=0; i<ncore; i++) {
@@ -155,6 +156,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift, strin
         else if (Ne==8 && type=="CFL" &&ind==-1) ll[i].set_ds(ds);
         if (Ne==37&& type=="CFL" &&ind>=0) ll[i].set_ds(dset[ind]);//if ind=-1, cal GS. else, ES.
         if (Ne==69&& type=="CFL" &&ind>=0) ll[i].set_ds(dset[ind]);//if ind=-1, cal GS. else, ES.
+        if (Ne==9 && type=="CFL" &&ind>=0) ll[i].set_ds(dset[ind]);//if ind=-1, cal GS. else, ES.
         
         ll[i].setup_tables(CE, "ce");
         ll[i].setup_tables(PP, "pa");
@@ -386,7 +388,7 @@ vector<vector<vector<int>>> output_dset(int Ne){
         
         d=old_ds;
         d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
-        d.push_back(vector<int>{-2,-3});
+        d.push_back(vector<int>{2,-3});
         dset.push_back(d);
         
         d=old_ds;
@@ -407,35 +409,35 @@ vector<vector<vector<int>>> output_dset(int Ne){
         d.push_back(vector<int>{3,4});
         dset.push_back(d);
         
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-        d.push_back(vector<int>{-3,4});
-        dset.push_back(d);
-        
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-        d.push_back(vector<int>{-4,3});
-        dset.push_back(d);
-        
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-        d.push_back(vector<int>{-4,-3});
-        dset.push_back(d);
-        
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-        d.push_back(vector<int>{-3,-4});
-        dset.push_back(d);
-        
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-        d.push_back(vector<int>{3,-4});
-        dset.push_back(d);
-        
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-        d.push_back(vector<int>{4,-3});
-        dset.push_back(d);
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+//        d.push_back(vector<int>{-3,4});
+//        dset.push_back(d);
+//        
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+//        d.push_back(vector<int>{-4,3});
+//        dset.push_back(d);
+//        
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+//        d.push_back(vector<int>{-4,-3});
+//        dset.push_back(d);
+//        
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+//        d.push_back(vector<int>{-3,-4});
+//        dset.push_back(d);
+//        
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+//        d.push_back(vector<int>{3,-4});
+//        dset.push_back(d);
+//        
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+//        d.push_back(vector<int>{4,-3});
+//        dset.push_back(d);
         
         return dset;
     }
@@ -450,10 +452,7 @@ vector<vector<vector<int>>> output_dset(int Ne){
         exit(0);
     }
 }
-/*
 void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<double> a){
-//    int u=1;//TODO:modify Wi0.
-    
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, alpha_t;
@@ -467,7 +466,7 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
     infile>>type;
     //initialize MC object
     
-    double shiftx=0.1, shifty=0.1;
+    double shiftx=0.2, shifty=0.2;
     cout<<"***pomeranchunk instability***   shift = "<<shiftx<<" "<<shifty<<endl;
     cout<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nSteps="<<nSteps<<" nBins="<<nBins<<" ncore="<<ncore<<endl;
     
@@ -480,7 +479,7 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
     
     double theta=theta_t*M_PI, alpha=alpha_t;
     vector<vector<vector<int>>> dset=output_dset(Ne);
-    int Nn=dset.size();
+    int Nn=dset.size(), N=Nn+1;
     
     vector<LATTICE> ll(ncore);
     
@@ -497,6 +496,11 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
             tmp.erase(remove(tmp.begin(),tmp.end(),vector<int>{1,1}),tmp.end());
             ll[i].set_ds(tmp);
         }
+//        ll[i].set_ds(dset[1]);
+        
+        if (Ne==37) {
+            //ll[i].set_ds(dset[0]);
+        }
         
         ll[i].setup_tables(CE, "ce");
         ll[i].setup_nonsamplestates(dset, a);
@@ -506,14 +510,25 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
     ll[0].print_ds();
     
     int Coul_type=CE.size();
-    vector<vector<vector<double>>> E(Nn+1, vector<vector<double>>(Coul_type, vector<double>(nBins, 0.))), EE(Nn+1, vector<vector<double>>(Coul_type, vector<double>(nBins, 0.)));
-    //one dimension higher: different excited states. *[Nn] is for the GC.
+    //A(a,b) = \sum_x { {Ea(x)*Eb(x), Ea(x)*wb(x)}, {wa(x)*Eb(x), wa(x)*wb(x)} }.
+    //B(a) = \sum_x {Ea(x), wa(x)}.
+    //where Ea(x)=wa(x)*E(x), wa is the un-normalized weight, E(x) is Coulomb.
     
-    //weight
-    vector<vector<double>> W(Nn+1, vector<double>(nBins, 0.));
-    //correlation, O^n, n=0,1,2
-    vector<vector<vector<vector<double>>>> Wii(3, vector<vector<vector<double>>>(Nn+1, vector<vector<double>>(Coul_type, vector<double>(nBins, 0.))));
-    vector<vector<vector<vector<double>>>> Wi0(3, vector<vector<vector<double>>>(Nn+1, vector<vector<double>>(Coul_type, vector<double>(nBins, 0.))));
+    //here is all nasty vectors that needs to be initialized.
+    vector<vector<vector<Eigen::MatrixXd>>> Aew(Coul_type,vector<vector<Eigen::MatrixXd>>(N*N,vector<Eigen::MatrixXd>(nBins)));
+    vector<vector<vector<Eigen::MatrixXd>>> Bew(Coul_type,vector<vector<Eigen::MatrixXd>>(N,vector<Eigen::MatrixXd>(nBins)));
+    vector<vector<Eigen::MatrixXd>> Aewtotal(Coul_type,vector<Eigen::MatrixXd>(N*N));
+    vector<vector<Eigen::MatrixXd>> Bewtotal(Coul_type,vector<Eigen::MatrixXd>(N));
+    for (int c=0; c<Coul_type; c++) {
+        for (int n=0; n<N*N; n++) {
+            for (int s=0; s<nBins; s++) Aew[c][n][s]=Eigen::MatrixXd::Zero(CE[c].screen.size(),4);
+            Aewtotal[c][n]=Eigen::MatrixXd::Zero(CE[c].screen.size(),4);
+        }
+        for (int n=0; n<N; n++) {
+            for (int s=0; s<nBins; s++) Bew[c][n][s]=Eigen::MatrixXd::Zero(CE[c].screen.size(),2);
+            Bewtotal[c][n]=Eigen::MatrixXd::Zero(CE[c].screen.size(),2);
+        }
+    }
     
     omp_set_num_threads(ncore);
 #pragma omp parallel for
@@ -524,145 +539,181 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
         
         for(int i=0;i<nMeas;i++){
             ll[coren].step(nSteps);
-            //W.
-            vector<double> weit=ll[coren].get_runweis(), ratio=ll[coren].get_ratio();
-            double weit0=ll[coren].running_weight, den=ratio[Nn];
-            for (int j=0; j<Nn; j++) den+=ratio[j]*exp(weit[j]-weit0);
-            for (int j=0; j<Nn; j++) W[j][s]+=ratio[j]*exp(weit[j]-weit0)/den; W[Nn][s]+=ratio[Nn]/den;
-            //
-            for (int c=0; c<Coul_type; c++) {
-                double e=ll[coren].coulomb_energy(c,"ce");
-                //energy.
-                for (int j=0; j<Nn; j++) E[j][c][s]+=e*ratio[j]*exp(weit[j]-weit0)/den;
-                E[Nn][c][s]+=e*ratio[Nn]/den;
-                //WW. n<Nn
-//                double temp3=ratio[u]*exp(weit[u]-weit0)/den;//TODO:modify Wi0
-                for (int j=0; j<Nn; j++) {
-                    double temp1=ratio[j]*exp(weit[j]-weit0)/den;
-                    double temp2=temp1*ratio[Nn]/den;
-                    
-                    for (int k=0; k<3; k++) {
-                        if (e==0) {
-                            Wii[0][j][c][s]+=pow(temp1,2);
-                            Wi0[0][j][c][s]+=temp2;//TODO:modify Wi0
-//                            Wi0[0][j][c][s]+=temp1*temp3;
-                        }
-                        else {
-                            Wii[k][j][c][s]+=pow(e,k)*pow(temp1,2);
-                            Wi0[k][j][c][s]+=pow(e,k)*temp2;//TODO:modify Wi0
-//                            Wi0[k][j][c][s]+=pow(e,k)*temp1*temp3;
-                        }
-                    }
-                    
-                }
-                //WW. n=Nn
-                if (e==0) {
-                    Wii[0][Nn][c][s]+=pow(ratio[Nn]/den, 2);
-                    Wi0[0][Nn][c][s]+=pow(ratio[Nn]/den, 2);//TODO:modify Wi0
-//                    Wi0[0][Nn][c][s]+=ratio[Nn]/den*temp3;
-                }
-                else {
-                    for (int k=0; k<3; k++) {
-                        Wii[k][Nn][c][s]+=pow(e,k)*pow(ratio[Nn]/den, 2);
-                        Wi0[k][Nn][c][s]+=pow(e,k)*pow(ratio[Nn]/den, 2);//TODO:modify Wi0
-//                        Wi0[k][Nn][c][s]+=pow(e,k)*ratio[Nn]/den*temp3;
-                    }
-                }
-                //
-            }
             
+            //unnormalized wi(x). Ei= [\sum_x wi(x)E(x)]/[\sum_x wi(x)].
+            vector<double> weit=ll[coren].get_w();
+            
+            for (int c=0; c<Coul_type; c++) {
+                //get coulomb energy, a vector of dimention of screensize.
+                Eigen::VectorXd ematrix=ll[coren].coulomb_energy_eigen(c,"ce");
+    
+                for (int n=0; n<N; n++) {
+                    Bew[c][n][s].col(0)+=weit[n]*ematrix;
+                    Bew[c][n][s].col(1).array()+=weit[n];
+                }
+                for (int n=0; n<N*N; n++) {
+                    double w1=weit[n/N];
+                    double w2=weit[n%N];
+                    
+                    Aew[c][n][s].col(0).array()+=w1*w2*ematrix.array()*ematrix.array();
+                    Aew[c][n][s].col(1)+=w1*w2*ematrix;
+                    Aew[c][n][s].col(2)+=w1*w2*ematrix;
+                    Aew[c][n][s].col(3).array()+=w1*w2;
+                }
+            }
         }
     }
     cout<<"finish roop"<<endl;
+    
+    //calculate the total.
+    for (int c=0; c<Coul_type; c++) for (int n=0; n<N*N; n++) for(int s=0; s<nBins; s++) Aewtotal[c][n]+=Aew[c][n][s]; Aew.clear();
+    for (int c=0; c<Coul_type; c++) for (int n=0; n<N; n++) for(int s=0; s<nBins; s++) Bewtotal[c][n]+=Bew[c][n][s]; Bew.clear();
 
-    vector<vector<double>> Etotal(Nn+1, vector<double>(Coul_type, 0.)), EEtotal(Nn+1, vector<double>(Coul_type, 0.));
-    vector<vector<vector<double>>> Wiitotal(3, vector<vector<double>>(Nn+1, vector<double>(Coul_type, 0.)));
-    vector<vector<vector<double>>> Wi0total(3, vector<vector<double>>(Nn+1, vector<double>(Coul_type, 0.)));
-    vector<double> Wtotal(Nn+1, 0.);
+    //just normalize a bit.
     
+    for (int c=0; c<Coul_type; c++) {
+        for (int n=0; n<N*N; n++) Aewtotal[c][n]/=1.*nMeas*nBins;
+        for (int n=0; n<N; n++) Bewtotal[c][n]/=1.*nMeas*nBins;
+    }
     
-    for (int s=0; s<nBins; s++) {
-        for (int n=0; n<=Nn; n++) {
-            Wtotal[n]+=W[n][s]/(1.*nMeas*nBins);
-            for (int c=0; c<Coul_type; c++) {
-                Etotal[n][c]+=E[n][c][s]/(1.*nMeas*nBins);
-                for (int k=0; k<3; k++) {
-                    Wiitotal[k][n][c]+=Wii[k][n][c][s]/(1.*nMeas*nBins);
-                    Wi0total[k][n][c]+=Wi0[k][n][c][s]/(1.*nMeas*nBins);
-                }
+    //outfile here. output A&B matrix.
+    ofstream outfilea("out_csa_"+filename);
+    outfilea<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<"\nshift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<" ratio=";
+    for (int i=0; i<ll[0].get_ratio().size(); i++) outfilea<<ll[0].get_ratio()[i]<<" ";
+    outfilea<<" Nn="<<Nn<<" N=Nn+1"<<endl;
+    
+    for (int c=0; c<Coul_type; c++) {
+        for (int screen=0; screen<CE[c].screen.size(); screen++) {
+            for (int n=0; n<N; n++) {
+                for (int k=0; k<4; k++) outfilea<<Aewtotal[c][n](screen,k)<<" ";
             }
+            outfilea<<endl;
         }
+        outfilea<<endl;
     }
+    outfilea.close();
     
-    double Wsum=0.;
-    for (int n=0; n<=Nn; n++) Wsum+=Wtotal[n];
-    //cout<<"Wsum="<<Wsum<<endl;//This should be 1, as a check.
+    ofstream outfileb("out_csb_"+filename);
+    outfileb<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<"\nshift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<" ratio=";
+    for (int i=0; i<ll[0].get_ratio().size(); i++) outfileb<<ll[0].get_ratio()[i]<<" ";
+    outfileb<<" Nn="<<Nn<<" N=Nn+1"<<endl;
     
     for (int c=0; c<Coul_type; c++) {
-        for (int n=0; n<Nn+1; n++) {
-            for (int k=0; k<3; k++) {
-                Wiitotal[k][n][c]/=Wtotal[n]*Wtotal[n];
-                Wi0total[k][n][c]/=Wtotal[n]*Wtotal[Nn];//TODO:modify Wi0
-//                Wi0total[k][n][c]/=Wtotal[n]*Wtotal[u];
-                
+        for (int screen=0; screen<CE[c].screen.size(); screen++) {
+            for (int n=0; n<N; n++) {
+                for (int k=0; k<2; k++) outfileb<<Bewtotal[c][n](screen,k)<<" ";
             }
-            Etotal[n][c]/=Wtotal[n];
+            outfileb<<endl;
         }
+        outfileb<<endl;
     }
+    outfileb.close();
     
-    //variance
-    vector<vector<double>> variance(Nn+1, vector<double>(Coul_type, 0.));
-    for (int c=0; c<Coul_type; c++) {
-        for (int n=0; n<Nn; n++) {
-            variance[n][c]+=Wiitotal[2][n][c]+Wiitotal[2][Nn][c]-2.*Wi0total[2][n][c];//TODO:modifyWi0
-//            variance[n][c]+=Wiitotal[2][n][c]+Wiitotal[2][u][c]-2.*Wi0total[2][n][c];
-            
-            variance[n][c]+=Wiitotal[0][n][c]*pow(Etotal[n][c],2)+Wiitotal[0][Nn][c]*pow(Etotal[Nn][c],2)-2.*Wi0total[0][n][c]*Etotal[n][c]*Etotal[Nn][c];//TODO:modifyWi0
-//            variance[n][c]+=Wiitotal[0][n][c]*pow(Etotal[n][c],2)+Wiitotal[0][u][c]*pow(Etotal[u][c],2)-2.*Wi0total[0][n][c]*Etotal[n][c]*Etotal[u][c];
-            
-            double temp=Wiitotal[1][n][c]*Etotal[n][c]+Wiitotal[1][Nn][c]*Etotal[Nn][c]-Wi0total[1][n][c]*(Etotal[n][c]+Etotal[Nn][c]);//TODO:modifyWi0
-//            double temp=Wiitotal[1][n][c]*Etotal[n][c]+Wiitotal[1][u][c]*Etotal[u][c]-Wi0total[1][n][c]*(Etotal[n][c]+Etotal[u][c]);
-            
-            variance[n][c]-=2.*temp;
-        }
-        variance[Nn][c]=Wiitotal[2][Nn][c]+Wiitotal[0][Nn][c]*pow(Etotal[Nn][c],2)-2*Wiitotal[1][Nn][c]*Etotal[Nn][c];
-    }
+//    nMeas*=nBins;
+//    for (int n=0; n<Nn; n++) {
+//        while doing experiment on standard error, i found we should use the follows as error. (ed result for 4/12 is -0.414171)
+//            ofstream outfile("output/out_corsam_"+filename+"_"+to_string((long long int)n));
+//        outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas/nBins<<" nBins="<<nBins<<" ncore="<<ncore<<endl;
+//        outfile<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<endl<<endl;
+//        for (int c=0; c<Coul_type; c++) {
+//            vector<double> short_value, short_error;
+//            double MCerror;
+//            ll[0].shortrange(c, short_value, short_error, "ce");
+//            for (int i=0; i<CE[c].screen.size(); i++) {
+//                short_value[i]/=(1.*Ne);
+//                short_error[i]/=(1.*Ne);
+//                
+//                MCerror=sqrt( variance[Nn][c][i] )/sqrt(1.*nMeas)/(1.*Ne);
+//                outfile<<CE[c].N<<" "<<CE[c].Q<<" "<<CE[c].screen[i]<<endl;
+//                outfile<<setprecision(10)<<short_value[i]<<" "<<short_error[i]<<" "<<MCerror<<" "<<Etotal[n][c][i]-Etotal[Nn][c][i];
+//                outfile<<endl;
+//            }
+//        }
+//        outfile.close();
+//    }
+//    
+//    for (int c=0; c<Coul_type; c++) {
+//        double short_value, short_error;
+//        ll[0].shortrange(c, short_value, short_error, "ce");
+//        short_value/=(1.*Ne);
+//        short_error/=(1.*Ne);
+//        
+//        outfile<<"------"<<endl;
+//        outfile<<"LL="<<CE[c].N<<" COULOMB-ENERGY."<<endl;
+//        outfile<<"cutoff="<<CE[c].Q<<endl;
+//        outfile<<"SM-error  = "<<setprecision(10)<<short_error<<endl<<endl;
+//        
+//        double MCerror=sqrt( variance[Nn][c] )/sqrt(1.*nMeas)/(1.*Ne);
+//        Cauchy inequality garunatee it's non-nagnetive. If nan, there must be somewhere wrong.
+//        
+//        outfile<<"GS"<<" "<<"\nMC-error  = "<<setprecision(10)<<MCerror<<endl;
+//        outfile<<"*Energy="<<setprecision(10)<<Etotal[Nn][c]/(1.*Ne)+short_value<<"\n*var="<<sqrt( MCerror*MCerror + short_error*short_error)<<endl<<endl;
+//        
+//        for (int n=0; n<Nn; n++) {
+//            MCerror=sqrt( variance[n][c] )/sqrt(1.*nMeas)/(1.*Ne);TODO: the deviation of excitation energy.
+//            outfile<<"ES"<<n<<"\nMC-error  = "<<setprecision(10)<<MCerror<<endl;
+//            outfile<<"*deltaE="<<setprecision(10)<<Etotal[n][c]/(1.*Ne)+short_value<<"\n*var="<<sqrt( MCerror*MCerror + short_error*short_error)<<endl<<endl;TODO:MC error should be doubled.
+//        }
+//    }
+//    outfile.close();
     
-    //outfile part.
-    ofstream outfile("out_"+filename);
-    outfile<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<endl;
-    outfile<<"shift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<" ratio=";
-    for (int i=0; i<ll[0].get_ratio().size(); i++) outfile<<ll[0].get_ratio()[i]<<" ";
-    outfile<<endl;
     
-    nMeas*=nBins;
     
-    for (int c=0; c<Coul_type; c++) {
-        double short_value, short_error;
-        ll[0].shortrange(c, short_value, short_error, "ce");
-        short_value/=(1.*Ne);
-        short_error/=(1.*Ne);
-        
-        outfile<<"------"<<endl;
-        outfile<<"LL="<<CE[c].N<<" COULOMB-ENERGY."<<endl;
-        outfile<<"cutoff="<<CE[c].Q<<endl;
-        outfile<<"SM-error  = "<<setprecision(10)<<short_error<<endl<<endl;
-        
-        double MCerror=sqrt( variance[Nn][c] )/sqrt(1.*nMeas)/(1.*Ne);
-        //Cauchy inequality garunatee it's non-nagnetive. If nan, there must be somewhere wrong.
-        
-        outfile<<"GS"<<" "<<"\nMC-error  = "<<setprecision(10)<<MCerror<<endl;
-        outfile<<"*Energy="<<setprecision(10)<<Etotal[Nn][c]/(1.*Ne)+short_value<<"\n*var="<<sqrt( MCerror*MCerror + short_error*short_error)<<endl<<endl;
-        
-        for (int n=0; n<Nn; n++) {
-            MCerror=sqrt( variance[n][c] )/sqrt(1.*nMeas)/(1.*Ne);//TODO: the deviation of excitation energy.
-            outfile<<"ES"<<n<<"\nMC-error  = "<<setprecision(10)<<MCerror<<endl;
-            outfile<<"*deltaE="<<setprecision(10)<<Etotal[n][c]/(1.*Ne)+short_value<<"\n*var="<<sqrt( MCerror*MCerror + short_error*short_error)<<endl<<endl;//TODO:MC error should be doubled.
-        }
-    }
-    outfile.close();
+    
+//    //calculate energy. Stored in Bewtotal.col(0).
+//    for (int c=0; c<Coul_type; c++) for (int n=0; n<N; n++) {
+//        Bewtotal[c][n].col(0).array()/=Bewtotal[c][n].col(1).array();
+//    }
+//    //calculate covariance matrix. Stored in Aewtotal.col(0).
+//    for (int c=0; c<Coul_type; c++) {
+//        for (int n=0; n<N*N; n++) {
+//            int m1=n/N, m2=n%N;
+//            
+//            Aewtotal[c][n].col(0).array()-=Aewtotal[c][n].col(1).array()*Bewtotal[c][m1].col(0).array();
+//            Aewtotal[c][n].col(0).array()-=Aewtotal[c][n].col(2).array()*Bewtotal[c][m2].col(0).array();
+//            Aewtotal[c][n].col(0).array()+=Aewtotal[c][n].col(3).array()*Bewtotal[c][m1].col(0).array()*Bewtotal[c][m2].col(0).array();
+//            
+//            Aewtotal[c][n].col(0).array()/=Bewtotal[c][m1].col(1).array()*Bewtotal[c][m2].col(1).array();
+//            
+//        }
+//    }
+//    
+//    for (int c=0; c<Coul_type; c++) {
+//        cout<<"****** c="<<c<<endl;
+//        cout<<"covariance matrix"<<endl;
+//        for (int screen=0; screen<CE[c].screen.size(); screen++) {
+//            for (int n=0; n<N; n++) {
+//                for (int m=0; m<N; m++) {
+//                    cout<<Aewtotal[c][m*N+n](screen,0)<<" ";
+//                }
+//                cout<<endl;
+//            }
+//            cout<<"\nenergy"<<endl;
+//            for (int n=0; n<N; n++) {
+//                cout<<n<<" "<<Bewtotal[c][n](screen,0)/Ne<<endl;
+//            }
+//            cout<<"\naweight"<<endl;
+//            for (int n=0; n<N; n++) {
+//                cout<<n<<" "<<a[n]*Bewtotal[c][n](screen,1)<<endl;
+//            }
+//            cout<<"\nerrormatrix"<<endl;
+//            for (int m=0; m<N; m++) {
+//                for (int n=0; n<N; n++) {
+//                    double temp;
+//                    
+//                    if (m==n) temp=Aewtotal[c][n*N+n](screen,0);
+//                    else temp=Aewtotal[c][m*N+m](screen,0)+Aewtotal[c][n*N+n](screen,0)-Aewtotal[c][m*N+n](screen,0)-Aewtotal[c][n*N+m](screen,0);
+//                    
+//                    cout<<temp<<"   ";
+//                }
+//                cout<<endl;
+//            }
+//            cout<<endl;
+//        }
+//    }
+ 
 }
-*/
+
 /*
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;

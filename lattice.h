@@ -133,6 +133,7 @@ public:
     //stuff for correlatedsampling
     void setup_nonsamplestates(vector<vector<vector<int>>>, vector<double>);
     vector<double> get_runweis();//return runing_weight of CFL excited states.
+    vector<double> get_w();
     vector<double> get_ratio();
     
     //structure factor
@@ -153,6 +154,8 @@ public:
     vector<vector<vector<vector<double>>>> coulomb_tableHLL;//[LLN][Screen][x][y]
     vector<vector<vector<vector<double>>>> PA_table;
     vector<double> coulomb_energy(int, string typee="ce");
+    Eigen::VectorXd coulomb_energy_eigen(int, string typee="ce");
+    
     void shortrange(int ind, vector<double>&, vector<double>&, string);
     double get_correlated_weight();
 	
