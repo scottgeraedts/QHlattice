@@ -1528,13 +1528,19 @@ void LATTICE::check_sanity(){
         cout<<"Filled LL zeros size or Ne/NPhi wrong."<<endl;
         exit(0);
     }
+    
     double pre=1e-15;
-    double tmpx=fmod(get_shift()[0]-get_bc()[0],1.);
-    double tmpy=fmod(get_shift()[1]-get_bc()[1],1.);
-    if ( abs(tmpx)>pre or abs(tmpy)>pre ) {
+    double tmpx=get_bc()[0]-get_shift()[0];
+    double tmpy=get_bc()[1]-get_shift()[1];
+    
+    tmpx=fmod(fmod(tmpx,1.)+1.,1.);
+    tmpy=fmod(fmod(tmpy,1.)+1.,1.);
+ 
+    bool ifw= (abs(tmpx)<pre or abs(tmpx-1.)<pre) and ((abs(tmpy)<pre or abs(tmpy-1.)<pre));
+    if (!ifw) {
         cout<<"shift!=bc."<<endl;
         cout<<"shift="<<get_shift()[0]<<" "<<get_shift()[1]<<" bc="<<get_bc()[0]<<" "<<get_bc()[1]<<endl;
-        cout<<get_shift()[0]-get_bc()[0]<<" "<<get_shift()[1]-get_bc()[1]<<endl;
+        cout<<abs(tmpx)<<" "<<abs(tmpy)<<endl;
         exit(0);
     }
     

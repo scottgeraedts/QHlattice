@@ -3,7 +3,7 @@ using namespace std;
 #include <iomanip>
 #include "lattice.h"
 #include "berry_tests.h"
-#include "time.h"
+#include "ctime"
 
 bool IsOdd (int i) {
     return ((i%2)==1);
@@ -21,12 +21,33 @@ int main(){
     void testins();
 //    testins();
     
+//    time_t t1, t2;
+//    t1 = time(NULL);
+//    t2 = time(NULL);
+//    cout<<"time eclips="<<(double)t2-(double)t1<<endl;    
     
-    
-    CFL_berry_phases_parallel("params", "4bp/quater_berry", 1, "kind", 0.5*M_PI, 1.0);
-    
-    
-    
+    void quarterbp_e();
+    void quarterbp_h();
+    quarterbp_e();
+    quarterbp_h();
+}
+void quarterbp_e(){
+    int ncore=1;
+    double theta=0.5*M_PI, alpha=1.0;
+    string outputfile="4bp/quater_berry";
+    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott1", theta, alpha);
+//    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott2", theta, alpha);
+//    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott3", theta, alpha);
+//    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott4", theta, alpha);
+//    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott5", theta, alpha);
+}
+void quarterbp_h(){
+    int ncore=1;
+    double theta=0.5*M_PI, alpha=1.0;
+    string outputfile="4bp/quater_berry";
+    CFL_berry_phases_parallel("params12h", outputfile, ncore, "loop1_new", theta, alpha);
+//    CFL_berry_phases_parallel("params12h", outputfile, ncore, "loop2_new", theta, alpha);
+//    CFL_berry_phases_parallel("params12h", outputfile, ncore, "loop3_new", theta, alpha);
 }
 void Ed_Coulomb(){
     vector<double> screen;

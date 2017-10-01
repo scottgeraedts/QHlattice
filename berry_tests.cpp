@@ -1141,13 +1141,12 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
     //old_dbar is the center of the circular fermi surface
     vector<double> old_dbar=templl.get_dbar_parameter();
     templl.print_ds(); //exit(0);
-
-	get_dlist(holes, tempNe, kind, extra_ds, remove_ds, old_ds);	
-	
+    
+	get_dlist(holes, tempNe, kind, extra_ds, remove_ds, old_ds);
+    
     templl.set_ds(old_ds);
 //    templl.print_ds(); exit(0);
 //    exit(0);
-    
     int nds=extra_ds.size();
     int dsteps=nds; //nds
     
@@ -1865,12 +1864,40 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
         }
         else if (tempNe==12){
             if (kind=="Scott1") {
+                old_ds.clear(); extra_ds.clear();
+                old_ds.push_back(vector<int>{2,0});
+                old_ds.push_back(vector<int>{1,0});
+                old_ds.push_back(vector<int>{0,0});
+                old_ds.push_back(vector<int>{-1,0});
+                old_ds.push_back(vector<int>{2,1});
+                old_ds.push_back(vector<int>{1,1});
+                old_ds.push_back(vector<int>{0,1});
+                old_ds.push_back(vector<int>{-1,1});
+                old_ds.push_back(vector<int>{1,2});
+                old_ds.push_back(vector<int>{0,2});
+                old_ds.push_back(vector<int>{1,-1});
+                old_ds.push_back(vector<int>{0,-1});
+                
                 extra_ds.push_back(vector<int>{2,2});
                 extra_ds.push_back(vector<int>{-1,2});
                 extra_ds.push_back(vector<int>{-1,-1});
                 extra_ds.push_back(vector<int>{2,-1});
             }
             else if (kind=="Scott2") {
+                old_ds.clear(); extra_ds.clear();
+                old_ds.push_back(vector<int>{2,0});
+                old_ds.push_back(vector<int>{1,0});
+                old_ds.push_back(vector<int>{0,0});
+                old_ds.push_back(vector<int>{-1,0});
+                old_ds.push_back(vector<int>{2,1});
+                old_ds.push_back(vector<int>{1,1});
+                old_ds.push_back(vector<int>{0,1});
+                old_ds.push_back(vector<int>{-1,1});
+                old_ds.push_back(vector<int>{1,2});
+                old_ds.push_back(vector<int>{0,2});
+                old_ds.push_back(vector<int>{1,-1});
+                old_ds.push_back(vector<int>{0,-1});
+                
                 extra_ds.push_back(vector<int>{2,2});
                 extra_ds.push_back(vector<int>{1,3});
                 extra_ds.push_back(vector<int>{0,3});
@@ -1885,12 +1912,40 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
                 extra_ds.push_back(vector<int>{3,1});
             }
             else if (kind=="Scott3") {
+                old_ds.clear(); extra_ds.clear();
+                old_ds.push_back(vector<int>{2,0});
+                old_ds.push_back(vector<int>{1,0});
+                old_ds.push_back(vector<int>{0,0});
+                old_ds.push_back(vector<int>{-1,0});
+                old_ds.push_back(vector<int>{2,1});
+                old_ds.push_back(vector<int>{1,1});
+                old_ds.push_back(vector<int>{0,1});
+                old_ds.push_back(vector<int>{-1,1});
+                old_ds.push_back(vector<int>{1,2});
+                old_ds.push_back(vector<int>{0,2});
+                old_ds.push_back(vector<int>{1,-1});
+                old_ds.push_back(vector<int>{0,-1});
+                
                 extra_ds.push_back(vector<int>{-1,2});
                 extra_ds.push_back(vector<int>{-2,1});
                 extra_ds.push_back(vector<int>{-2,0});
                 extra_ds.push_back(vector<int>{-1,-1});
             }
             else if (kind=="Scott4") {
+                old_ds.clear(); extra_ds.clear();
+                old_ds.push_back(vector<int>{2,0});
+                old_ds.push_back(vector<int>{1,0});
+                old_ds.push_back(vector<int>{0,0});
+                old_ds.push_back(vector<int>{-1,0});
+                old_ds.push_back(vector<int>{2,1});
+                old_ds.push_back(vector<int>{1,1});
+                old_ds.push_back(vector<int>{0,1});
+                old_ds.push_back(vector<int>{-1,1});
+                old_ds.push_back(vector<int>{1,2});
+                old_ds.push_back(vector<int>{0,2});
+                old_ds.push_back(vector<int>{1,-1});
+                old_ds.push_back(vector<int>{0,-1});
+                
                 extra_ds.push_back(vector<int>{2,2});
                 extra_ds.push_back(vector<int>{-1,2});
                 extra_ds.push_back(vector<int>{-2,1});
@@ -1899,11 +1954,24 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
                 extra_ds.push_back(vector<int>{2,-1});
             }
             else if (kind=="Scott5") {
+                old_ds.clear(); extra_ds.clear();
+                old_ds.push_back(vector<int>{2,0});
+                old_ds.push_back(vector<int>{1,0});
+                old_ds.push_back(vector<int>{0,0});
+                old_ds.push_back(vector<int>{-1,0});
+                old_ds.push_back(vector<int>{2,1});
+                old_ds.push_back(vector<int>{1,1});
+                old_ds.push_back(vector<int>{0,1});
+                old_ds.push_back(vector<int>{-1,1});
+                old_ds.push_back(vector<int>{1,2});
+                old_ds.push_back(vector<int>{0,2});
+                old_ds.push_back(vector<int>{1,-1});
+                old_ds.push_back(vector<int>{0,-1});
+                
                 extra_ds.push_back(vector<int>{2,2});
                 extra_ds.push_back(vector<int>{-1,2});
                 extra_ds.push_back(vector<int>{-2,0});
                 extra_ds.push_back(vector<int>{-2,1});
-//                extra_ds.push_back(vector<int>{-2,0});
                 extra_ds.push_back(vector<int>{-1,-1});
                 extra_ds.push_back(vector<int>{2,-1});
             }
@@ -2504,18 +2572,18 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
             }
             else if(kind=="loop1_new"){
                 old_ds.clear(); extra_ds.clear();
-                old_ds.push_back(vector<int>{-1,0});
-                old_ds.push_back(vector<int>{-1,1});
-                old_ds.push_back(vector<int>{0,1});
-                old_ds.push_back(vector<int>{1,1});
-                old_ds.push_back(vector<int>{2,1});
                 old_ds.push_back(vector<int>{2,0});
+                old_ds.push_back(vector<int>{1,0});
+                old_ds.push_back(vector<int>{0,0});
+                old_ds.push_back(vector<int>{-1,0});
+                old_ds.push_back(vector<int>{2,1});
+                old_ds.push_back(vector<int>{1,1});
+                old_ds.push_back(vector<int>{0,1});
+                old_ds.push_back(vector<int>{-1,1});
+                old_ds.push_back(vector<int>{1,2});
                 old_ds.push_back(vector<int>{0,2});
                 old_ds.push_back(vector<int>{1,-1});
                 old_ds.push_back(vector<int>{0,-1});
-                old_ds.push_back(vector<int>{1,2});
-                old_ds.push_back(vector<int>{0,0});
-                old_ds.push_back(vector<int>{1,0});
                 
                 extra_ds.push_back(vector<int>{2,0});
                 extra_ds.push_back(vector<int>{2,1});
@@ -2529,43 +2597,43 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
             }
             else if(kind=="loop2_new"){
                 old_ds.clear(); extra_ds.clear();
-                old_ds.push_back(vector<int>{-1,0});
-                old_ds.push_back(vector<int>{-1,1});
-                old_ds.push_back(vector<int>{0,1});
-                old_ds.push_back(vector<int>{1,1});
-                old_ds.push_back(vector<int>{2,1});
                 old_ds.push_back(vector<int>{2,0});
+                old_ds.push_back(vector<int>{1,0});
+                old_ds.push_back(vector<int>{0,0});
+                old_ds.push_back(vector<int>{-1,0});
+                old_ds.push_back(vector<int>{2,1});
+                old_ds.push_back(vector<int>{1,1});
+                old_ds.push_back(vector<int>{0,1});
+                old_ds.push_back(vector<int>{-1,1});
+                old_ds.push_back(vector<int>{1,2});
                 old_ds.push_back(vector<int>{0,2});
                 old_ds.push_back(vector<int>{1,-1});
                 old_ds.push_back(vector<int>{0,-1});
-                old_ds.push_back(vector<int>{1,2});
-                old_ds.push_back(vector<int>{0,0});
-                old_ds.push_back(vector<int>{1,0});
                 
                 extra_ds.push_back(vector<int>{2,0});
                 extra_ds.push_back(vector<int>{2,1});
-                //                extra_ds.push_back(vector<int>{1,2});
+                //extra_ds.push_back(vector<int>{1,2});
                 extra_ds.push_back(vector<int>{0,2});
                 extra_ds.push_back(vector<int>{-1,1});
                 extra_ds.push_back(vector<int>{-1,0});
                 extra_ds.push_back(vector<int>{0,-1});
-                //                extra_ds.push_back(vector<int>{1,-1});
+                //extra_ds.push_back(vector<int>{1,-1});
                 
             }
             else if(kind=="loop3_new"){
                 old_ds.clear(); extra_ds.clear();
-                old_ds.push_back(vector<int>{-1,0});
-                old_ds.push_back(vector<int>{-1,1});
-                old_ds.push_back(vector<int>{0,1});
-                old_ds.push_back(vector<int>{1,1});
-                old_ds.push_back(vector<int>{2,1});
                 old_ds.push_back(vector<int>{2,0});
+                old_ds.push_back(vector<int>{1,0});
+                old_ds.push_back(vector<int>{0,0});
+                old_ds.push_back(vector<int>{-1,0});
+                old_ds.push_back(vector<int>{2,1});
+                old_ds.push_back(vector<int>{1,1});
+                old_ds.push_back(vector<int>{0,1});
+                old_ds.push_back(vector<int>{-1,1});
+                old_ds.push_back(vector<int>{1,2});
                 old_ds.push_back(vector<int>{0,2});
                 old_ds.push_back(vector<int>{1,-1});
                 old_ds.push_back(vector<int>{0,-1});
-                old_ds.push_back(vector<int>{1,2});
-                old_ds.push_back(vector<int>{0,0});
-                old_ds.push_back(vector<int>{1,0});
                 
                 extra_ds.push_back(vector<int>{2,0});
                 extra_ds.push_back(vector<int>{2,1});
@@ -2574,7 +2642,7 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
                 
                 extra_ds.push_back(vector<int>{-1,0});
                 extra_ds.push_back(vector<int>{-1,1});
-//                extra_ds.push_back(vector<int>{-1,0});
+                
                 extra_ds.push_back(vector<int>{0,-1});
                 extra_ds.push_back(vector<int>{1,-1});
                 
