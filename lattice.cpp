@@ -124,6 +124,7 @@ void LATTICE::init(int seed){
     sq2=vector<vector<double>>(NPhi, vector<double>(NPhi, 0));
     sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi, 0));
     sq2_mqy=vector<vector<double>>(NPhi, vector<double>(NPhi, 0));
+    sq3=vector<vector<vector<vector<complex<double>>>>> (NPhi, vector<vector<vector<complex<double>>>>(NPhi, vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0.))));
 }
 vector<double> LATTICE::get_shift(){return vector<double>{shiftx, shifty};}
 vector<double> LATTICE::get_bc(){if (type=="CFL" or type=="doubledCFL") return vector<double>{wsum[0]-dsum[0]/(1.*NPhi), wsum[1]-dsum[1]/(1.*NPhi)}; else return wsum;}
@@ -1252,55 +1253,80 @@ double LATTICE::threebody(){
 }
 void LATTICE::update_structure_factors(){
     vector<vector<complex<double>>>temp(NPhi,vector<complex<double>>(NPhi,0.));
-    vector<vector<complex<double>>>temp2(NPhi,vector<complex<double>>(NPhi,0.));
+    //vector<vector<complex<double>>>temp2(NPhi,vector<complex<double>>(NPhi,0.));
     for(int qx=0;qx<NPhi;qx++){
         for(int qy=0; qy<NPhi; qy++){
             for(int i=0;i<Ne;i++){
                 temp[qx][qy]+=omega[supermod(2*(qx*locs[i][1]-qy*locs[i][0]),2*NPhi)];
                 //Using this definition, 'rho(q)' is taken as e^{iq\times z} where q has spatial index.
-                temp2[qx][qy]+=omega[supermod(2*(qx*locs[i][1]+qy*locs[i][0]),2*NPhi)];
+                //temp2[qx][qy]+=omega[supermod(2*(qx*locs[i][1]+qy*locs[i][0]),2*NPhi)];
                 //temp2 restore qy<=0 components.
             }
             sq[qx][qy]+=temp[qx][qy];
             sq2[qx][qy]+=norm(temp[qx][qy]);
-            sq_mqy[qx][qy]+=temp2[qx][qy];
-            sq2_mqy[qx][qy]+=norm(temp2[qx][qy]);
+            //sq_mqy[qx][qy]+=temp2[qx][qy];
+            //sq2_mqy[qx][qy]+=norm(temp2[qx][qy]);
         }
     }
-    //    cout<<sq[0][0]<<endl;
-    //	int qx3,qy3;
-    //	for(int qx1=0;qx1<NPhi;qx1++){
-    //		for(int qx2=0;qx2<NPhi;qx2++){
-    //			for(int qy1=0;qy1<NPhi;qy1++){
-    //				for(int qy2=0;qy2<NPhi;qy2++){
-    //					qx3=supermod(-qx1-qx2,NPhi);
-    //					qy3=supermod(-qy1-qy2,NPhi);
-    //					sq3[qx1][qx2][qy1][qy2]+=temp[qx1][qy1]*temp[qx2][qy2]*temp[qx3][qy3];
-    //				}
-    //			}
-    //		}
-    //	}
+    
+    int qx3,qy3;
+    for(int qx1=0;qx1<NPhi;qx1++){
+        for(int qx2=0;qx2<NPhi;qx2++){
+            for(int qy1=0;qy1<NPhi;qy1++){
+                for(int qy2=0;qy2<NPhi;qy2++){
+                    qx3=supermod(-qx1-qx2,NPhi);
+                    qy3=supermod(-qy1-qy2,NPhi);
+                    sq3[qx1][qx2][qy1][qy2]+=temp[qx1][qy1]*temp[qx2][qy2]*temp[qx3][qy3];
+                }
+            }
+        }
+    }
 }
 void LATTICE::print_structure_factors(int nMeas, string filename){
-    ofstream sqout(type+"sq/sq"+filename), sqout2(type+"sq/sq2"+filename), sqout3(type+"sq/sq3"+filename);
-    //    ofstream sqoutfl(type+"sq/sqfl"+filename), sqout2fl(type+"sq/sq2fl"+filename);//'fl'=first line.
-    for(int qx=0;qx<NPhi;qx++){
-        for(int qy=0; qy<NPhi; qy++){
+    ofstream sqout("SQ/sq"+filename), sqout2("SQ/sq2"+filename), sqout3("SQ/sq3"+filename);
+    for (int qx=0; qx<NPhi; qx++) {
+        for (int qy=0; qy<NPhi; qy++) {
             sqout2<<sq2[qx][qy]/(1.*nMeas)<<" ";
-            sqout<<abs(sq[qx][qy]/(1.*nMeas))<<" ";
+            sqout<<abs(sq[qx][qy])/(1.*nMeas)<<" ";
         }
         sqout<<endl;
         sqout2<<endl;
     }
-    ofstream sqout_mqy(type+"sq/sq_mqy"+filename), sqout2_mqy(type+"sq/sq2_mqy"+filename), sqout3_mqy(type+"sq/sq3_mqy"+filename);
-    for(int qx=0;qx<NPhi;qx++){
-        for(int qy=0; qy<NPhi; qy++){
-            sqout2_mqy<<sq2_mqy[qx][qy]/(1.*nMeas)<<" ";
-            sqout_mqy<<abs(sq_mqy[qx][qy]/(1.*nMeas))<<" ";
+    for(int qx1=0; qx1<NPhi; qx1++) {
+        for(int qy1=0; qy1<NPhi; qy1++) {
+            for(int qx2=0; qx2<NPhi; qx2++) {
+                for(int qy2=0; qy2<NPhi; qy2++) {
+                    sqout3<<real(sq3[qx1][qx2][qy1][qy2])/(1.*nMeas)<<" ";
+                }
+                sqout3<<endl;
+            }
         }
-        sqout_mqy<<endl;
-        sqout2_mqy<<endl;
     }
+    sqout.close();
+    sqout2.close();
+    sqout3.close();
+    
+//    ofstream sqout(type+"sq/sq"+filename), sqout2(type+"sq/sq2"+filename), sqout3(type+"sq/sq3"+filename);
+//    //    ofstream sqoutfl(type+"sq/sqfl"+filename), sqout2fl(type+"sq/sq2fl"+filename);//'fl'=first line.
+//    for(int qx=0;qx<NPhi;qx++){
+//        for(int qy=0; qy<NPhi; qy++){
+//            sqout2<<sq2[qx][qy]/(1.*nMeas)<<" ";
+//            sqout<<abs(sq[qx][qy]/(1.*nMeas))<<" ";
+//        }
+//        sqout<<endl;
+//        sqout2<<endl;
+//    }
+//    ofstream sqout_mqy(type+"sq/sq_mqy"+filename), sqout2_mqy(type+"sq/sq2_mqy"+filename), sqout3_mqy(type+"sq/sq3_mqy"+filename);
+//    for(int qx=0;qx<NPhi;qx++){
+//        for(int qy=0; qy<NPhi; qy++){
+//            sqout2_mqy<<sq2_mqy[qx][qy]/(1.*nMeas)<<" ";
+//            sqout_mqy<<abs(sq_mqy[qx][qy]/(1.*nMeas))<<" ";
+//        }
+//        sqout_mqy<<endl;
+//        sqout2_mqy<<endl;
+//    }
+    
+    
 //    ofstream smaout(type+"sq/sma"+filename);
 //    for (int qx=0; qx<NPhi; qx++) {
 //        for (int qy=0; qy<NPhi; qy++) {
@@ -1309,23 +1335,23 @@ void LATTICE::print_structure_factors(int nMeas, string filename){
 //        smaout<<endl;
 //    }
     
-    //	for(int qx1=0;qx1<NPhi;qx1++){
-    //		for(int qy1=0;qy1<NPhi;qy1++){
-    //			for(int qx2=0;qx2<NPhi;qx2++){
-    //				for(int qy2=0;qy2<NPhi;qy2++)
-    //					sqout3<<real(sq3[qx1][qx2][qy1][qy2])/(1.*nMeas)<<" ";
-    //				sqout3<<endl;
-    //			}
-    //		}
-    //	}
+//    	for(int qx1=0;qx1<NPhi;qx1++){
+//    		for(int qy1=0;qy1<NPhi;qy1++){
+//    			for(int qx2=0;qx2<NPhi;qx2++){
+//    				for(int qy2=0;qy2<NPhi;qy2++)
+//    					sqout3<<real(sq3[qx1][qx2][qy1][qy2])/(1.*nMeas)<<" ";
+//    				sqout3<<endl;
+//    			}
+//    		}
+//    	}
     //    sqoutfl.close();
     //    sqout2fl.close();
-    sqout3.close();
-    sqout3_mqy.close();
-    sqout.close();
-    sqout2.close();
-    sqout_mqy.close();
-    sqout2_mqy.close();
+//    sqout3.close();
+//    sqout3_mqy.close();
+//    sqout.close();
+//    sqout2.close();
+//    sqout_mqy.close();
+//    sqout2_mqy.close();
 //    smaout.close();
 }
 complex<double> LATTICE::formfactor(int qx, int qy){
@@ -1503,7 +1529,9 @@ void LATTICE::check_sanity(){
         exit(0);
     }
     double pre=1e-15;
-    if ( abs(get_shift()[0]-get_bc()[0])>pre or abs(get_shift()[1]-get_bc()[1])>pre ) {
+    double tmpx=fmod(get_shift()[0]-get_bc()[0],1.);
+    double tmpy=fmod(get_shift()[1]-get_bc()[1],1.);
+    if ( abs(tmpx)>pre or abs(tmpy)>pre ) {
         cout<<"shift!=bc."<<endl;
         cout<<"shift="<<get_shift()[0]<<" "<<get_shift()[1]<<" bc="<<get_bc()[0]<<" "<<get_bc()[1]<<endl;
         cout<<get_shift()[0]-get_bc()[0]<<" "<<get_shift()[1]-get_bc()[1]<<endl;
@@ -1890,7 +1918,7 @@ vector<double> LATTICE::get_w(){
     
     vector<double> weit=get_runweis(); weit.push_back(running_weight);
     double den=0.;
-    for (int i=0; i<Nn+1; i++) den+=ratio[i]*exp(weit[i]-running_weight);
+    for (int i=0; i<Nn+1; i++) den+=ratio[i]*exp(weit[i]-weit[Nn]);
     for (int i=0; i<Nn+1; i++) out[i]=exp(weit[i]-weit[Nn])/den;
     return out;
 }

@@ -88,9 +88,9 @@ void single_run(string filename, bool trace){
                 e_tracker.pop_back();
                 p_tracker.pop_back();
             }
-            //ll.update_structure_factors();
+//            ll.update_structure_factors();
         }
-        //ll.print_structure_factors(nMeas, "_"+to_string((long long int)s));
+//        ll.print_structure_factors(nMeas, "_"+to_string((long long int)s));
         
         outfile<<E/(1.*nMeas*ll.Ne)<<" "<<(E2/(1.*nMeas)-pow(E/(1.*nMeas),2))/(1.*ll.Ne)<<" "<<real(berry_phase)/(1.*nMeas)<<" "<<imag(berry_phase)/(1.*nMeas)<<endl;
         cout<<"acceptance rate: "<<(1.*ll.accepts)/(1.*ll.tries)<<endl;
@@ -361,40 +361,40 @@ vector<vector<vector<int>>> output_dset(int Ne){
         d.push_back(vector<int>{3,2});
         dset.push_back(d);
         
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
-        d.push_back(vector<int>{2,3});
-        dset.push_back(d);
-        
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
-        d.push_back(vector<int>{-2,3});
-        dset.push_back(d);
-        
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
-        d.push_back(vector<int>{-3,2});
-        dset.push_back(d);
-        
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
-        d.push_back(vector<int>{-3,-2});
-        dset.push_back(d);
-        
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
-        d.push_back(vector<int>{-2,-3});
-        dset.push_back(d);
-        
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
-        d.push_back(vector<int>{2,-3});
-        dset.push_back(d);
-        
-        d=old_ds;
-        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
-        d.push_back(vector<int>{3,-2});
-        dset.push_back(d);
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+//        d.push_back(vector<int>{2,3});
+//        dset.push_back(d);
+//        
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+//        d.push_back(vector<int>{-2,3});
+//        dset.push_back(d);
+//        
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+//        d.push_back(vector<int>{-3,2});
+//        dset.push_back(d);
+//        
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+//        d.push_back(vector<int>{-3,-2});
+//        dset.push_back(d);
+//        
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+//        d.push_back(vector<int>{-2,-3});
+//        dset.push_back(d);
+//        
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+//        d.push_back(vector<int>{2,-3});
+//        dset.push_back(d);
+//        
+//        d=old_ds;
+//        d.erase(remove(d.begin(),d.end(),vector<int>{1,3}),d.end());
+//        d.push_back(vector<int>{3,-2});
+//        dset.push_back(d);
         
         return dset;
     }
@@ -409,35 +409,35 @@ vector<vector<vector<int>>> output_dset(int Ne){
         d.push_back(vector<int>{3,4});
         dset.push_back(d);
         
-//        d=old_ds;
-//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-//        d.push_back(vector<int>{-3,4});
-//        dset.push_back(d);
-//        
-//        d=old_ds;
-//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-//        d.push_back(vector<int>{-4,3});
-//        dset.push_back(d);
-//        
-//        d=old_ds;
-//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-//        d.push_back(vector<int>{-4,-3});
-//        dset.push_back(d);
-//        
-//        d=old_ds;
-//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-//        d.push_back(vector<int>{-3,-4});
-//        dset.push_back(d);
-//        
-//        d=old_ds;
-//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-//        d.push_back(vector<int>{3,-4});
-//        dset.push_back(d);
-//        
-//        d=old_ds;
-//        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
-//        d.push_back(vector<int>{4,-3});
-//        dset.push_back(d);
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{-3,4});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{-4,3});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{-4,-3});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{-3,-4});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{3,-4});
+        dset.push_back(d);
+        
+        d=old_ds;
+        d.erase(remove(d.begin(),d.end(),vector<int>{2,4}),d.end());
+        d.push_back(vector<int>{4,-3});
+        dset.push_back(d);
         
         return dset;
     }
@@ -452,7 +452,7 @@ vector<vector<vector<int>>> output_dset(int Ne){
         exit(0);
     }
 }
-void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<double> a){
+void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<double> a, int seed_t){
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
     double theta_t, alpha_t;
@@ -484,7 +484,7 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
     vector<LATTICE> ll(ncore);
     
     for (int i=0; i<ncore; i++) {
-        seed=i;
+        seed=seed_t+i;
         bool trace=false, correlatedsampling=true;
         
         ll[i]=LATTICE(Ne, invNu, testing, type, seed, gs, theta, alpha, shiftx, shifty, trace, correlatedsampling);
@@ -556,6 +556,15 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
                     double w2=weit[n%N];
                     
                     Aew[c][n][s].col(0).array()+=w1*w2*ematrix.array()*ematrix.array();
+                    int k1=1;int k2=2;
+                    if (c==0) {
+                        if (n==k1*N+k2 or n==k2*N+k1) {
+                            cout<<"n="<<n<<" "<<(w1*w2*ematrix.array()*ematrix.array())(0)<<endl;
+                            cout<<"n="<<n<<" "<<Aew[c][n][s].col(0).array()(0)<<endl;
+                            cout<<endl;
+                        }
+                    }
+                    
                     Aew[c][n][s].col(1)+=w1*w2*ematrix;
                     Aew[c][n][s].col(2)+=w1*w2*ematrix;
                     Aew[c][n][s].col(3).array()+=w1*w2;
@@ -577,14 +586,14 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
     }
     
     //outfile here. output A&B matrix.
-    ofstream outfilea("out_csa_"+filename);
+    ofstream outfilea("data/out_csa_"+filename+"_"+to_string((long long int)seed_t));
     outfilea<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<"\nshift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<" ratio=";
     for (int i=0; i<ll[0].get_ratio().size(); i++) outfilea<<ll[0].get_ratio()[i]<<" ";
     outfilea<<" Nn="<<Nn<<" N=Nn+1"<<endl;
     
     for (int c=0; c<Coul_type; c++) {
         for (int screen=0; screen<CE[c].screen.size(); screen++) {
-            for (int n=0; n<N; n++) {
+            for (int n=0; n<N*N; n++) {//Amatrix has dimension of N*N, rather than N.
                 for (int k=0; k<4; k++) outfilea<<Aewtotal[c][n](screen,k)<<" ";
             }
             outfilea<<endl;
@@ -593,7 +602,7 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
     }
     outfilea.close();
     
-    ofstream outfileb("out_csb_"+filename);
+    ofstream outfileb("data/out_csb_"+filename+"_"+to_string((long long int)seed_t));
     outfileb<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<"\nshift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<" ratio=";
     for (int i=0; i<ll[0].get_ratio().size(); i++) outfileb<<ll[0].get_ratio()[i]<<" ";
     outfileb<<" Nn="<<Nn<<" N=Nn+1"<<endl;
@@ -608,6 +617,22 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
         outfileb<<endl;
     }
     outfileb.close();
+    
+    ofstream outfilec("data/out_csc_"+filename+"_"+to_string((long long int)seed_t));
+    outfilec<<"Ne="<<Ne<<" invNu="<<invNu<<" nMeas="<<nMeas<<" nBins="<<nBins<<"\nshift="<<ll[0].get_shift()[0]<<" "<<ll[0].get_shift()[1]<<" ratio=";
+    for (int i=0; i<ll[0].get_ratio().size(); i++) outfilec<<ll[0].get_ratio()[i]<<" ";
+    outfilec<<" Nn="<<Nn<<" N=Nn+1"<<endl;
+    
+    for (int c=0; c<Coul_type; c++) {
+        for (int screen=0; screen<CE[c].screen.size(); screen++) {
+            for (int n=0; n<N; n++) {//Amatrix has dimension of N*N, rather than N.
+                for (int k=0; k<4; k++) outfilec<<Aewtotal[c][n](screen,k)<<" ";
+            }
+            outfilec<<endl;
+        }
+        outfilec<<endl;
+    }
+    outfilec.close();
     
 //    nMeas*=nBins;
 //    for (int n=0; n<Nn; n++) {
@@ -714,7 +739,6 @@ void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<d
  
 }
 
-/*
 void structurefactor(string intputfilename, int num_core){//fielname='params_sq_...'.
     int Ne,invNu,nWarmup,nMeas,nSteps,nBins,seed;
     bool testing;
@@ -762,6 +786,8 @@ void structurefactor(string intputfilename, int num_core){//fielname='params_sq_
         ll[coren].print_structure_factors(nMeas, intputfilename+"_"+to_string((long long int)(s)));
     }
 }
+
+/*
 //laughlin-hole berry phase.
 void laughlinberryphase(string input_name, string output_name, vector<double> length, double steplength, int change_nMeas, int change_Ne, int num_core, double theta, double alpha){
     //input file is 'params_name'.
@@ -1047,6 +1073,8 @@ void two_holes(string input_name, string str, int nmeasurement, data& test){
     }
     
 }
+*/
+
 //CFL Berry Phase Calculator, Core Part.
 void CFL_berry_phases_parallel(string params_name, string output_name, int num_core, string kind, double theta, double alpha){
     //input file is 'params_name'.
@@ -1128,11 +1156,16 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
     omp_set_num_threads(num_core);
     
     vector<vector<LATTICE> > ll(num_core, vector<LATTICE>(invNu)), pp(num_core, vector<LATTICE>(invNu));
+    vector<NQ> NQCE(1);
+    NQCE[0].N=0; NQCE[0].Q=5.0; NQCE[0].screen=vector<double>(1,0.);
     //do this to avoid accessing wrong memory since openmp shares memory.
     for (int k=0; k<num_core; k++)
         for (int i=0; i<invNu; i++) {
             ll[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i, theta, alpha);
             pp[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i, theta, alpha);
+            
+            ll[k][i].setup_tables(NQCE, "ce");
+            pp[k][i].setup_tables(NQCE, "ce");
         }
     
     for (int nbin=0; nbin<nBins; nbin++) {
@@ -1207,7 +1240,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
                 for (int i=0; i<invNu; i++)
                     ll[coren][i].step(nSteps);
                 
-                energy[b]+=ll[coren][0].coulomb_energy(0);
+                energy[b]+=ll[coren][0].coulomb_energy(0)[0];
                 
                 for (int i=0; i<invNu; i++) {
                     for (int j=0; j<invNu; j++) {
@@ -1243,7 +1276,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
             
             //            overlaps[b][2]=overlaps[b][2].array()/overlaps[b][3].array().sqrt();//
             //            hermitianize(overlaps[b][2]);
-            //            cout<<"energy: "<<energy/(1.*nMeas*Ne)<<endl;
+                        //cout<<"energy: "<<energy/(1.*nMeas*Ne)<<endl;
         }
         //parallel programming end.
         
@@ -1336,7 +1369,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
     outfile2.close();
     outfile3.close();
 }
-
+/*
 //Particle Hole Symmetry (Ne9, maximal symmetric ds).
 void ParticleHoleSym(){
     int Ne, invNu, seed, nMeas, nWarmup, nSteps, nBins; bool testing; string type;
@@ -1671,6 +1704,7 @@ void Explicit(){
 	norm1=1;
 	cout<<"final overlap: "<<sqrt(comb(Ne,Ne/2))*abs(out/sqrt(norm1*norm2*norm3))<<" "<<total/norm3<<endl;
 }
+ */
 //this part of the code specifies all the grid points just outside the circle made up of tempNe electrons
 //we will loop through all these positions and add electrons to them
 //to go to larger sizes, it will be necessary to add more possible values of tempNe
@@ -2816,6 +2850,7 @@ void get_dlist(string holes, int tempNe, string kind, vector< vector<int> > &ext
         }
     }
 }
+/*
 //pairamplitude
 complex<double> interaction(int m1, int m3, int m4, int No, vector<double> vpseu, string type){
     double L=sqrt(2.0*M_PI*No), gamma=(2*M_PI/L)*(2*M_PI/L);

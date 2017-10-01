@@ -42,7 +42,7 @@ void parallel_ce_pa(int ncore, vector<NQ> CE, vector<NQ> PP, double shift=0.25, 
 //Pomeranchuk Instability.
 void print_d(vector<vector<int>>);
 vector<vector<vector<int>>> output_dset(int);
-void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<double> a);
+void pomeranchuk_instability(int ncore, vector<NQ> CE, string filename, vector<double> a, int seed_t);
 
 //Laughlin-Hole Berry Phase
 void laughlinberryphase(string input_name, string output_name, vector<double> length, double steplength, int change_nMeas, int change_Ne, int num_core, double theta=0.5*M_PI, double alpha=1.0);
