@@ -124,7 +124,7 @@ void LATTICE::init(int seed){
     sq2=vector<vector<double>>(NPhi, vector<double>(NPhi, 0));
     sq_mqy=vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi, 0));
     sq2_mqy=vector<vector<double>>(NPhi, vector<double>(NPhi, 0));
-    sq3=vector<vector<vector<vector<complex<double>>>>> (NPhi, vector<vector<vector<complex<double>>>>(NPhi, vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0.))));
+    //sq3=vector<vector<vector<vector<complex<double>>>>> (NPhi, vector<vector<vector<complex<double>>>>(NPhi, vector<vector<complex<double>>>(NPhi, vector<complex<double>>(NPhi,0.))));
 }
 vector<double> LATTICE::get_shift(){return vector<double>{shiftx, shifty};}
 vector<double> LATTICE::get_bc(){if (type=="CFL" or type=="doubledCFL") return vector<double>{wsum[0]-dsum[0]/(1.*NPhi), wsum[1]-dsum[1]/(1.*NPhi)}; else return wsum;}
@@ -144,6 +144,10 @@ double LATTICE::get_in_det_rescaling(int Ne, int invNu){
         else if (invNu==4) {
             if (Ne<15) rescaling=0.1;
             else if (Ne>=15 && Ne<=21) rescaling=0.08;
+            else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
+        }
+        else if (invNu==8) {
+            if (Ne<15) rescaling=0.00155;//TODO:the scale is hard to set???
             else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
         }
     }
@@ -1529,18 +1533,20 @@ void LATTICE::check_sanity(){
         exit(0);
     }
     
-    double pre=1e-15;
+    double pre=1e-10;
     double tmpx=get_bc()[0]-get_shift()[0];
     double tmpy=get_bc()[1]-get_shift()[1];
     
     tmpx=fmod(fmod(tmpx,1.)+1.,1.);
     tmpy=fmod(fmod(tmpy,1.)+1.,1.);
  
-    bool ifw= (abs(tmpx)<pre or abs(tmpx-1.)<pre) and ((abs(tmpy)<pre or abs(tmpy-1.)<pre));
+    bool ifw = (abs(tmpx)<pre or abs(tmpx-1.)<pre) and ((abs(tmpy)<pre or abs(tmpy-1.)<pre));
     if (!ifw) {
         cout<<"shift!=bc."<<endl;
         cout<<"shift="<<get_shift()[0]<<" "<<get_shift()[1]<<" bc="<<get_bc()[0]<<" "<<get_bc()[1]<<endl;
-        cout<<abs(tmpx)<<" "<<abs(tmpy)<<endl;
+        cout<<tmpx<<" "<<tmpy<<endl;
+        cout<<tmpx<<" "<<tmpx-1<<endl;
+        cout<<tmpy<<" "<<tmpy-1<<endl;
         exit(0);
     }
     

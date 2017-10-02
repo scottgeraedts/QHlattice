@@ -24,31 +24,70 @@ int main(){
 //    time_t t1, t2;
 //    t1 = time(NULL);
 //    t2 = time(NULL);
-//    cout<<"time eclips="<<(double)t2-(double)t1<<endl;    
+//    cout<<"time eclips="<<(double)t2-(double)t1<<endl;
     
     void quarterbp_e();
     void quarterbp_h();
     quarterbp_e();
     quarterbp_h();
+    
+//    void eightbp_e();
+//    void eightbp_h();
+//    eightbp_e();
+    
+    void halfbp();
+    halfbp();
+}
+void halfbp(){
+    int ncore=10;
+    double theta=0.5*M_PI, alpha=1.0;
+    string outputfile="2bp/quater_berry";
+    CFL_berry_phases_parallel("params12e2", outputfile, ncore, "Scott1", theta, alpha);
+    CFL_berry_phases_parallel("params12e2", outputfile, ncore, "Scott2", theta, alpha);
+    CFL_berry_phases_parallel("params12e2", outputfile, ncore, "Scott3", theta, alpha);
+    CFL_berry_phases_parallel("params12e2", outputfile, ncore, "Scott4", theta, alpha);
+    CFL_berry_phases_parallel("params12e2", outputfile, ncore, "Scott5", theta, alpha);
+    CFL_berry_phases_parallel("params12h2", outputfile, ncore, "loop1_new", theta, alpha);
+    CFL_berry_phases_parallel("params12h2", outputfile, ncore, "loop2_new", theta, alpha);
+    CFL_berry_phases_parallel("params12h2", outputfile, ncore, "loop3_new", theta, alpha);
 }
 void quarterbp_e(){
-    int ncore=1;
+    int ncore=10;
     double theta=0.5*M_PI, alpha=1.0;
     string outputfile="4bp/quater_berry";
     CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott1", theta, alpha);
-//    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott2", theta, alpha);
-//    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott3", theta, alpha);
-//    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott4", theta, alpha);
-//    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott5", theta, alpha);
+    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott2", theta, alpha);
+    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott3", theta, alpha);
+    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott4", theta, alpha);
+    CFL_berry_phases_parallel("params12e", outputfile, ncore, "Scott5", theta, alpha);
 }
 void quarterbp_h(){
-    int ncore=1;
+    int ncore=10;
     double theta=0.5*M_PI, alpha=1.0;
     string outputfile="4bp/quater_berry";
     CFL_berry_phases_parallel("params12h", outputfile, ncore, "loop1_new", theta, alpha);
-//    CFL_berry_phases_parallel("params12h", outputfile, ncore, "loop2_new", theta, alpha);
-//    CFL_berry_phases_parallel("params12h", outputfile, ncore, "loop3_new", theta, alpha);
+    CFL_berry_phases_parallel("params12h", outputfile, ncore, "loop2_new", theta, alpha);
+    CFL_berry_phases_parallel("params12h", outputfile, ncore, "loop3_new", theta, alpha);
 }
+void eightbp_e(){
+    int ncore=10;
+    double theta=0.5*M_PI, alpha=1.0;
+    string outputfile="8bp/quater_berry";
+    CFL_berry_phases_parallel("params12e8", outputfile, ncore, "Scott1", theta, alpha);
+    CFL_berry_phases_parallel("params12e8", outputfile, ncore, "Scott2", theta, alpha);
+    CFL_berry_phases_parallel("params12e8", outputfile, ncore, "Scott3", theta, alpha);
+    CFL_berry_phases_parallel("params12e8", outputfile, ncore, "Scott4", theta, alpha);
+    CFL_berry_phases_parallel("params12e8", outputfile, ncore, "Scott5", theta, alpha);
+}
+void eightbp_h(){
+    int ncore=10;
+    double theta=0.5*M_PI, alpha=1.0;
+    string outputfile="8bp/quater_berry";
+    CFL_berry_phases_parallel("params12h8", outputfile, ncore, "loop1_new", theta, alpha);
+    CFL_berry_phases_parallel("params12h8", outputfile, ncore, "loop2_new", theta, alpha);
+    CFL_berry_phases_parallel("params12h8", outputfile, ncore, "loop3_new", theta, alpha);
+}
+
 void Ed_Coulomb(){
     vector<double> screen;
     for (int i=0; i<100; i++) {

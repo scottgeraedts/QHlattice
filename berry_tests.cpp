@@ -1162,8 +1162,7 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
         for (int i=0; i<invNu; i++) {
             ll[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i, theta, alpha);
             pp[k][i]=LATTICE(Ne, invNu, testing, "CFL", seed, i, theta, alpha);
-            
-            ll[k][i].setup_tables(NQCE, "ce");
+            ll[k][i].setup_tables(NQCE, "ce");//TODO:not set up coulomb tables.
             pp[k][i].setup_tables(NQCE, "ce");
         }
     
@@ -1180,7 +1179,6 @@ void CFL_berry_phases_parallel(string params_name, string output_name, int num_c
             vector<vector<int> > new_ds_ll, new_ds_pp;
             new_ds_ll=old_ds;
             new_ds_pp=old_ds;
-            
             //depending on the mode, this adds one or two electons just outside the Fermi surface
             if(holes=="particles"){
                 new_ds_ll.push_back(extra_ds[b]);
