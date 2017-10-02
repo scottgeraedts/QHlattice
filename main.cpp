@@ -28,15 +28,17 @@ int main(){
     
     void quarterbp_e();
     void quarterbp_h();
-    quarterbp_e();
-    quarterbp_h();
+//    quarterbp_e();
+//    quarterbp_h();
     
-//    void eightbp_e();
-//    void eightbp_h();
-//    eightbp_e();
+    void eightbp_e();
+    void eightbp_h();
+    
+    eightbp_e();
+    eightbp_h();
     
     void halfbp();
-    halfbp();
+//    halfbp();
 }
 void halfbp(){
     int ncore=10;

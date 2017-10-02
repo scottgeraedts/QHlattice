@@ -147,7 +147,7 @@ double LATTICE::get_in_det_rescaling(int Ne, int invNu){
             else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
         }
         else if (invNu==8) {
-            if (Ne<15) rescaling=0.00155;//TODO:the scale is hard to set???
+            if (Ne<15) rescaling=0.02;//TODO:the scale is hard to set???
             else {cout<<"Please set in_determinant_rescaling."<<endl; exit(0);}
         }
     }
@@ -651,6 +651,9 @@ double LATTICE::get_weight(const vector< vector<int> > &zs){
                 y=(zs[i][1]-zs[j][1])/(1.*NPhi);
                 z_function_(&x,&y,&L1,&L2,&one,&NPhi,&temp);
                 temp=pow(temp,vandermonde_exponent);
+                if (invNu==8 && type=="CFL") {
+                    temp/=100.;//for eight-CFL, regularize.
+                }
                 
                 //......
                 if (type=="laughlin"||type=="laughlin-hole") {
@@ -769,6 +772,10 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                     ix=(zs[i][0]-zs[j][0]);
                     iy=(zs[i][1]-zs[j][1]);
                     out*=pow(lattice_z_(&NPhi,&ix,&iy,&L1,&L2,&one), vandermonde_exponent);
+                    if (invNu==8 && type=="CFL") {
+                        out/=100.;//for eight-CFL, regularize.
+                    }
+                    //cout<<"out="<<out<<endl;
                     
                     if (type=="laughlin"||type=="laughlin-hole") {
                         out*=pow(in_determinant_rescaling, Ne-1);
@@ -776,6 +783,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                 }
             }
         }
+        //cout<<"vandermonde part="<<out<<endl;
         
         //COM piece (together with phase)
         int COM[2]={0,0};
@@ -835,7 +843,7 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
             }
             out*=sum;
         }
-        //  cout<<" com piece = "<<out<<endl;
+        //cout<<" com piece = "<<out<<endl;
         
         //Determinant piece
         if(type=="CFL"){
@@ -855,7 +863,6 @@ complex<double> LATTICE::get_wf(const vector< vector<int> > &zs){
                     M(i,j)=product*polar(pow(in_determinant_rescaling, Ne-1), 2*M_PI*NPhi*(zs[i][1]*ds[j][0] - zs[i][0]*ds[j][1])/(2.*invNu*NPhi*Ne) );
                 }
             }
-            
             detSolver.compute(M);
             
             complex<double> tmp=detSolver.determinant();
